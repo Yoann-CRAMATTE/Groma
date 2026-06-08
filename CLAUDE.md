@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Documents de référence
+
+Lire ces fichiers **avant toute session de développement** — ils sont le système de contrôle du projet :
+
+- `ARCHITECTURE.md` — schéma du protocole manifeste, dépendances entre composants, machine à états UI, critères du spike 48h
+- `DECISIONS.md` — pourquoi Rust pour l'UI, pourquoi Ollama seul au MVP, ce qui est exclu et pourquoi
+
+---
+
 ## Rôle de Claude
 
 Co-développeur rigoureux. Analyser, anticiper, alerter — pas exécuter aveuglément.
@@ -134,15 +143,43 @@ synapse/
 
 ---
 
-## Roadmap
+## Ordre de développement MVP
 
-### MVP (en cours)
-- [ ] Bureau minimaliste + orbe
-- [ ] Menu navigation 2 niveaux
-- [ ] Bourrelet mode travail + morphose orbe
-- [ ] Écran config IA (Ollama / API)
-- [ ] App démo : Paint avec manifeste IA v1
-- [ ] Protocole `manifest.json` v1
+> Décision issue du LLM Council (08/06/2026) — consensus total.
+
+**Ne pas commencer par les animations d'orbes.** C'est de la dette émotionnelle déguisée en avancement.
+
+### Étape 0 — Spike 48h (PREMIÈRE CHOSE)
+- [ ] `manifest.json` Paint : 3 actions (`new_canvas`, `set_color`, `draw_line`)
+- [ ] `intent_parser.py` : texte naturel → Ollama → action JSON
+- [ ] `paint.py` reçoit l'action et l'exécute
+- [ ] Fenêtre Qt basique pour visualiser — **pas d'orbe, pas d'animation**
+- **Critère de succès :** `"dessine une ligne rouge"` → Paint trace une ligne rouge
+
+### Étape 1 — UI minimale (après spike validé)
+- [ ] Orbe minimal (heure/date, clic, menu 2 niveaux plat)
+- [ ] Mode travail avec bourrelet d'état simple
+- [ ] Machine à états explicite (cf. `ARCHITECTURE.md`)
+
+### Étape 2 — Intégration
+- [ ] Manifeste Paint dans l'UI Synapse
+- [ ] Écran config IA (Ollama uniquement)
+- [ ] Protocole `manifest.json` v1 documenté
+
+### Étape 3 — Polish (en dernier)
+- [ ] Animations d'orbes et morphose bourrelet
+- [ ] PyInstaller testé et validé sur Windows
+
+### V1.1
+- [ ] Interface abstraite IA (cloud API en option)
+- [ ] App Store
+- [ ] Sandbox apps
+- [ ] Apps natives : Notes, Texte, Terminal léger
+
+### V2
+- [ ] Port multi-plateforme (Linux, macOS)
+- [ ] Modèle IA embarqué < 1B params
+- [ ] Exploration Wear OS / watchOS
 
 ### V1.1
 - [ ] App Store (téléchargement apps compatibles Synapse)
