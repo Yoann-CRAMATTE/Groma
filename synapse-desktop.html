@@ -651,19 +651,15 @@
     ring.style.top = e.clientY + 'px';
   });
 
-  // Horloge
+  // Heure
   function updateTime() {
     const now = new Date();
     const h = String(now.getHours()).padStart(2,'0');
     const m = String(now.getMinutes()).padStart(2,'0');
-    const timeStr = h + ':' + m;
+    document.getElementById('time').textContent = h + ':' + m;
     const days = ['DIM','LUN','MAR','MER','JEU','VEN','SAM'];
     const months = ['JAN','FÉV','MAR','AVR','MAI','JUN','JUL','AOÛ','SEP','OCT','NOV','DÉC'];
-    const dateStr = days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()];
-    document.getElementById('time').textContent = timeStr;
-    document.getElementById('date').textContent = dateStr;
-    document.getElementById('bTime').textContent = timeStr;
-    document.getElementById('bDate').textContent = days[now.getDay()];
+    document.getElementById('date').textContent = days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()];
   }
   updateTime();
   setInterval(updateTime, 1000);
@@ -671,176 +667,219 @@
   // Données des catégories
   const CATS = {
     bureau: [
-      { name: 'Texte',    icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>' },
-      { name: 'Paint',    icon: '<circle cx="12" cy="12" r="3"/><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/>' },
-      { name: 'Notes',    icon: '<path d="M4 6h16M4 10h16M4 14h8"/>' },
-      { name: 'Tableur',  icon: '<rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 8h18M8 3v18M13 3v18"/>' },
+      { name: 'Texte', icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>' },
+      { name: 'Paint', icon: '<circle cx="12" cy="12" r="3"/><path d="M3 12a9 9 0 1 0 18 0"/>' },
+      { name: 'Notes', icon: '<path d="M4 6h16M4 10h16M4 14h8"/>' },
+      { name: 'Tableur', icon: '<rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 8h18M8 3v18M13 3v18"/>' },
     ],
     jeux: [
-      { name: 'Arcade',   icon: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4M8 10v4M15 11h2M15 13h2"/>' },
-      { name: 'Puzzle',   icon: '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/>' },
-      { name: 'Carte',    icon: '<polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>' },
+      { name: 'Arcade', icon: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4M8 10v4M15 11h2M15 13h2"/>' },
+      { name: 'Puzzle', icon: '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/>' },
+      { name: 'Carte', icon: '<polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>' },
     ],
     ia: [
-      { name: 'Chat',     icon: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>' },
-      { name: 'Image',    icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>' },
-      { name: 'Code',     icon: '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>' },
-      { name: 'Voix',     icon: '<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/>' },
+      { name: 'Chat', icon: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>' },
+      { name: 'Image', icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>' },
+      { name: 'Code', icon: '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>' },
+      { name: 'Voix', icon: '<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/>' },
     ],
     store: [
-      { name: 'Top',      icon: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>' },
-      { name: 'Nouveau',  icon: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>' },
-      { name: 'Gratuit',  icon: '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>' },
-      { name: 'Outils',   icon: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>' },
+      { name: 'Top', icon: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>' },
+      { name: 'Nouveau', icon: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>' },
+      { name: 'Catégo.', icon: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/>' },
     ],
     systeme: [
-      { name: 'Config',   icon: '<circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>' },
-      { name: 'IA',       icon: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>' },
-      { name: 'Réseau',   icon: '<rect x="9" y="2" width="6" height="6"/><rect x="16" y="16" width="6" height="6"/><rect x="2" y="16" width="6" height="6"/><path d="M5 16V9h14v7M12 8v8"/>' },
-      { name: 'Info',     icon: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12.01" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/>' },
-    ],
+      { name: 'Réseau', icon: '<circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>' },
+      { name: 'Sécurité', icon: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>' },
+      { name: 'Affichage', icon: '<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>' },
+      { name: 'IA Config', icon: '<circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>' },
+    ]
   };
 
-  // État
-  let menuOpen = false;
-  let activeCat = null;
-  let appMode = false;
-  let bourrelетMorphed = false;
+  // Rendu des apps
+  const appsRow = document.getElementById('apps-row');
+  let activecat = null;
 
-  const menuEl     = document.getElementById('menu');
-  const orbEl      = document.getElementById('orb');
-  const hintEl     = document.getElementById('hint');
-  const appsRow    = document.getElementById('apps-row');
-  const appWindow  = document.getElementById('appWindow');
-  const bourrelet  = document.getElementById('bourrelet');
-  const demoBtn    = document.getElementById('demoBtn');
+  function renderApps(cat) {
+    const apps = CATS[cat];
+    appsRow.style.opacity = '0';
+    appsRow.style.transform = 'translateY(8px)';
+    setTimeout(() => {
+      appsRow.innerHTML = apps.map(a => `
+        <div class="app-orb">
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--muted);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;">${a.icon}</svg>
+          <span class="app-name">${a.name}</span>
+        </div>
+      `).join('');
+      appsRow.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+      appsRow.style.opacity = '1';
+      appsRow.style.transform = 'translateY(0)';
 
-  function openMenu() {
-    menuOpen = true;
-    menuEl.classList.add('open');
-    hintEl.classList.add('hidden');
-  }
-
-  function closeMenu() {
-    menuOpen = false;
-    menuEl.classList.remove('open');
-    hintEl.classList.remove('hidden');
-    clearApps();
+      appsRow.querySelectorAll('.app-orb').forEach(el => {
+        el.addEventListener('mouseenter', () => { ring.style.width='40px'; ring.style.height='40px'; ring.style.borderColor='rgba(91,143,255,0.6)'; });
+        el.addEventListener('mouseleave', () => { ring.style.width='28px'; ring.style.height='28px'; ring.style.borderColor='rgba(91,143,255,0.4)'; });
+      });
+    }, 150);
   }
 
   function clearApps() {
-    activeCat = null;
-    appsRow.innerHTML = '';
-    appsRow.classList.add('hidden');
-    document.querySelectorAll('.cat-orb').forEach(o => o.classList.remove('active'));
+    appsRow.style.transition = 'opacity 0.15s ease';
+    appsRow.style.opacity = '0';
+    setTimeout(() => { appsRow.innerHTML = ''; }, 150);
   }
-
-  function showApps(cat) {
-    const apps = CATS[cat];
-    appsRow.innerHTML = '';
-    apps.forEach(app => {
-      const orb = document.createElement('div');
-      orb.className = 'app-orb';
-      orb.innerHTML = `<svg viewBox="0 0 24 24">${app.icon}</svg><div class="app-name">${app.name}</div><div class="tooltip">${app.name}</div>`;
-      appsRow.appendChild(orb);
-    });
-    appsRow.classList.remove('hidden');
-  }
-
-  // Clic orbe principal
-  orbEl.addEventListener('click', e => {
-    e.stopPropagation();
-    menuOpen ? closeMenu() : openMenu();
-  });
 
   // Clic catégorie
-  document.querySelectorAll('.cat-orb').forEach(catOrb => {
-    catOrb.addEventListener('click', e => {
+  document.querySelectorAll('.cat-orb').forEach(orb => {
+    orb.addEventListener('click', e => {
       e.stopPropagation();
-      const cat = catOrb.dataset.cat;
-      if (activeCat === cat) {
+      const cat = orb.dataset.cat;
+      document.querySelectorAll('.cat-orb').forEach(o => {
+        o.style.borderColor = '';
+        o.style.boxShadow = '';
+      });
+      if (activecat === cat) {
+        activecat = null;
         clearApps();
       } else {
-        document.querySelectorAll('.cat-orb').forEach(o => o.classList.remove('active'));
-        catOrb.classList.add('active');
-        activeCat = cat;
-        showApps(cat);
+        activecat = cat;
+        orb.style.borderColor = 'rgba(91,143,255,0.5)';
+        orb.style.boxShadow = '0 0 24px rgba(91,143,255,0.2)';
+        renderApps(cat);
       }
     });
   });
 
-  // Clic ailleurs → ferme tout
+  // Toggle menu
+  const mainOrb = document.getElementById('orb');
+  const menu = document.getElementById('menu');
+  const hint = document.getElementById('hint');
+  let menuOpen = false;
+
+  mainOrb.addEventListener('click', () => {
+    menuOpen = !menuOpen;
+    menu.classList.toggle('open', menuOpen);
+    hint.classList.toggle('hidden', menuOpen);
+    if (!menuOpen) { activecat = null; clearApps(); document.querySelectorAll('.cat-orb').forEach(o => { o.style.borderColor=''; o.style.boxShadow=''; }); }
+  });
+
   document.addEventListener('click', e => {
-    if (menuOpen && !menuEl.contains(e.target) && e.target !== orbEl) {
-      closeMenu();
+    if (menuOpen && !mainOrb.contains(e.target) && !menu.contains(e.target)) {
+      menuOpen = false;
+      menu.classList.remove('open');
+      hint.classList.remove('hidden');
+      activecat = null;
+      clearApps();
     }
   });
 
-  // Bouton démo : simule une app ouverte
-  demoBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    if (!appMode) {
-      appMode = true;
-      appWindow.classList.add('visible');
-      orbEl.style.opacity = '0';
-      orbEl.style.pointerEvents = 'none';
-      closeMenu();
-      bourrelet.classList.add('visible');
-      demoBtn.textContent = '[ fermer app ]';
-    } else {
-      appMode = false;
-      appWindow.classList.remove('visible');
-      orbEl.style.opacity = '';
-      orbEl.style.pointerEvents = '';
-      bourrelet.classList.remove('visible');
-      bourrelet.classList.remove('morphed');
-      bourrelетMorphed = false;
-      closeMenu();
-      demoBtn.textContent = '[ simuler app ouverte ]';
-    }
-  });
-
-  // Clic bourrelet : morphose → orbe → menu s'ouvre
-  bourrelet.addEventListener('click', e => {
-    e.stopPropagation();
-    if (!bourrelетMorphed) {
-      bourrelетMorphed = true;
-      bourrelet.classList.add('morphed');
-      setTimeout(() => openMenu(), 350);
-    } else {
-      bourrelетMorphed = false;
-      bourrelet.classList.remove('morphed');
-      closeMenu();
-    }
-  });
-
-  // Ferme le menu quand on clique sur l'app window (hors bourrelet)
-  appWindow.addEventListener('click', e => {
-    if (!bourrelet.contains(e.target)) {
-      if (menuOpen) {
-        closeMenu();
-        bourrelетMorphed = false;
-        bourrelet.classList.remove('morphed');
-      }
-    }
-  });
-
-  // Toggles status
+  // Toggles status icons
   document.getElementById('btn-wifi').addEventListener('click', e => {
     e.stopPropagation();
-    const el = document.getElementById('btn-wifi');
-    el.classList.toggle('on');
-    el.classList.toggle('off');
+    document.getElementById('btn-wifi').classList.toggle('on');
+    document.getElementById('btn-wifi').classList.toggle('off');
   });
   document.getElementById('btn-bt').addEventListener('click', e => {
     e.stopPropagation();
-    const el = document.getElementById('btn-bt');
-    el.classList.toggle('on');
-    el.classList.toggle('off');
+    document.getElementById('btn-bt').classList.toggle('on');
+    document.getElementById('btn-bt').classList.toggle('off');
   });
   document.getElementById('btn-theme').addEventListener('click', e => {
     e.stopPropagation();
+    const root = document.documentElement;
+    const isDark = getComputedStyle(root).getPropertyValue('--bg').trim() === '#0a0a0c';
+    if (isDark) {
+      root.style.setProperty('--bg', '#f0f0f4');
+      root.style.setProperty('--surface', '#ffffff');
+      root.style.setProperty('--ring', '#d0d0dc');
+      root.style.setProperty('--text', '#111114');
+      root.style.setProperty('--muted', '#888899');
+    } else {
+      root.style.setProperty('--bg', '#0a0a0c');
+      root.style.setProperty('--surface', '#111114');
+      root.style.setProperty('--ring', '#1e1e24');
+      root.style.setProperty('--text', '#e8e8f0');
+      root.style.setProperty('--muted', '#555566');
+    }
   });
+
+  // Bourrelet + mode travail
+  const appWindow = document.getElementById('appWindow');
+  const bourrelet = document.getElementById('bourrelet');
+  const demoBtn = document.getElementById('demoBtn');
+  const desktop = document.querySelector('.desktop');
+  let appMode = false;
+
+  function updateBourreletTime() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const days = ['DIM','LUN','MAR','MER','JEU','VEN','SAM'];
+    document.getElementById('bTime').textContent = h + ':' + m;
+    document.getElementById('bDate').textContent = days[now.getDay()];
+  }
+  updateBourreletTime();
+  setInterval(updateBourreletTime, 1000);
+
+  function enterAppMode() {
+    appMode = true;
+    menuOpen = false;
+    menu.classList.remove('open');
+    hint.classList.add('hidden');
+    desktop.style.transition = 'opacity 0.3s ease';
+    desktop.style.opacity = '0';
+    desktop.style.pointerEvents = 'none';
+    setTimeout(() => { appWindow.classList.add('visible'); }, 250);
+    setTimeout(() => { bourrelet.classList.add('visible'); }, 350);
+    demoBtn.textContent = '[ fermer app ]';
+  }
+
+  function exitAppMode() {
+    appMode = false;
+    bourrelet.classList.remove('visible');
+    menu.style.zIndex = '';
+    mainOrb.style.zIndex = '';
+    menuOpen = false;
+    menu.classList.remove('open');
+    appWindow.classList.remove('visible');
+    setTimeout(() => {
+      desktop.style.opacity = '1';
+      desktop.style.pointerEvents = '';
+      hint.classList.remove('hidden');
+    }, 300);
+    demoBtn.textContent = '[ simuler app ouverte ]';
+  }
+
+  demoBtn.addEventListener('click', () => {
+    if (appMode) exitAppMode(); else enterAppMode();
+  });
+
+  // Clic bourrelet → monte, morphe en orbe, ouvre menu
+  bourrelet.addEventListener('click', () => {
+    if (menuOpen) {
+      menuOpen = false;
+      menu.classList.remove('open');
+      setTimeout(() => { bourrelet.classList.remove('morphed'); }, 150);
+    } else {
+      bourrelet.classList.add('morphed');
+      setTimeout(() => {
+        mainOrb.style.display = 'none';
+        menuOpen = true;
+        menu.classList.add('open');
+      }, 300);
+    }
+  });
+
+  // Hover curseur
+  bourrelet.addEventListener('mouseenter', () => { ring.style.width='40px'; ring.style.height='40px'; ring.style.borderColor='rgba(91,143,255,0.6)'; });
+  bourrelet.addEventListener('mouseleave', () => { ring.style.width='28px'; ring.style.height='28px'; ring.style.borderColor='rgba(91,143,255,0.4)'; });
+  demoBtn.addEventListener('mouseenter', () => { ring.style.width='40px'; ring.style.height='40px'; });
+  demoBtn.addEventListener('mouseleave', () => { ring.style.width='28px'; ring.style.height='28px'; });
+
+  document.querySelectorAll('.cat-orb, #orb').forEach(el => {
+    el.addEventListener('mouseenter', () => { ring.style.width='40px'; ring.style.height='40px'; ring.style.borderColor='rgba(91,143,255,0.6)'; });
+    el.addEventListener('mouseleave', () => { ring.style.width='28px'; ring.style.height='28px'; ring.style.borderColor='rgba(91,143,255,0.4)'; });
+  });
+
 </script>
 </body>
 </html>
