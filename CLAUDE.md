@@ -12,7 +12,7 @@ Avant tout code : analyser les risques, proposer une architecture, valider ensem
 
 ## Qu'est-ce que Synapse ?
 
-Mini OS desktop AI-native développé from scratch en Python/PySide6.
+Shell desktop AI-native qui tourne par-dessus un OS existant (Windows en priorité, puis Linux/macOS).
 L'IA n'est pas un assistant adjacent — elle est la couche de contrôle native de chaque application.
 
 **Philosophie** : interface minimaliste géométrique, navigation par orbes (ronds), zéro chrome inutile. Chaque app expose un `manifest.json` qui dit à l'IA comment la piloter (inspiré MCP, appliqué à un OS entier).
@@ -21,14 +21,18 @@ L'IA n'est pas un assistant adjacent — elle est la couche de contrôle native 
 
 ## Stack technique
 
-| Couche | Techno |
-|--------|--------|
-| Langage | Python |
-| UI | PySide6 |
-| IA locale | Ollama (Llama 3.2 ou équivalent léger) |
-| IA cloud | API configurable (OpenAI, Anthropic, etc.) |
-| Packaging | PyInstaller → `.exe` Windows (MVP) |
-| Stockage | SQLite local |
+| Couche | Techno | Raison |
+|--------|--------|--------|
+| Core UI / shell / animations | **Rust** | Performances, sécurité mémoire, 60 fps sans GIL |
+| Orchestration IA / manifestes | **Python** | Écosystème AI imbattable (Ollama, OpenAI, Anthropic) |
+| Apps tierces | Python ou tout langage | Via le protocole manifest — pas de contrainte |
+| IA locale | Ollama (Llama 3.2 ou léger) | Inférence locale sans dépendance cloud |
+| IA cloud | API configurable (OpenAI, Anthropic…) | Fallback ou modèles plus puissants |
+| IPC core ↔ IA | IPC léger (socket Unix / named pipe) | Pont Rust ↔ Python sans overhead |
+| Packaging | Cargo + PyInstaller bundlé | `.exe` Windows pour le MVP |
+| Stockage | SQLite local | Simple, embarqué, sans serveur |
+
+> **Règle d'or** : tout ce qui touche au rendu, aux animations et à la réactivité de l'UI s'écrit en Rust. Tout ce qui touche à l'IA, aux manifestes et à la logique des apps s'écrit en Python.
 
 ---
 
@@ -50,7 +54,7 @@ L'IA n'est pas un assistant adjacent — elle est la couche de contrôle native 
 - **Clic bourrelet** → monte et se morphe en orbe (350 ms) → menu s'ouvre automatiquement par-dessus l'app
 - 2e clic → menu ferme, bourrelet redescend et reprend sa forme
 
-La maquette HTML interactive `synapse-desktop.html` est la **référence visuelle et comportementale** pour tout développement PySide6.
+La maquette HTML interactive `synapse-desktop.html` est la **référence visuelle et comportementale** pour tout développement Rust UI.
 
 ---
 
@@ -122,10 +126,10 @@ synapse/
 
 ## Conventions
 
-- Indentation : 4 espaces (Python), 2 espaces (JS/HTML/CSS)
+- Indentation : 4 espaces (Python), 2 espaces (JS/HTML/CSS), style Rust standard (`rustfmt`)
 - Nommage fichiers : `kebab-case`
-- Variables : `snake_case` (Python), `camelCase` (JS)
-- Pas de `print()` dans le code livré
+- Variables : `snake_case` (Python & Rust), `camelCase` (JS)
+- Pas de `print()` / `println!()` dans le code livré
 - Commenter le **pourquoi**, jamais le quoi
 
 ---
