@@ -98,7 +98,7 @@ App (manifest.json)
 ┌─────────────────────────────────────────────────┼──┐
 │                   COUCHE PYTHON                  │  │
 │                                                  │  │
-│  ia-core/                                        │  │
+│  ia_core/                                        │  │
 │  ─ manifest_loader.py   charge manifest.json     │  │
 │  ─ intent_parser.py     texte → action JSON      │  │
 │  ─ action_dispatcher.py valide + route           │  │
