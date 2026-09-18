@@ -31,17 +31,20 @@ body { padding-bottom: 40px; }
 
 /* ---------- En-tête ---------- */
 
+.barre-haute {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--fond-2);
+}
+
 .entete {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 12px var(--gouttiere);
-  background: var(--fond-2);
   border-bottom: 1px solid var(--bord);
-  position: sticky;
-  top: 0;
-  z-index: 20;
 }
 
 .entete h1 {
@@ -74,11 +77,7 @@ body { padding-bottom: 40px; }
 .onglets {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  background: var(--fond-2);
   border-bottom: 1px solid var(--bord);
-  position: sticky;
-  top: 53px;
-  z-index: 19;
 }
 
 .onglet {
@@ -104,9 +103,14 @@ body { padding-bottom: 40px; }
   background: rgba(255, 255, 255, 0.03);
 }
 
-/* Écrans étroits : « ASSAINISSEMENT » doit tenir sans être coupé. */
-@media (max-width: 430px) {
-  .onglet { font-size: 0.6rem; letter-spacing: 0; padding: 12px 2px; }
+/* Deux libellés par onglet : le long disparaît quand il ne tient plus. */
+.onglet-court { display: none; }
+
+/* Seuil mesuré : « CONFIGURATION » déborde encore de sa colonne à 430 px. */
+@media (max-width: 480px) {
+  .onglet { font-size: 0.68rem; letter-spacing: 0.03em; padding: 12px 2px; }
+  .onglet-long { display: none; }
+  .onglet-court { display: inline; }
 }
 
 /* ---------- Structure ---------- */
@@ -276,8 +280,31 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .point-ref { font-weight: 600; font-size: 0.9rem; }
 .point-date { font-size: 0.7rem; color: var(--texte-faible); white-space: nowrap; }
 .point-detail { font-size: 0.8rem; color: var(--texte-faible); margin-top: 4px; word-break: break-word; }
-.point-coord { font-size: 0.75rem; font-variant-numeric: tabular-nums; margin-top: 4px; }
-.point-coord a { color: var(--accent); }
+.point-coord {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  margin-top: 6px;
+}
+
+/* Cible tactile : un lien de 14 px de haut est inutilisable au doigt. */
+.lien-carte {
+  color: var(--accent);
+  text-decoration: none;
+  border: 1px solid var(--bord);
+  border-radius: 6px;
+  padding: 8px 10px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.lien-carte:hover, .lien-carte:focus { border-color: var(--accent); text-decoration: underline; }
+
+.point-precision { color: var(--texte-faible); }
 
 .point-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 .point-actions button { padding: 7px 12px; min-height: 36px; font-size: 0.78rem; font-weight: 500; }
@@ -351,9 +378,16 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .stat-valeur { font-size: 1.5rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 .stat-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--texte-faible); }
 
-.case { display: flex; align-items: center; gap: 10px; }
-.case input { width: 20px; min-height: 20px; height: 20px; flex: 0 0 auto; }
-.case label { font-size: 0.88rem; color: var(--texte); }
+.case { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.case input { width: 22px; min-height: 22px; height: 22px; flex: 0 0 auto; }
+
+.case label {
+  font-size: 0.88rem;
+  color: var(--texte);
+  flex: 1;
+  padding: 11px 0;
+  cursor: pointer;
+}
 
 /* ---------- Toast ---------- */
 
@@ -380,4 +414,64 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 @media (prefers-reduced-motion: reduce) {
   #toast { transition: none; }
+}
+
+/* ---------- Petits smartphones ---------- */
+
+/* Sous 400 px, le toast centré se replie en colonne étroite : bandeau pleine largeur. */
+@media (max-width: 480px) {
+  #toast {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    max-width: none;
+    transform: translateY(160%);
+  }
+
+  #toast[data-visible="true"] { transform: translateY(0); }
+}
+
+/* Paysage sur petit écran : 96 px de barres fixes sur 320 px de haut, c'est trop. */
+@media (max-height: 480px) and (orientation: landscape) {
+  /* L'en-tête glisse hors écran, les onglets restent collés en haut.
+     --h-entete est mesuré par app.js : la hauteur change avec la largeur. */
+  .barre-haute { top: calc(-1 * var(--h-entete, 40px)); }
+
+  .entete { padding: 6px var(--gouttiere); }
+  .entete h1 { font-size: 0.85rem; }
+
+  .onglet { padding: 8px 4px; }
+
+  main { padding-top: 10px; }
+  .bloc { padding: 10px 12px; margin-bottom: 10px; }
+  textarea { min-height: 56px; }
+}
+
+/* iPhone SE, Galaxy Fold replié : chaque pixel de largeur compte. */
+@media (max-width: 360px) {
+  :root { --gouttiere: 10px; }
+
+  .entete { padding: 10px var(--gouttiere); }
+  .entete h1 { font-size: 0.95rem; letter-spacing: 0.1em; }
+  .badge-fichier { max-width: 40vw; font-size: 0.66rem; padding: 3px 8px; }
+
+  .bloc { padding: 11px; }
+  .position { gap: 8px; }
+  .position dt { font-size: 0.62rem; letter-spacing: 0.04em; }
+  .position dd { font-size: 0.88rem; }
+
+  .fichier { padding: 9px 10px; }
+  .fichier-nom { font-size: 0.82rem; }
+  .fichier-filiere { font-size: 0.6rem; }
+  .fichier-entete { flex-direction: column; align-items: flex-start; gap: 2px; }
+
+  /* Les boutons compacts passent sur deux colonnes plutôt que de déborder. */
+  .fichier .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .fichier .actions button { width: 100%; }
+  .fichier .actions button:last-child { grid-column: 1 / -1; }
+
+  .stat { flex-basis: calc(50% - 5px); padding: 9px 10px; }
+  .stat-valeur { font-size: 1.3rem; }
+
+  .point-actions button { padding: 7px 9px; font-size: 0.74rem; }
 }

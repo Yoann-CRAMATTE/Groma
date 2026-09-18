@@ -77,6 +77,44 @@ colonne `filiere` est accepté et rattaché à la filière ciblée.
 
 ---
 
+## Affichage — petits smartphones
+
+Contrainte de conception : l'application doit rester utilisable sur les plus petits
+écrans du parc. Elle est vérifiée à **280, 320, 360, 390, 412, 430, 480 et 540 px**
+de large, ainsi qu'en **orientation paysage** (568×320 et 653×280).
+
+| Palier | Adaptation |
+|---|---|
+| ≤ 480 px | Libellés d'onglets abrégés : `EAU` · `ASSAIN.` · `SPANC` · `CONFIG`. Le libellé complet reste exposé aux lecteurs d'écran via `aria-label`. Seuil mesuré : « CONFIGURATION » déborde encore de sa colonne à 430 px. |
+| < 480 px | Le message de confirmation passe en bandeau pleine largeur (centré, il se repliait en colonne étroite). |
+| < 360 px | Gouttière à 10 px, marges et typographie compactées, boutons des cartes fichier en grille à deux colonnes, en-tête de carte sur deux lignes. |
+| Paysage, hauteur < 480 px | L'en-tête glisse hors écran au défilement, la barre d'onglets reste collée : 47 px de barres fixes au lieu de 84. |
+
+Règles tenues à toutes les largeurs :
+
+- **Aucun débordement horizontal** — vérifié automatiquement sur les quatre onglets.
+- **Aucun texte tronqué** — libellés, boutons et valeurs tiennent dans leur boîte.
+- **Cibles tactiles ≥ 36 px**, champs de saisie à 44 px. Les cases à cocher occupent
+  une ligne de 44 px et se basculent en touchant le libellé.
+
+La hauteur de l'en-tête n'est pas codée en dur : `app.js` la mesure et la publie dans
+la variable CSS `--h-entete`, que le mode paysage utilise pour se caler.
+
+### Rejouer l'audit
+
+```bash
+python3 geoloc/serveur.py 8123 &
+npm install playwright
+node geoloc/tests/audit-responsive.mjs
+```
+
+Le script parcourt les quatre onglets à chaque largeur et signale débordement, texte
+tronqué, cible tactile trop petite et erreur JavaScript. Sortie non nulle en cas de
+défaut. **Playwright n'est pas une dépendance de l'application** : il ne sert qu'à ce
+contrôle.
+
+---
+
 ## Coordonnées
 
 Chaque point enregistre la position WGS84 (latitude, longitude, altitude, précision)

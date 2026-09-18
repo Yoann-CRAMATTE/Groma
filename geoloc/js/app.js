@@ -151,10 +151,11 @@
     var nav = document.getElementById('onglets');
     vider(nav);
     var entrees = Cfg.FILIERES.map(function (f) {
-      return { id: f.id, label: f.label, couleur: f.couleur };
-    }).concat([{ id: 'configuration', label: 'CONFIGURATION', couleur: '#94a3b8' }]);
+      return { id: f.id, label: f.label, labelCourt: f.labelCourt, couleur: f.couleur };
+    }).concat([{ id: 'configuration', label: 'CONFIGURATION', labelCourt: 'CONFIG', couleur: '#94a3b8' }]);
 
     entrees.forEach(function (e) {
+      // Deux libellés : sous 400 px, « ASSAINISSEMENT » ne tient pas sans être coupé.
       var b = el('button', {
         classe: 'onglet',
         type: 'button',
@@ -162,10 +163,13 @@
         id: 'onglet-' + e.id,
         'aria-controls': 'vue-' + e.id,
         'aria-selected': 'false',
+        'aria-label': e.label,
         style: '--couleur-onglet:' + e.couleur,
-        texte: e.label,
         onclick: function () { activerOnglet(e.id); }
-      });
+      }, [
+        el('span', { classe: 'onglet-long', texte: e.label }),
+        el('span', { classe: 'onglet-court', texte: e.labelCourt })
+      ]);
       nav.appendChild(b);
     });
   }
@@ -463,15 +467,16 @@
     if (p.observations) enfants.push(el('div', { classe: 'point-detail', texte: '« ' + p.observations + ' »' }));
 
     if (p.latitude && p.longitude) {
-      var coord = el('div', { classe: 'point-coord' }, [
+      enfants.push(el('div', { classe: 'point-coord' }, [
         el('a', {
+          classe: 'lien-carte',
           href: Geo.lienCarte(p.latitude, p.longitude),
           target: '_blank', rel: 'noopener noreferrer',
-          texte: p.latitude + ', ' + p.longitude
+          title: 'Ouvrir dans OpenStreetMap',
+          texte: '⌖ ' + p.latitude + ', ' + p.longitude
         }),
-        '  (±' + (p.precision_m || '?') + ' m)'
-      ]);
-      enfants.push(coord);
+        el('span', { classe: 'point-precision', texte: '±' + (p.precision_m || '?') + ' m' })
+      ]));
     }
 
     enfants.push(el('div', { classe: 'point-actions' }, [
@@ -871,6 +876,26 @@
 
   // ---------------------------------------------------------------- amorçage
 
+  /**
+   * Publie la hauteur mesurée de l'en-tête. En paysage court, la barre haute se cale
+   * sur cette valeur en négatif : l'en-tête glisse hors écran, les onglets restent
+   * collés. Mesuré plutôt que codé en dur, car la hauteur varie selon la largeur.
+   */
+  function suivreHauteurEntete() {
+    var entete = document.querySelector('.entete');
+    if (!entete) return;
+
+    function poser() {
+      document.documentElement.style.setProperty(
+        '--h-entete', Math.round(entete.getBoundingClientRect().height) + 'px');
+    }
+    poser();
+
+    if (typeof ResizeObserver === 'function') new ResizeObserver(poser).observe(entete);
+    else global.addEventListener('resize', poser);
+    global.addEventListener('orientationchange', poser);
+  }
+
   function avertirContexte() {
     if (!Geo.contexteSecurise()) {
       toast('Page non servie en HTTPS ou localhost : le GPS sera refusé par le navigateur.', 'erreur');
@@ -895,6 +920,7 @@
     var valide = dernier === 'configuration' || Cfg.filiere(dernier);
     activerOnglet(valide ? dernier : Cfg.FILIERES[0].id);
 
+    suivreHauteurEntete();
     avertirContexte();
   }
 

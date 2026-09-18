@@ -20,6 +20,7 @@
     {
       id: 'eau',
       label: 'EAU',
+      labelCourt: 'EAU',
       titre: 'Eau potable (AEP)',
       couleur: '#0ea5e9',
       prefixe: 'AEP',
@@ -47,6 +48,7 @@
     {
       id: 'assainissement',
       label: 'ASSAINISSEMENT',
+      labelCourt: 'ASSAIN.',
       titre: 'Assainissement collectif',
       couleur: '#22c55e',
       prefixe: 'AC',
@@ -74,6 +76,7 @@
     {
       id: 'spanc',
       label: 'SPANC',
+      labelCourt: 'SPANC',
       titre: 'Assainissement non collectif',
       couleur: '#a855f7',
       prefixe: 'ANC',

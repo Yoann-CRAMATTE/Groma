@@ -3,9 +3,9 @@
 > Mémoire de travail. À relire en début de session **avant** d'ouvrir le code,
 > à mettre à jour en fin de session. Évite de relire toute l'application à chaque fois.
 
-**Dernière mise à jour :** 18/09/2026 (v0.2)
+**Dernière mise à jour :** 18/09/2026 (v0.3)
 **Branche :** `claude/geoloc-web-app-duccxo`
-**Statut :** v0.2 fonctionnelle, testée en navigateur headless.
+**Statut :** v0.3 fonctionnelle, testée en navigateur headless de 280 px à 1100 px, portrait et paysage.
 
 ---
 
@@ -14,7 +14,7 @@
 | Fichier | Rôle | Stable ? |
 |---|---|---|
 | `index.html` | Coquille : en-tête, nav, conteneur, datalist, toast | oui |
-| `css/style.css` | Feuille unique, mobile d'abord, `--accent` piloté par l'onglet | oui |
+| `css/style.css` | Feuille unique, mobile d'abord, paliers 480 / 400 / 360 px + paysage court | oui |
 | `js/config.js` | **Source de vérité du schéma** : filières, champs, couleurs, colonnes CSV | oui |
 | `js/lambert93.js` | WGS84 → EPSG:2154, constantes IGN | oui, vérifié |
 | `js/csv.js` | Sérialisation / lecture RFC 4180, BOM UTF-8, détection de séparateur | oui, aller-retour testé |
@@ -23,6 +23,7 @@
 | `js/app.js` | Construction du DOM, formulaires, liste, configuration | oui |
 | `serveur.py` | Serveur local — indispensable, le GPS refuse `file://` | oui |
 | `docs/RGPD.md` | Point de vigilance sur les données SPANC | oui |
+| `tests/audit-responsive.mjs` | Contrôle d'affichage, 280 → 540 px et paysage | oui |
 
 ## Invariants à ne pas casser
 
@@ -38,7 +39,13 @@
 4. **Aucune dépendance, aucun build.** Scripts classiques, pas de modules ES
    (compatibilité maximale, y compris ouverture directe pour inspection).
 5. **Aucune donnée utilisateur via `innerHTML`.** Tout passe par `el()` / `textContent`.
-6. **Cibles tactiles ≥ 44 px** — saisie au téléphone, parfois avec des gants.
+6. **Cibles tactiles ≥ 44 px** pour la saisie, ≥ 36 px pour les actions secondaires —
+   saisie au téléphone, parfois avec des gants.
+7. **Aucune largeur ni hauteur codée en dur pour le chrome collant.** La hauteur de
+   l'en-tête est mesurée par `suivreHauteurEntete()` et publiée dans `--h-entete`.
+   Un `top: 53px` en dur avait déjà cassé au palier 360 px.
+8. **Plancher de support : 280 px de large.** Toute modification d'interface se
+   vérifie à cette largeur avant d'être poussée.
 
 ## Décisions prises
 
@@ -52,6 +59,10 @@
   triple, pas le modèle de données.
 - **Import mono-filière** : une ligne portant une autre `filiere` est rejetée. Sans
   ce contrôle, un `eau.csv` importé dans SPANC passerait sans bruit.
+- **Double libellé d'onglet** plutôt que troncature par ellipsis : « ASSAINISSEMENT »
+  coupé en « ASSAINISS… » n'apprend rien. Le libellé complet reste dans `aria-label`.
+- **En paysage court, l'en-tête glisse hors écran** au lieu de rester collé : sur
+  320 px de haut, 84 px de barres fixes rendaient le formulaire inutilisable.
 - **Lambert 93 calculé côté client** plutôt qu'importé : la conversion est courte et
   évite une dépendance (`proj4js`) pour une seule projection.
 - **Pas de carte embarquée** : tuiles = requêtes réseau et dépendance externe, sans
@@ -83,3 +94,7 @@
 - **Vidage du cache navigateur = perte des données** si aucun CSV n'est lié.
 - **Trois liaisons à faire**, une par filière : un seul fichier lié ne couvre pas
   les autres onglets. Le badge d'en-tête indique l'état du fichier de l'onglet actif.
+- **Tout ajout d'interface se teste avec `tests/audit-responsive.mjs`** avant d'être
+  poussé : il détecte débordement, texte tronqué, cible tactile trop petite et erreur
+  JavaScript, sur dix configurations d'écran. C'est lui qui a révélé le défaut des
+  430 px, invisible sur les largeurs testées à la main.

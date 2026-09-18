@@ -11,12 +11,15 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header class="entete">
-    <h1>GÉO<span>LOC</span></h1>
-    <span class="badge-fichier" id="badge-fichier" data-etat="neutre">…</span>
-  </header>
+  <!-- En-tête et onglets collent ensemble : évite d'aligner la nav sur une hauteur codée en dur. -->
+  <div class="barre-haute">
+    <header class="entete">
+      <h1>GÉO<span>LOC</span></h1>
+      <span class="badge-fichier" id="badge-fichier" data-etat="neutre">…</span>
+    </header>
 
-  <nav class="onglets" id="onglets" role="tablist" aria-label="Filières"></nav>
+    <nav class="onglets" id="onglets" role="tablist" aria-label="Filières"></nav>
+  </div>
 
   <main id="vues"></main>
 
