@@ -36,6 +36,12 @@
     return CIRCONFERENCE * Math.cos(lat * Math.PI / 180) / tailleMonde(z);
   }
 
+  /** Zoom le plus fort pour lequel la vue couvre encore `etendueM` mètres. */
+  function zoomPourEtendue(etendueM, lat, cotePx) {
+    var k = CIRCONFERENCE * Math.cos(lat * Math.PI / 180) * cotePx / (etendueM * TUILE);
+    return Math.floor(Math.log(k) / Math.LN2);
+  }
+
   // --- Fonds ----------------------------------------------------------------
 
   var GEOPF = 'https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile'
@@ -95,8 +101,9 @@
     var o = options || {};
     var fonds = o.urls || FONDS;
     var fondActif = o.fond && fonds[o.fond] ? o.fond : 'photo';
-    var zoom = o.zoom || fonds[fondActif].zoomMax;
     var zoomMin = o.zoomMin || 14;
+    var etendueMin = o.etendueMinM || 0;
+    var zoom = o.zoom || fonds[fondActif].zoomMax;
 
     var centre = { latitude: 0, longitude: 0 };
     var marqueurs = [];
@@ -120,6 +127,24 @@
     var demandees = 0;
     var echouees = 0;
 
+    function plafond() {
+      var base = fonds[fondActif].zoomMax;
+      if (!etendueMin) return base;
+      var cote = Math.min(hote.clientWidth, hote.clientHeight);
+      if (!cote) return base;
+      // Aucun fond gratuit ne descend nativement à dix mètres de large. Au-delà
+      // de son zoom maximal on réclame quand même la tuile la plus fine et on
+      // l'agrandit : l'image devient floue mais le géoréférencement reste juste.
+      // Trois niveaux (x8) est la limite au-delà de laquelle il n'y a plus rien
+      // à lire dans le pixel.
+      return Math.max(base, Math.min(base + 3, zoomPourEtendue(etendueMin, centre.latitude, cote)));
+    }
+
+    /** Niveaux d'agrandissement au-delà de la résolution réelle du fond. */
+    function surZoom() {
+      return Math.max(0, zoom - fonds[fondActif].zoomMax);
+    }
+
     function signalerEtat() {
       var perdu = demandees > 0 && echouees >= demandees;
       hote.setAttribute('data-tuiles', perdu ? 'absentes' : 'ok');
@@ -137,12 +162,15 @@
       var gauche = cx - largeur / 2;
       var haut = cy - hauteur / 2;
 
+      var zNatif = Math.min(zoom, fonds[fondActif].zoomMax);
+      var pas = TUILE * Math.pow(2, zoom - zNatif); // côté de la tuile à l'écran
+
       // Une tuile de marge : évite le vide sur les bords pendant le déplacement.
-      var x0 = Math.floor(gauche / TUILE) - 1;
-      var y0 = Math.floor(haut / TUILE) - 1;
-      var x1 = Math.floor((gauche + largeur) / TUILE) + 1;
-      var y1 = Math.floor((haut + hauteur) / TUILE) + 1;
-      var max = Math.pow(2, zoom);
+      var x0 = Math.floor(gauche / pas) - 1;
+      var y0 = Math.floor(haut / pas) - 1;
+      var x1 = Math.floor((gauche + largeur) / pas) + 1;
+      var y1 = Math.floor((haut + hauteur) / pas) + 1;
+      var max = Math.pow(2, zNatif);
 
       var fragment = document.createDocumentFragment();
       demandees = 0;
@@ -158,8 +186,10 @@
           img.loading = 'eager';
           img.decoding = 'async';
           img.draggable = false;
-          img.style.left = (tx * TUILE - gauche) + 'px';
-          img.style.top = (ty * TUILE - haut) + 'px';
+          img.style.left = (tx * pas - gauche) + 'px';
+          img.style.top = (ty * pas - haut) + 'px';
+          img.style.width = pas + 'px';
+          img.style.height = pas + 'px';
           // Une tuile en échec laisse sinon une icône de lien brisé sur le fond.
           img.addEventListener('error', function () {
             this.style.display = 'none';
@@ -168,7 +198,7 @@
           });
           img.addEventListener('load', signalerEtat);
           img.src = fonds[fondActif].url
-            .replace('{z}', zoom).replace('{x}', wx).replace('{y}', ty);
+            .replace('{z}', zNatif).replace('{x}', wx).replace('{y}', ty);
           demandees++;
           fragment.appendChild(img);
         }
@@ -256,15 +286,16 @@
     var api = {
       centrer: function (lat, lon, z) {
         centre = { latitude: lat, longitude: lon };
-        if (z) zoom = z;
+        if (z) zoom = Math.max(zoomMin, Math.min(plafond(), z));
         rendre();
         return api;
       },
       centre: function () { return { latitude: centre.latitude, longitude: centre.longitude }; },
       zoom: function () { return zoom; },
-      zoomMax: function () { return fonds[fondActif].zoomMax; },
+      zoomMax: plafond,
+      surZoom: surZoom,
       zoomer: function (delta) {
-        var cible = Math.max(zoomMin, Math.min(fonds[fondActif].zoomMax, zoom + delta));
+        var cible = Math.max(zoomMin, Math.min(plafond(), zoom + delta));
         if (cible === zoom) return api;
         zoom = cible;
         rendre();
@@ -274,7 +305,7 @@
         if (!id) return fondActif;
         if (!fonds[id]) return api;
         fondActif = id;
-        if (zoom > fonds[id].zoomMax) zoom = fonds[id].zoomMax;
+        if (zoom > plafond()) zoom = plafond();
         rendre();
         return api;
       },

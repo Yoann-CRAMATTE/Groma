@@ -4,6 +4,59 @@ Une entrée par session de travail, la plus récente en haut.
 
 ---
 
+## 18/09/2026 — Refonte tablette et catalogue de matériel (v0.6)
+
+**Demande :** interface pensée pour la tablette — dans chaque onglet, la relève en
+cours puis les relèves déjà faites en dessous, une barre de recherche en haut. Le
+matériel choisi dans des listes déroulantes en cascade : choisir « compteur » au
+premier niveau ne doit laisser voir que les compteurs et leurs diamètres au second.
+La configuration de ces listes dans un fichier CSV à part. Photo mise de côté.
+
+**Fait :**
+
+- **Disposition refondue** dans les trois onglets : barre de recherche collante en
+  haut, bloc « nouveau relevé » (position d'abord, matériel ensuite), puis les
+  relevés effectués du plus récent au plus ancien. Palier 768 px ajouté — cascade
+  sur trois colonnes, boutons GPS sur un rang, cibles à 48 px.
+- **Cascade à trois niveaux** `type_materiel` → `modele` → `detail`, en remplacement
+  de la colonne unique `type_ouvrage` / `type_installation`.
+- **`js/catalogue.js`** : nouveau module. Graine de 316 lignes couvrant les trois
+  filières, requêtes de cascade, aller-retour `parametres.csv`.
+- **`parametres.csv`** : quatrième fichier, `filiere;type_materiel;modele;detail`.
+  Lié, exporté et importé comme les autres, avec son propre handle.
+- **Éditeur de catalogue** dans Configuration : un dépliant par filière, ajout en
+  trois cases avec complétion du type, suppression à la croix.
+- **Modale carte simplifiée** : le tableau de trois définitions devient une ligne.
+
+**Deux pièges rencontrés :**
+
+- *La cascade ne se réinitialisait plus.* En voulant préserver une valeur absente du
+  catalogue — cas d'un relevé relu après refonte du catalogue — `remplirSelect()` la
+  réinjectait systématiquement. Conséquence : changer le type de matériel laissait en
+  place un détail devenu impossible. La fonction distingue désormais deux régimes
+  selon que la valeur est **imposée** (relecture d'un relevé) ou **courante**
+  (cascade interactive). C'est l'audit qui l'a attrapé, pas la relecture du code.
+- *Dix mètres de côté n'existent pas dans les fonds gratuits.* La photo IGN plafonne
+  à z20, soit une cinquantaine de mètres de large sur une tablette. La demande
+  supposait donc de sur-zoomer : la tuile la plus fine est réclamée puis agrandie
+  (jusqu'à ×8). Le géoréférencement reste exact, l'image est interpolée — et le
+  facteur est **affiché à côté de l'échelle**, parce qu'une image lissée se lit
+  autrement comme une mesure précise.
+
+**Vérifié :** audit d'affichage sur quinze formats (cinq tablettes, huit téléphones,
+deux paysages courts) — aucun défaut ; l'audit contrôle aussi que le niveau 2 dépend
+du niveau 1 et que le niveau 3 tombe quand le niveau 1 change. Test fonctionnel
+séparé : cascade, enregistrement, recherche, relecture d'un relevé, ajout au
+catalogue répercuté dans les listes, en-tête de `parametres.csv`, plafond de zoom.
+
+**Réserve :** les 316 lignes livrées sont plausibles mais **non validées métier**.
+C'est une amorce à corriger avec les services, pas une nomenclature de référence.
+
+**Mis de côté :** le travail sur la photo, commencé à la session précédente, est dans
+le stash `WIP photo (mis de cote - redesign tablet)`.
+
+---
+
 ## 18/09/2026 — Revue visuelle (v0.5.1)
 
 Captures de l'application complète avec un jeu de données réaliste. Deux défauts

@@ -5,6 +5,18 @@
 (function (global) {
   'use strict';
 
+  /**
+   * Identification du matériel en trois listes liées. Les valeurs ne sont pas
+   * dans ce fichier : elles viennent du catalogue (`parametres.csv`), modifiable
+   * sans toucher au code. Le niveau 1 seul est obligatoire — beaucoup d'ouvrages
+   * anciens n'ont ni modèle ni détail identifiables sur le terrain.
+   */
+  var CHAMPS_CASCADE = [
+    { cle: 'type_materiel', label: 'Type de matériel', type: 'cascade', requis: true },
+    { cle: 'modele', label: 'Modèle', type: 'cascade' },
+    { cle: 'detail', label: 'Détail', type: 'cascade' }
+  ];
+
   // Champs présents sur les trois filières, avant les champs métier.
   var CHAMPS_COMMUNS = [
     { cle: 'reference', label: 'Référence', type: 'text', placeholder: 'auto si vide' },
@@ -26,12 +38,6 @@
       prefixe: 'AEP',
       fichier: 'eau.csv',
       champs: [
-        {
-          cle: 'type_ouvrage', label: "Type d'ouvrage", type: 'select', requis: true,
-          options: ['Vanne', 'Poteau incendie', 'Bouche incendie', 'Compteur', 'Regard de comptage',
-            'Ventouse', 'Purge / vidange', 'Réducteur de pression', 'Stabilisateur', 'Réservoir',
-            'Captage', 'Surpresseur', 'Branchement', 'Autre']
-        },
         { cle: 'diametre_mm', label: 'Diamètre (mm)', type: 'number', min: 0, step: 1 },
         {
           cle: 'materiau', label: 'Matériau', type: 'select',
@@ -54,12 +60,6 @@
       prefixe: 'AC',
       fichier: 'assainissement.csv',
       champs: [
-        {
-          cle: 'type_ouvrage', label: "Type d'ouvrage", type: 'select', requis: true,
-          options: ['Regard de visite', 'Tampon', 'Grille avaloir', 'Boîte de branchement',
-            'Poste de relevage', "Déversoir d'orage", "Bassin d'orage", "Station d'épuration",
-            'Exutoire', 'Siphon', 'Autre']
-        },
         {
           cle: 'reseau', label: 'Type de réseau', type: 'select',
           options: ['Eaux usées', 'Eaux pluviales', 'Unitaire', 'Inconnu']
@@ -84,12 +84,6 @@
       // Adresse + propriétaire = données à caractère personnel (RGPD) : cf. docs/RGPD.md
       donneesPersonnelles: true,
       champs: [
-        {
-          cle: 'type_installation', label: "Type d'installation", type: 'select', requis: true,
-          options: ['Fosse toutes eaux', 'Fosse septique', 'Micro-station', 'Filtre à sable vertical drainé',
-            'Filtre à sable vertical non drainé', "Tranchées d'épandage", 'Lit filtrant', 'Filtre compact',
-            'Filtre planté de roseaux', 'Puits perdu', "Absence d'installation", 'Autre']
-        },
         { cle: 'adresse', label: 'Adresse', type: 'text' },
         { cle: 'proprietaire', label: 'Propriétaire', type: 'text' },
         { cle: 'parcelle', label: 'Parcelle cadastrale', type: 'text', placeholder: 'ex. AB 0142' },
@@ -128,6 +122,7 @@
     var f = filiere(filiereId);
     if (!f) return [];
     var cols = COLONNES_TECHNIQUES.slice();
+    CHAMPS_CASCADE.forEach(function (c) { if (cols.indexOf(c.cle) === -1) cols.push(c.cle); });
     CHAMPS_COMMUNS.forEach(function (c) { if (cols.indexOf(c.cle) === -1) cols.push(c.cle); });
     f.champs.forEach(function (c) { if (cols.indexOf(c.cle) === -1) cols.push(c.cle); });
     cols.push(CHAMP_OBSERVATIONS.cle);
@@ -151,7 +146,7 @@
   function champsDe(id) {
     var f = filiere(id);
     if (!f) return [];
-    return CHAMPS_COMMUNS.concat(f.champs).concat([CHAMP_OBSERVATIONS]);
+    return CHAMPS_CASCADE.concat(CHAMPS_COMMUNS).concat(f.champs).concat([CHAMP_OBSERVATIONS]);
   }
 
   var CONFIG_DEFAUT = {

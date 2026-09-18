@@ -11,6 +11,11 @@
   var Csv = global.GeoLocCsv;
   var Geo = global.GeoLocGeo;
   var Carte = global.GeoLocCarte;
+  var Catalogue = global.GeoLocCatalogue;
+
+  // Étendue la plus serrée autorisée sur la carte de recalage : en deçà, on ne
+  // gagne plus en justesse, on grossit seulement l'interpolation de l'image.
+  var ETENDUE_CARTE_M = 10;
 
   var LIBELLE_RAPIDE = '⌖  Relevé rapide';
   var LIBELLE_PRECIS = '◎  Précision maximale';
@@ -103,8 +108,8 @@
 
     if (!filiereId || filiereId === 'configuration') {
       badge.setAttribute('data-etat', 'neutre');
-      badge.textContent = '3 fichiers CSV';
-      badge.title = 'Un fichier par filière, géré ci-dessous.';
+      badge.textContent = '4 fichiers CSV';
+      badge.title = 'Un fichier par filière, plus le catalogue de matériel.';
       return;
     }
     if (!Store.fsaDisponible()) {
@@ -127,16 +132,19 @@
     });
   }
 
-  function telechargerCsv(filiereId) {
-    var f = Cfg.filiere(filiereId);
-    var blob = new Blob([contenuCsv(filiereId)], { type: 'text/csv;charset=utf-8' });
+  function telechargerTexte(nomBase, contenu) {
+    var blob = new Blob([contenu], { type: 'text/csv;charset=utf-8' });
     var url = URL.createObjectURL(blob);
-    var nom = f.fichier.replace(/\.csv$/, '') + '-' + new Date().toISOString().slice(0, 10) + '.csv';
+    var nom = nomBase.replace(/\.csv$/, '') + '-' + new Date().toISOString().slice(0, 10) + '.csv';
     var a = el('a', { href: url, download: nom });
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function telechargerCsv(filiereId) {
+    telechargerTexte(Cfg.filiere(filiereId).fichier, contenuCsv(filiereId));
   }
 
   /** Téléchargements échelonnés : Chrome bloque les déclenchements simultanés. */
@@ -191,9 +199,73 @@
       v.hidden = v.id !== 'vue-' + id;
     });
     rafraichirBadgeFichier();
-    if (id === 'configuration') { rafraichirStats(); rafraichirFonds(); }
+    if (id === 'configuration') {
+      rafraichirStats();
+      rafraichirFonds();
+      Cfg.FILIERES.forEach(function (f) { rafraichirCatalogue(f.id); });
+    }
     else rafraichirListe(id);
     try { localStorage.setItem('geoloc.onglet', id); } catch (e) { /* mode privé */ }
+  }
+
+  // ---------------------------------------------------------------- cascade matériel
+
+  function selCascade(filiereId, cle) {
+    return document.getElementById(filiereId + '-' + cle);
+  }
+
+  /**
+   * Deux régimes selon que `valeurForcee` est fournie :
+   *   - absente (cascade interactive) : la valeur courante n'est gardée que si
+   *     elle figure encore dans les options, sinon la liste se vide. C'est ce qui
+   *     fait tomber le modèle et le détail quand on change de type ;
+   *   - fournie (relecture d'un relevé enregistré) : la valeur est imposée, et
+   *     signalée « hors catalogue » si le catalogue a changé depuis la saisie.
+   *     Sans cela, rouvrir un ancien point le viderait en silence.
+   */
+  function remplirSelect(noeud, options, valeurForcee) {
+    var force = valeurForcee !== undefined;
+    var cible = force ? valeurForcee : noeud.value;
+    var connue = options.indexOf(cible) !== -1;
+
+    vider(noeud);
+    noeud.appendChild(el('option', { value: '', texte: options.length ? '—' : '(aucun)' }));
+    options.forEach(function (o) { noeud.appendChild(el('option', { value: o, texte: o })); });
+
+    if (force && cible && !connue) {
+      noeud.appendChild(el('option', { value: cible, texte: cible + '  (hors catalogue)' }));
+    }
+
+    noeud.value = connue || (force && cible) ? cible : '';
+    noeud.disabled = !options.length && !noeud.value;
+  }
+
+  /** Recalcule les trois listes de haut en bas ; chacune dépend de la précédente. */
+  function rafraichirCascade(filiereId) {
+    var n1 = selCascade(filiereId, 'type_materiel');
+    var n2 = selCascade(filiereId, 'modele');
+    var n3 = selCascade(filiereId, 'detail');
+    if (!n1 || !n2 || !n3) return;
+
+    remplirSelect(n1, Catalogue.types(filiereId));
+    remplirSelect(n2, Catalogue.modeles(filiereId, n1.value));
+    remplirSelect(n3, Catalogue.details(filiereId, n1.value, n2.value));
+  }
+
+  /** Impose les trois valeurs d'un relevé relu, chaque niveau ouvrant le suivant. */
+  function poserCascade(filiereId, valeurs) {
+    var n1 = selCascade(filiereId, 'type_materiel');
+    var n2 = selCascade(filiereId, 'modele');
+    var n3 = selCascade(filiereId, 'detail');
+    if (!n1 || !n2 || !n3) return;
+
+    var v1 = valeurs.type_materiel || '';
+    var v2 = valeurs.modele || '';
+    var v3 = valeurs.detail || '';
+
+    remplirSelect(n1, Catalogue.types(filiereId), v1);
+    remplirSelect(n2, Catalogue.modeles(filiereId, v1), v2);
+    remplirSelect(n3, Catalogue.details(filiereId, v1, v2), v3);
   }
 
   // ---------------------------------------------------------------- vue filière
@@ -202,7 +274,12 @@
     var idChamp = filiereId + '-' + champ.cle;
     var saisie;
 
-    if (champ.type === 'select') {
+    if (champ.type === 'cascade') {
+      saisie = el('select', {
+        id: idChamp, name: champ.cle,
+        onchange: function () { rafraichirCascade(filiereId); }
+      });
+    } else if (champ.type === 'select') {
       saisie = el('select', { id: idChamp, name: champ.cle },
         [el('option', { value: '', texte: '—' })].concat(
           champ.options.map(function (o) { return el('option', { value: o, texte: o }); })
@@ -227,7 +304,12 @@
     return el('div', { classe: classe }, [etiquette, saisie]);
   }
 
-  function blocPosition(filiereId) {
+  /**
+   * Bloc « relevé » : on prend la position d'abord, on décrit le matériel ensuite.
+   * C'est l'ordre du terrain — on arrive sur l'ouvrage, on se géolocalise, puis
+   * on regarde ce qu'on a sous les yeux.
+   */
+  function blocReleve(f) {
     var lignes = [
       ['Latitude', 'lat'], ['Longitude', 'lon'], ['Altitude', 'alt'], ['Précision', 'prec'],
       ['Dispersion', 'disp'], ['Mesures', 'nb'], ['X Lambert 93', 'x93'], ['Y Lambert 93', 'y93']
@@ -236,47 +318,49 @@
     lignes.forEach(function (l) {
       dl.appendChild(el('div', {}, [
         el('dt', { texte: l[0] }),
-        el('dd', { id: filiereId + '-pos-' + l[1], classe: 'vide', texte: '—' })
+        el('dd', { id: f.id + '-pos-' + l[1], classe: 'vide', texte: '—' })
       ]));
     });
 
-    return el('section', { classe: 'bloc' }, [
-      el('h2', { texte: 'Position' }),
+    var position = el('div', { classe: 'zone-position' }, [
       el('div', { classe: 'actions-gps' }, [
         el('button', {
-          classe: 'btn-gps', type: 'button', id: filiereId + '-btn-gps',
+          classe: 'btn-gps', type: 'button', id: f.id + '-btn-gps',
           texte: LIBELLE_RAPIDE,
           title: 'Une seule mesure, immédiate',
-          onclick: function () { lancerLocalisation(filiereId); }
+          onclick: function () { lancerLocalisation(f.id); }
         }),
         el('button', {
-          classe: 'btn-primaire btn-gps', type: 'button', id: filiereId + '-btn-precis',
+          classe: 'btn-primaire btn-gps', type: 'button', id: f.id + '-btn-precis',
           texte: LIBELLE_PRECIS,
           title: 'Mesure continue puis agrégation des meilleures positions',
-          onclick: function () { basculerAffinage(filiereId); }
+          onclick: function () { basculerAffinage(f.id); }
+        }),
+        el('button', {
+          classe: 'btn-carte btn-gps', type: 'button', id: f.id + '-btn-carte',
+          texte: '🗺  Ajuster sur la carte', disabled: 'disabled',
+          onclick: function () { ouvrirCarte(f.id); }
         })
       ]),
-      el('div', { classe: 'progression', id: filiereId + '-progression', hidden: 'hidden' }, [
-        el('div', { classe: 'progression-barre', id: filiereId + '-progression-barre' })
+      el('div', { classe: 'progression', id: f.id + '-progression', hidden: 'hidden' }, [
+        el('div', { classe: 'progression-barre', id: f.id + '-progression-barre' })
       ]),
-      el('button', {
-        classe: 'btn-carte btn-plein', type: 'button', id: filiereId + '-btn-carte',
-        texte: '🗺  Ajuster sur la carte', disabled: 'disabled',
-        onclick: function () { ouvrirCarte(filiereId); }
-      }),
       dl,
-      el('p', { classe: 'etat-gps', id: filiereId + '-etat-gps' })
+      el('p', { classe: 'etat-gps', id: f.id + '-etat-gps' })
     ]);
-  }
 
-  function construireVueFiliere(f) {
+    // Les trois listes liées d'abord, isolées : c'est l'identification de l'ouvrage.
+    var cascade = el('div', { classe: 'cascade' });
     var grille = el('div', { classe: 'grille' });
-    Cfg.champsDe(f.id).forEach(function (c) { grille.appendChild(construireChamp(f.id, c)); });
+    Cfg.champsDe(f.id).forEach(function (c) {
+      (c.type === 'cascade' ? cascade : grille).appendChild(construireChamp(f.id, c));
+    });
 
     var formulaire = el('form', { id: f.id + '-form', autocomplete: 'off' }, [
+      cascade,
       grille,
       el('div', { classe: 'actions' }, [
-        el('button', { classe: 'btn-primaire', type: 'submit', id: f.id + '-btn-valider', texte: 'Enregistrer le point' }),
+        el('button', { classe: 'btn-primaire btn-enregistrer', type: 'submit', id: f.id + '-btn-valider', texte: 'Enregistrer le relevé' }),
         el('button', {
           type: 'button', texte: 'Réinitialiser',
           onclick: function () { reinitialiserFormulaire(f.id); }
@@ -288,21 +372,35 @@
       enregistrerPoint(f.id);
     });
 
-    return el('section', { classe: 'vue', id: 'vue-' + f.id, role: 'tabpanel', 'aria-labelledby': 'onglet-' + f.id, hidden: 'hidden' }, [
-      blocPosition(f.id),
-      el('section', { classe: 'bloc' }, [
-        el('h2', { texte: f.titre }),
-        formulaire
+    return el('section', { classe: 'bloc bloc-releve', id: f.id + '-bloc-releve' }, [
+      el('div', { classe: 'bloc-titre' }, [
+        el('h2', { id: f.id + '-titre-releve', texte: 'Nouveau relevé' }),
+        el('span', { classe: 'bloc-soustitre', texte: f.titre })
       ]),
+      position,
+      formulaire
+    ]);
+  }
+
+  function construireVueFiliere(f) {
+    var recherche = el('div', { classe: 'barre-recherche' }, [
+      el('input', {
+        type: 'search', id: f.id + '-recherche',
+        'aria-label': 'Rechercher dans les relevés ' + f.label,
+        placeholder: 'Rechercher un relevé…',
+        oninput: function () { rafraichirListe(f.id); }
+      }),
+      el('span', { classe: 'compteur', id: f.id + '-compteur', texte: '0' })
+    ]);
+
+    return el('section', { classe: 'vue', id: 'vue-' + f.id, role: 'tabpanel', 'aria-labelledby': 'onglet-' + f.id, hidden: 'hidden' }, [
+      recherche,
+      blocReleve(f),
       el('section', { classe: 'bloc' }, [
         el('div', { classe: 'bloc-titre' }, [
-          el('h2', { texte: 'Points relevés' }),
-          el('span', { classe: 'compteur', id: f.id + '-compteur', texte: '0' })
+          el('h2', { texte: 'Relevés effectués' }),
+          el('span', { classe: 'bloc-soustitre', texte: 'du plus récent au plus ancien' })
         ]),
-        el('input', {
-          type: 'search', id: f.id + '-recherche', placeholder: 'Filtrer (référence, commune, type, observations)…',
-          oninput: function () { rafraichirListe(f.id); }
-        }),
         el('ul', { classe: 'liste', id: f.id + '-liste' })
       ])
     ]);
@@ -449,7 +547,9 @@
   }
 
   function ecrireFormulaire(filiereId, valeurs) {
+    poserCascade(filiereId, valeurs);
     Cfg.champsDe(filiereId).forEach(function (c) {
+      if (c.type === 'cascade') return;
       var n = document.getElementById(filiereId + '-' + c.cle);
       if (n) n.value = valeurs[c.cle] === undefined ? '' : valeurs[c.cle];
     });
@@ -480,7 +580,7 @@
     var info = document.getElementById(filiereId + '-etat-gps');
     info.textContent = '';
     info.removeAttribute('data-niveau');
-    document.getElementById(filiereId + '-btn-valider').textContent = 'Enregistrer le point';
+    document.getElementById(filiereId + '-btn-valider').textContent = 'Enregistrer le relevé';
   }
 
   function enregistrerPoint(filiereId) {
@@ -545,10 +645,14 @@
     return etat.points.filter(function (p) { return p.filiere === filiereId; });
   }
 
+  /** Chaîne « Compteur › DN 20 › Vitesse » : les trois niveaux tels qu'ils ont été choisis. */
+  function materielDe(p) {
+    return [p.type_materiel, p.modele, p.detail].filter(Boolean).join(' › ');
+  }
+
   function resumePoint(filiereId, p) {
-    var f = Cfg.filiere(filiereId);
     var parts = [];
-    f.champs.slice(0, 3).forEach(function (c) {
+    Cfg.filiere(filiereId).champs.slice(0, 3).forEach(function (c) {
       if (p[c.cle]) parts.push(c.label + ' : ' + p[c.cle]);
     });
     return parts.join(' · ');
@@ -562,6 +666,9 @@
         el('span', { classe: 'point-date', texte: dateCourteFr(p.date_saisie) })
       ])
     ];
+
+    var materiel = materielDe(p);
+    if (materiel) enfants.push(el('div', { classe: 'point-materiel', texte: materiel }));
 
     var resume = resumePoint(filiereId, p);
     if (resume) enfants.push(el('div', { classe: 'point-detail', texte: resume }));
@@ -612,14 +719,14 @@
     }).sort(function (a, b) { return (b.date_saisie || '').localeCompare(a.date_saisie || ''); });
 
     compteur.textContent = q
-      ? visibles.length + ' / ' + tous.length + ' point(s)'
-      : tous.length + ' point(s)';
+      ? visibles.length + ' / ' + tous.length
+      : tous.length + ' relevé' + (tous.length > 1 ? 's' : '');
 
     vider(liste);
     if (!visibles.length) {
       liste.appendChild(el('li', {
         classe: 'vide-message',
-        texte: tous.length ? 'Aucun point ne correspond au filtre.' : 'Aucun point relevé pour cette filière.'
+        texte: tous.length ? 'Aucun relevé ne correspond à la recherche.' : 'Aucun relevé pour cette filière.'
       }));
       return;
     }
@@ -651,7 +758,7 @@
     var info = document.getElementById(filiereId + '-etat-gps');
     info.setAttribute('data-niveau', 'info');
     info.textContent = 'Modification en cours. « Localiser » remplace la position enregistrée.';
-    document.getElementById(filiereId + '-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById(filiereId + '-bloc-releve').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   /** Reprend les attributs métier sans la position : cas des ouvrages en série. */
@@ -664,7 +771,7 @@
     copie.reference = '';
     ecrireFormulaire(filiereId, copie);
     toast('Attributs repris. Relevez la nouvelle position.', 'info');
-    document.getElementById(filiereId + '-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById(filiereId + '-bloc-releve').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function supprimerPoint(filiereId, id) {
@@ -710,14 +817,20 @@
   function rafraichirInfosCarte() {
     if (!carte || !carteEtat) return;
     var c = carte.centre();
-    document.getElementById('carte-lat').textContent = nombre(c.latitude, 6);
-    document.getElementById('carte-lon').textContent = nombre(c.longitude, 6);
-    document.getElementById('carte-echelle').textContent = formaterEchelle(carte.resolution());
+
+    document.getElementById('carte-coord').textContent =
+      nombre(c.latitude, 6) + '  ·  ' + nombre(c.longitude, 6);
 
     var ecart = Carte.distance(c, carteEtat.origine);
     var champ = document.getElementById('carte-ecart');
-    champ.textContent = ecart < 0.5 ? 'position GPS' : ecart.toFixed(1) + ' m';
-    champ.className = ecart > carteEtat.origine.precision ? 'ecart-fort' : '';
+    champ.textContent = ecart < 0.5 ? 'sur le point GPS' : 'déplacé de ' + ecart.toFixed(1) + ' m';
+    champ.className = 'carte-ecart' + (ecart > carteEtat.origine.precision ? ' ecart-fort' : '');
+
+    // Le facteur d'agrandissement est affiché : au-delà du zoom natif du fond,
+    // l'image est interpolée et ne prouve plus rien de ce qu'elle montre.
+    var sur = carte.surZoom();
+    document.getElementById('carte-echelle').textContent =
+      formaterEchelle(carte.resolution()) + (sur ? '  ·  image agrandie ×' + Math.pow(2, sur) : '');
 
     document.getElementById('carte-moins').disabled = false;
     document.getElementById('carte-plus').disabled = carte.zoom() >= carte.zoomMax();
@@ -767,6 +880,7 @@
     carte = Carte.creerCarte(hote, {
       urls: fonds,
       fond: fonds[etat.config.fondCarte] ? etat.config.fondCarte : Object.keys(fonds)[0],
+      etendueMinM: ETENDUE_CARTE_M,
       surChangement: rafraichirInfosCarte,
       surTuiles: function (t) {
         message.textContent = t.perdu
@@ -903,7 +1017,7 @@
         el('h2', { texte: 'Fichiers CSV' }),
         el('button', { type: 'button', classe: 'btn-compact', texte: 'Exporter les 3', onclick: telechargerTousCsv })
       ]),
-      el('p', { classe: 'note', texte: 'Un fichier par filière. Chaque CSV ne contient que les colonnes de sa filière.' }),
+      el('p', { classe: 'note', texte: 'Un fichier par filière. Chaque CSV ne contient que les colonnes de sa filière. Le catalogue a le sien, plus bas.' }),
       el('div', { classe: 'fichiers' }, Cfg.FILIERES.map(construireCarteFichier)),
       el('p', { classe: 'note', id: 'cfg-note-fsa' }),
       el('input', {
@@ -996,6 +1110,7 @@
     return el('section', { classe: 'vue', id: 'vue-configuration', role: 'tabpanel', 'aria-labelledby': 'onglet-configuration', hidden: 'hidden' }, [
       el('section', { classe: 'bloc' }, [el('h2', { texte: 'Paramètres' }), formulaire]),
       blocFichier,
+      construireBlocCatalogue(),
       blocDonnees,
       blocFonds,
       blocRgpd
@@ -1036,6 +1151,259 @@
           }
         })
       ])
+    ]);
+  }
+
+  // ------------------------------------------------- catalogue de matériel
+
+  /** Réécrit parametres.csv si un fichier lui est lié ; silencieux sinon. */
+  function synchroniserParametres() {
+    if (!Store.fsaDisponible()) return Promise.resolve('absent');
+    return Store.ecrireFichier('parametres', Catalogue.versCsv(etat.config.separateur));
+  }
+
+  /**
+   * Après toute modification du catalogue : la table de l'éditeur, les listes
+   * des trois onglets de relevé et le fichier lié doivent repartir ensemble.
+   */
+  function appliquerCatalogue() {
+    Cfg.FILIERES.forEach(function (f) {
+      rafraichirCatalogue(f.id);
+      rafraichirCascade(f.id);
+    });
+    return synchroniserParametres();
+  }
+
+  function rafraichirCatalogue(filiereId) {
+    var corps = document.getElementById('cat-corps-' + filiereId);
+    if (!corps) return;
+
+    var lignes = Catalogue.parFiliere(filiereId);
+    var types = Catalogue.types(filiereId);
+
+    var compte = document.getElementById('cat-compte-' + filiereId);
+    if (compte) compte.textContent = types.length + ' type(s) · ' + lignes.length + ' ligne(s)';
+
+    // Le type déjà saisi se complète tout seul : on ajoute rarement un type neuf.
+    var dl = document.getElementById('cat-liste-' + filiereId);
+    if (dl) {
+      vider(dl);
+      types.forEach(function (t) { dl.appendChild(el('option', { value: t })); });
+    }
+
+    // Replié : inutile de construire cent quarante lignes que personne ne regarde.
+    var hote = corps.parentNode;
+    while (hote && hote.tagName !== 'DETAILS') hote = hote.parentNode;
+    if (hote && !hote.open) { vider(corps); return; }
+
+    vider(corps);
+    if (!lignes.length) {
+      corps.appendChild(el('tr', {}, [
+        el('td', { colspan: '4', classe: 'cat-vide', texte: 'Aucune ligne pour cette filière.' })
+      ]));
+      return;
+    }
+
+    var precedent = null;
+    lignes.forEach(function (l) {
+      var rupture = l.type_materiel !== precedent;
+      precedent = l.type_materiel;
+      corps.appendChild(el('tr', { classe: rupture ? 'cat-rupture' : '' }, [
+        el('td', { classe: 'cat-type', texte: rupture ? l.type_materiel : '' }),
+        el('td', { texte: l.modele }),
+        el('td', { classe: 'cat-detail', texte: l.detail }),
+        el('td', {}, [
+          el('button', {
+            type: 'button', classe: 'cat-suppr', texte: '✕',
+            'aria-label': 'Supprimer ' + [l.type_materiel, l.modele, l.detail].filter(Boolean).join(' '),
+            onclick: function () { supprimerLigneCatalogue(filiereId, l); }
+          })
+        ])
+      ]));
+    });
+  }
+
+  function ajouterLigneCatalogue(filiereId) {
+    var n1 = document.getElementById('cat-n1-' + filiereId);
+    var n2 = document.getElementById('cat-n2-' + filiereId);
+    var n3 = document.getElementById('cat-n3-' + filiereId);
+    var type = n1.value.trim();
+    var modele = n2.value.trim();
+    var detail = n3.value.trim();
+
+    if (!type) { toast('Le type de matériel est obligatoire.', 'erreur'); n1.focus(); return; }
+    if (!modele && detail) { toast('Un détail sans modèle ne peut pas être atteint dans la cascade.', 'erreur'); n2.focus(); return; }
+
+    var toutes = Catalogue.tout();
+    var existe = toutes.some(function (l) {
+      return l.filiere === filiereId && l.type_materiel === type
+        && l.modele === modele && l.detail === detail;
+    });
+    if (existe) { toast('Cette combinaison est déjà au catalogue.', 'info'); return; }
+
+    Catalogue.definir(toutes.concat([
+      { filiere: filiereId, type_materiel: type, modele: modele, detail: detail }
+    ]));
+
+    // Le type reste en place : on enchaîne presque toujours plusieurs modèles.
+    n2.value = '';
+    n3.value = '';
+    n2.focus();
+    appliquerCatalogue();
+    toast('Ligne ajoutée.', 'succes');
+  }
+
+  function supprimerLigneCatalogue(filiereId, ligne) {
+    Catalogue.definir(Catalogue.tout().filter(function (l) {
+      return !(l.filiere === filiereId && l.type_materiel === ligne.type_materiel
+        && l.modele === ligne.modele && l.detail === ligne.detail);
+    }));
+    appliquerCatalogue();
+  }
+
+  function actionRetablirCatalogue() {
+    if (!confirm("Remplacer le catalogue actuel par celui livré avec l'application ?")) return;
+    Catalogue.reinitialiser();
+    appliquerCatalogue();
+    toast('Catalogue rétabli.', 'succes');
+  }
+
+  function chargerCatalogueDepuisTexte(texte) {
+    var n = Catalogue.depuisCsv(texte, Csv.detecterSeparateur(texte));
+    if (n < 0) {
+      toast('Fichier refusé : colonnes attendues — ' + Catalogue.COLONNES.join(', ') + '.', 'erreur');
+      return false;
+    }
+    toast(n + ' ligne(s) de catalogue chargée(s).', 'succes');
+    return true;
+  }
+
+  function actionImporterParametres(ev) {
+    var fichier = ev.target.files && ev.target.files[0];
+    if (!fichier) { ev.target.value = ''; return; }
+    fichier.text().then(function (texte) {
+      if (chargerCatalogueDepuisTexte(texte)) return appliquerCatalogue();
+      return null;
+    }).catch(function () {
+      toast('Lecture du fichier impossible.', 'erreur');
+    }).then(function () { ev.target.value = ''; });
+  }
+
+  function actionCreerParametres() {
+    Store.choisirFichier('parametres')
+      .then(synchroniserParametres)
+      .then(function () {
+        rafraichirEtatFichier();
+        toast(Catalogue.FICHIER + ' lié et initialisé.', 'succes');
+      })
+      .catch(function () { /* sélecteur annulé */ });
+  }
+
+  function actionOuvrirParametres() {
+    Store.ouvrirFichierExistant('parametres')
+      .then(function () { return Store.lireFichier('parametres'); })
+      .then(function (texte) {
+        // Fichier vide : on y écrit le catalogue courant plutôt que de le vider.
+        if (!texte || !texte.trim()) return synchroniserParametres();
+        if (!chargerCatalogueDepuisTexte(texte)) return null;
+        return appliquerCatalogue();
+      })
+      .then(function () {
+        Cfg.FILIERES.forEach(function (f) { rafraichirCatalogue(f.id); rafraichirCascade(f.id); });
+        rafraichirEtatFichier();
+      })
+      .catch(function () { /* sélecteur annulé */ });
+  }
+
+  function actionDelierParametres() {
+    Store.oublierFichier('parametres').then(function () {
+      rafraichirEtatFichier();
+      toast(Catalogue.FICHIER + ' délié. Le catalogue reste dans le navigateur.', 'info');
+    });
+  }
+
+  function construireCarteParametres() {
+    return el('div', { classe: 'fichier fichier--parametres' }, [
+      el('div', { classe: 'fichier-entete' }, [
+        el('span', { classe: 'fichier-nom', texte: Catalogue.FICHIER }),
+        el('span', { classe: 'fichier-filiere', texte: 'CATALOGUE' })
+      ]),
+      el('p', { classe: 'note', id: 'cfg-etat-parametres' }),
+      el('div', { classe: 'actions' }, [
+        el('button', { type: 'button', classe: 'btn-compact', 'data-fsa': 'true', texte: 'Créer / remplacer', onclick: actionCreerParametres }),
+        el('button', { type: 'button', classe: 'btn-compact', 'data-fsa': 'true', texte: 'Lier un existant', onclick: actionOuvrirParametres }),
+        el('button', { type: 'button', classe: 'btn-compact', 'data-fsa': 'true', texte: 'Délier', onclick: actionDelierParametres }),
+        el('button', {
+          type: 'button', classe: 'btn-compact', texte: 'Exporter',
+          onclick: function () { telechargerTexte(Catalogue.FICHIER, Catalogue.versCsv(etat.config.separateur)); }
+        }),
+        el('button', {
+          type: 'button', classe: 'btn-compact', texte: 'Importer',
+          onclick: function () { document.getElementById('cfg-import-parametres').click(); }
+        })
+      ])
+    ]);
+  }
+
+  /** Éditeur d'une filière : ajout en haut, lignes existantes en dessous. */
+  function construireCatalogueFiliere(f) {
+    var corps = el('tbody', { id: 'cat-corps-' + f.id });
+
+    var ajout = el('div', { classe: 'cat-ajout' }, [
+      el('input', {
+        type: 'text', id: 'cat-n1-' + f.id, list: 'cat-liste-' + f.id,
+        autocomplete: 'off', placeholder: 'Type de matériel', 'aria-label': 'Type de matériel'
+      }),
+      el('input', { type: 'text', id: 'cat-n2-' + f.id, autocomplete: 'off', placeholder: 'Modèle', 'aria-label': 'Modèle' }),
+      el('input', { type: 'text', id: 'cat-n3-' + f.id, autocomplete: 'off', placeholder: 'Détail (facultatif)', 'aria-label': 'Détail' }),
+      el('button', {
+        type: 'button', classe: 'btn-primaire btn-compact', texte: 'Ajouter',
+        onclick: function () { ajouterLigneCatalogue(f.id); }
+      })
+    ]);
+
+    var bloc = el('details', { classe: 'cat-filiere', style: '--couleur-filiere:' + f.couleur }, [
+      el('summary', {}, [
+        el('span', { classe: 'cat-nom', texte: f.label }),
+        el('span', { classe: 'cat-compte', id: 'cat-compte-' + f.id })
+      ]),
+      ajout,
+      el('datalist', { id: 'cat-liste-' + f.id }),
+      el('div', { classe: 'cat-table-hote' }, [
+        el('table', { classe: 'cat-table' }, [
+          el('thead', {}, [
+            el('tr', {}, [
+              el('th', { texte: 'Type' }), el('th', { texte: 'Modèle' }),
+              el('th', { texte: 'Détail' }), el('th', { 'aria-label': 'Supprimer' })
+            ])
+          ]),
+          corps
+        ])
+      ])
+    ]);
+
+    bloc.addEventListener('toggle', function () { rafraichirCatalogue(f.id); });
+    return bloc;
+  }
+
+  function construireBlocCatalogue() {
+    return el('section', { classe: 'bloc' }, [
+      el('div', { classe: 'bloc-titre' }, [
+        el('h2', { texte: 'Catalogue de matériel' }),
+        el('button', { type: 'button', classe: 'btn-compact', texte: 'Rétablir le catalogue livré', onclick: actionRetablirCatalogue })
+      ]),
+      el('p', {
+        classe: 'note',
+        texte: "Les trois listes liées des onglets de relevé lisent ce catalogue : "
+          + "type de matériel, puis modèle, puis détail. Il vit dans son propre fichier, "
+          + "séparé des relevés — on le fait évoluer sans toucher aux données déjà saisies."
+      }),
+      construireCarteParametres(),
+      el('div', { classe: 'catalogue' }, Cfg.FILIERES.map(construireCatalogueFiliere)),
+      el('input', {
+        type: 'file', id: 'cfg-import-parametres', accept: '.csv,text/csv',
+        style: 'display:none', onchange: actionImporterParametres
+      })
     ]);
   }
 
@@ -1181,6 +1549,7 @@
     Store.ecrireConfig(etat.config);
     remplirCommunes();
     synchroniserTout();
+    synchroniserParametres();
     toast('Configuration enregistrée.', 'succes');
   }
 
@@ -1214,7 +1583,7 @@
     if (!Store.fsaDisponible()) {
       note.textContent = "Ce navigateur ne permet pas l'écriture directe dans un fichier. Les données restent dans le navigateur ; utilisez « Exporter ».";
       Array.prototype.forEach.call(document.querySelectorAll('[data-fsa]'), function (b) { b.disabled = true; });
-      Cfg.FILIERES.forEach(function (f) {
+      Cfg.FILIERES.concat([{ id: 'parametres' }]).forEach(function (f) {
         var n = document.getElementById('cfg-etat-' + f.id);
         if (n) n.textContent = 'Export manuel uniquement.';
       });
@@ -1222,7 +1591,7 @@
     }
 
     note.textContent = "L'écriture directe n'existe que sur Chrome et Edge (bureau et Android). Un fichier lié est réécrit intégralement à chaque enregistrement, suppression ou import de sa filière.";
-    Cfg.FILIERES.forEach(function (f) {
+    Cfg.FILIERES.concat([{ id: 'parametres' }]).forEach(function (f) {
       Store.handleCourant(f.id).then(function (h) {
         var n = document.getElementById('cfg-etat-' + f.id);
         if (!n) return;
@@ -1338,16 +1707,25 @@
    */
   function suivreHauteurEntete() {
     var entete = document.querySelector('.entete');
-    if (!entete) return;
+    var barre = document.querySelector('.barre-haute');
+    if (!entete || !barre) return;
 
     function poser() {
-      document.documentElement.style.setProperty(
-        '--h-entete', Math.round(entete.getBoundingClientRect().height) + 'px');
+      var racine = document.documentElement.style;
+      racine.setProperty('--h-entete', Math.round(entete.getBoundingClientRect().height) + 'px');
+      // La barre de recherche se colle juste sous les onglets : elle a besoin de
+      // leur hauteur réelle, qui change avec la largeur et l'orientation.
+      racine.setProperty('--h-barre', Math.round(barre.getBoundingClientRect().height) + 'px');
     }
     poser();
 
-    if (typeof ResizeObserver === 'function') new ResizeObserver(poser).observe(entete);
-    else global.addEventListener('resize', poser);
+    if (typeof ResizeObserver === 'function') {
+      var obs = new ResizeObserver(poser);
+      obs.observe(entete);
+      obs.observe(barre);
+    } else {
+      global.addEventListener('resize', poser);
+    }
     global.addEventListener('orientationchange', poser);
   }
 
@@ -1360,6 +1738,7 @@
   function demarrer() {
     etat.config = Store.lireConfig();
     etat.points = Store.lirePoints();
+    Catalogue.charger();
 
     construireOnglets();
     var hote = document.getElementById('vues');
@@ -1368,6 +1747,7 @@
 
     remplirCommunes();
     remplirConfiguration();
+    Cfg.FILIERES.forEach(function (f) { rafraichirCascade(f.id); });
     Store.migrerAncienHandle();
 
     var dernier = null;

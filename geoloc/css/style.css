@@ -1,4 +1,5 @@
-/* GéoLoc — feuille unique. Mobile d'abord : la saisie se fait sur le terrain, au téléphone. */
+/* GéoLoc — feuille unique. Écrite pour la tablette, l'outil de terrain réel ;
+   les paliers descendants la rendent utilisable jusqu'au petit smartphone. */
 
 :root {
   --accent: #0ea5e9;
@@ -115,7 +116,7 @@ body { padding-bottom: 40px; }
 
 /* ---------- Structure ---------- */
 
-main { padding: var(--gouttiere); max-width: 860px; margin: 0 auto; }
+main { padding: var(--gouttiere); max-width: 1080px; margin: 0 auto; }
 
 .vue[hidden] { display: none; }
 
@@ -433,6 +434,152 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   cursor: pointer;
 }
 
+/* ---------- Barre de recherche ---------- */
+
+/* Collée sous les onglets : on cherche un relevé déjà pris sans remonter la page. */
+.barre-recherche {
+  position: sticky;
+  top: var(--h-barre, 0px);
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0 12px;
+  margin-bottom: 2px;
+  background: var(--fond);
+}
+
+.barre-recherche input {
+  min-height: 48px;
+  font-size: 1rem;
+  border-radius: 999px;
+  padding-left: 16px;
+}
+
+.barre-recherche .compteur {
+  white-space: nowrap;
+  font-size: 0.78rem;
+}
+
+.bloc-soustitre {
+  font-size: 0.72rem;
+  color: var(--texte-faible);
+  text-align: right;
+}
+
+/* ---------- Bloc relevé ---------- */
+
+.bloc-releve { border-left: 3px solid var(--accent); }
+
+.zone-position {
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--bord);
+}
+
+/* ---------- Cascade type / modèle / détail ---------- */
+
+/* Les trois listes liées sont l'identification de l'ouvrage : elles se lisent
+   d'un bloc, détachées des champs métier qui suivent. */
+.cascade {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 14px;
+  background: var(--fond-3);
+  border: 1px solid var(--bord);
+  border-radius: 8px;
+}
+
+.cascade select { background: var(--fond-2); }
+.cascade select:disabled { opacity: 0.5; }
+
+/* ---------- Catalogue de matériel ---------- */
+
+.catalogue { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+
+.cat-filiere {
+  border: 1px solid var(--bord);
+  border-left: 3px solid var(--couleur-filiere, var(--accent));
+  border-radius: 8px;
+  background: var(--fond-3);
+}
+
+.cat-filiere > summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 14px;
+  min-height: 48px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.cat-filiere > summary::-webkit-details-marker { display: none; }
+
+.cat-nom {
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  color: var(--couleur-filiere, var(--accent));
+}
+
+.cat-compte { font-size: 0.74rem; color: var(--texte-faible); }
+
+.cat-ajout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 0 14px 12px;
+}
+
+.cat-table-hote {
+  max-height: 340px;
+  overflow-y: auto;
+  border-top: 1px solid var(--bord);
+}
+
+.cat-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+
+.cat-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--fond-2);
+  text-align: left;
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--texte-faible);
+  font-weight: 600;
+  padding: 8px 10px;
+}
+
+.cat-table td { padding: 7px 10px; border-top: 1px solid var(--bord); }
+
+/* Le type n'est écrit qu'au changement : la colonne devient lisible au survol vertical. */
+.cat-rupture td { border-top-color: var(--texte-faible); }
+.cat-table .cat-type { font-weight: 600; white-space: nowrap; }
+.cat-table .cat-detail { color: var(--texte-faible); }
+.cat-vide { color: var(--texte-faible); text-align: center; padding: 16px 10px; }
+
+.cat-suppr {
+  width: 38px;
+  min-height: 38px;
+  padding: 0;
+  font-size: 0.8rem;
+  line-height: 1;
+  color: var(--danger);
+  border-color: transparent;
+  background: transparent;
+}
+
+.cat-suppr:hover { border-color: var(--danger); }
+
+.fichier--parametres { border-left-color: var(--texte-faible); }
+
 /* ---------- Modale carte ---------- */
 
 .modale {
@@ -468,14 +615,16 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .modale-entete {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px 10px;
   margin-bottom: 12px;
 }
 
 .modale-entete h2 {
   margin: 0;
+  flex: 1;
   font-size: 0.78rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -643,28 +792,29 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 }
 
 .carte-infos {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
   margin: 12px 0 0;
-}
-
-.carte-infos dt {
-  font-size: 0.64rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--texte-faible);
-}
-
-.carte-infos dd {
-  margin: 2px 0 0;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-variant-numeric: tabular-nums;
 }
 
-.carte-infos .ecart-fort { color: var(--alerte); }
+.carte-coord { font-weight: 600; }
+.carte-ecart { color: var(--texte-faible); }
+.carte-ecart.ecart-fort { color: var(--alerte); }
+.carte-echelle { margin-left: auto; }
 
-.btn-carte { margin-top: 10px; width: 100%; }
+/* Sur sa propre ligne sous le titre : coincée entre le titre et la croix,
+   elle écrase l'un et l'autre. */
+.modale-aide {
+  order: 3;
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--texte-faible);
+}
 
 /* ---------- Fonds de carte (configuration) ---------- */
 
@@ -718,6 +868,36 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   #toast { transition: none; }
 }
 
+/* ---------- Tablette : la cible principale ---------- */
+
+@media (min-width: 768px) {
+  :root { --gouttiere: 22px; }
+
+  .entete h1 { font-size: 1.2rem; }
+  .onglet { font-size: 0.82rem; padding: 14px 8px; }
+
+  .bloc { padding: 18px 20px; margin-bottom: 18px; }
+
+  /* Trois listes côte à côte : la cascade se lit en une ligne, gauche à droite. */
+  .cascade { grid-template-columns: repeat(3, 1fr); padding: 14px; }
+
+  /* Relevé rapide, précision maximale et carte tiennent sur un rang. */
+  .actions-gps { grid-template-columns: repeat(3, 1fr); }
+  .btn-gps { min-height: 56px; }
+
+  input, select, textarea { min-height: 48px; font-size: 1rem; }
+  button { min-height: 48px; }
+
+  .cat-ajout { grid-template-columns: 1fr 1fr 1fr auto; align-items: end; }
+  .cat-table-hote { max-height: 420px; }
+
+  .carte { height: clamp(320px, 52vh, 560px); }
+  .modale-fenetre { max-width: 720px; padding: 20px; }
+
+  .point { padding: 14px 16px; }
+  .fichiers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+}
+
 /* ---------- Petits smartphones ---------- */
 
 /* Sous 400 px, le toast centré se replie en colonne étroite : bandeau pleine largeur. */
@@ -738,6 +918,9 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   /* L'en-tête glisse hors écran, les onglets restent collés en haut.
      --h-entete est mesuré par app.js : la hauteur change avec la largeur. */
   .barre-haute { top: calc(-1 * var(--h-entete, 40px)); }
+
+  /* L'en-tête sort de l'écran : la barre de recherche remonte d'autant. */
+  .barre-recherche { top: calc(var(--h-barre, 0px) - var(--h-entete, 40px)); }
 
   .entete { padding: 6px var(--gouttiere); }
   .entete h1 { font-size: 0.85rem; }
@@ -781,7 +964,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   .carte { height: clamp(200px, 40vh, 320px); }
   .carte-barre { gap: 8px; }
   .carte-fond { padding: 7px 9px; font-size: 0.72rem; }
-  .carte-infos { grid-template-columns: 1fr 1fr; }
+  .carte-echelle { margin-left: 0; }
 
   .stat { flex-basis: calc(50% - 5px); padding: 9px 10px; }
   .stat-valeur { font-size: 1.3rem; }

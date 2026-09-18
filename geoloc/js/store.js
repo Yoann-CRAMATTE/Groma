@@ -136,10 +136,19 @@
 
   var TYPES_CSV = [{ description: 'Fichier CSV', accept: { 'text/csv': ['.csv'] } }];
 
+  /**
+   * Le catalogue de matériel est un fichier lié comme les autres, sous la clé
+   * `parametres` : même mécanique de handle, même écriture intégrale.
+   */
+  function nomFichier(cle) {
+    if (cle === 'parametres') return global.GeoLocCatalogue.FICHIER;
+    var f = global.GeoLocConfig.filiere(cle);
+    return f ? f.fichier : 'geoloc.csv';
+  }
+
   function choisirFichier(filiereId) {
-    var f = global.GeoLocConfig.filiere(filiereId);
     return global.showSaveFilePicker({
-      suggestedName: f ? f.fichier : 'geoloc.csv',
+      suggestedName: nomFichier(filiereId),
       types: TYPES_CSV
     }).then(function (handle) {
       return idbSet(cleHandle(filiereId), handle).then(function () { return handle; });
@@ -199,6 +208,7 @@
   }
 
   global.GeoLocStore = {
+    nomFichier: nomFichier,
     lirePoints: lirePoints,
     ecrirePoints: ecrirePoints,
     lireConfig: lireConfig,

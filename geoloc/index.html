@@ -33,6 +33,7 @@
     <div class="modale-fenetre" role="dialog" aria-modal="true" aria-labelledby="modale-titre">
       <header class="modale-entete">
         <h2 id="modale-titre">Ajuster la position</h2>
+        <p class="modale-aide">Déplacez la carte sous la croix, puis validez.</p>
         <button type="button" class="modale-fermer" id="modale-fermer" aria-label="Fermer">✕</button>
       </header>
 
@@ -45,16 +46,15 @@
         <div class="carte-fonds" id="carte-fonds" role="group" aria-label="Fond de carte"></div>
         <div class="carte-zoom">
           <button type="button" id="carte-moins" aria-label="Dézoomer">−</button>
-          <span id="carte-echelle" class="carte-echelle">—</span>
           <button type="button" id="carte-plus" aria-label="Zoomer">+</button>
         </div>
       </div>
 
-      <dl class="carte-infos">
-        <div><dt>Latitude</dt><dd id="carte-lat">—</dd></div>
-        <div><dt>Longitude</dt><dd id="carte-lon">—</dd></div>
-        <div><dt>Écart au GPS</dt><dd id="carte-ecart">—</dd></div>
-      </dl>
+      <p class="carte-infos">
+        <span class="carte-coord" id="carte-coord">—</span>
+        <span class="carte-ecart" id="carte-ecart">—</span>
+        <span class="carte-echelle" id="carte-echelle">—</span>
+      </p>
 
       <div class="actions">
         <button type="button" id="carte-recentrer">Revenir au GPS</button>
@@ -68,6 +68,7 @@
   <script src="js/lambert93.js"></script>
   <script src="js/carte.js"></script>
   <script src="js/config.js"></script>
+  <script src="js/catalogue.js"></script>
   <script src="js/csv.js"></script>
   <script src="js/store.js"></script>
   <script src="js/geo.js"></script>

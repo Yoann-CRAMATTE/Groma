@@ -3,9 +3,11 @@
 > Mémoire de travail. À relire en début de session **avant** d'ouvrir le code,
 > à mettre à jour en fin de session. Évite de relire toute l'application à chaque fois.
 
-**Dernière mise à jour :** 18/09/2026 (v0.5)
+**Dernière mise à jour :** 18/09/2026 (v0.6)
 **Branche :** `claude/geoloc-web-app-duccxo`
-**Statut :** v0.5 fonctionnelle, testée en navigateur headless de 280 px à 1100 px, portrait et paysage.
+**Statut :** v0.6 fonctionnelle. Refonte tablette : recherche en haut, relevé, liste
+en dessous ; matériel en trois listes liées alimentées par `parametres.csv`. Testée en
+navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysage.
 
 ---
 
@@ -14,8 +16,9 @@
 | Fichier | Rôle | Stable ? |
 |---|---|---|
 | `index.html` | Coquille : en-tête, nav, conteneur, datalist, toast | oui |
-| `css/style.css` | Feuille unique, mobile d'abord, paliers 480 / 400 / 360 px + paysage court | oui |
+| `css/style.css` | Feuille unique, réglée pour la tablette, paliers 768 / 480 / 360 px + paysage court | oui |
 | `js/config.js` | **Source de vérité du schéma** : filières, champs, couleurs, colonnes CSV | oui |
+| `js/catalogue.js` | Catalogue matériel 3 niveaux, graine livrée, lecture/écriture `parametres.csv` | oui |
 | `js/lambert93.js` | WGS84 → EPSG:2154, constantes IGN | oui, vérifié |
 | `js/csv.js` | Sérialisation / lecture RFC 4180, BOM UTF-8, détection de séparateur | oui, aller-retour testé |
 | `js/store.js` | `localStorage` (points, config, compteurs) + IndexedDB (un handle par filière) | oui |
@@ -24,7 +27,7 @@
 | `js/app.js` | Construction du DOM, formulaires, liste, configuration | oui |
 | `serveur.py` | Serveur local — indispensable, le GPS refuse `file://` | oui |
 | `docs/RGPD.md` | Point de vigilance sur les données SPANC | oui |
-| `tests/audit-responsive.mjs` | Contrôle d'affichage, 280 → 540 px, paysage, modale | oui |
+| `tests/audit-responsive.mjs` | Affichage sur 15 formats (tablettes + téléphones) + contrôle de la cascade | oui |
 
 ## Invariants à ne pas casser
 
@@ -33,6 +36,8 @@
 2. **Un CSV par filière** (`eau.csv`, `assainissement.csv`, `spanc.csv`), chacun
    limité à ses propres colonnes. La colonne `filiere` reste présente comme
    garde-fou à l'import. Le stockage interne, lui, reste un stock unique.
+   **`parametres.csv` est le quatrième fichier** : il porte le catalogue, pas des
+   relevés, et ne se mélange jamais aux trois autres.
 3. **`localStorage` fait autorité.** Chaque fichier disque est une projection
    réécrite intégralement ; un échec d'écriture ne doit jamais perdre une saisie
    terrain. Seule la filière touchée est réécrite (sauf purge et changement de
@@ -41,22 +46,33 @@
    (compatibilité maximale, y compris ouverture directe pour inspection).
 5. **Aucune donnée utilisateur via `innerHTML`.** Tout passe par `el()` / `textContent`.
 6. **Cibles tactiles ≥ 44 px** pour la saisie, ≥ 36 px pour les actions secondaires —
-   saisie au téléphone, parfois avec des gants.
+   saisie au doigt sur tablette, parfois avec des gants. À partir de 768 px, 48 px.
 7. **Aucune largeur ni hauteur codée en dur pour le chrome collant.** La hauteur de
-   l'en-tête est mesurée par `suivreHauteurEntete()` et publiée dans `--h-entete`.
-   Un `top: 53px` en dur avait déjà cassé au palier 360 px.
-8. **Plancher de support : 280 px de large.** Toute modification d'interface se
-   vérifie à cette largeur avant d'être poussée.
-9. **Ne jamais présenter une précision meilleure que celle annoncée par le
+   l'en-tête est mesurée par `suivreHauteurEntete()` et publiée dans `--h-entete`,
+   celle de la barre complète dans `--h-barre` — c'est sur elle que se cale la barre
+   de recherche collante. Un `top: 53px` en dur avait déjà cassé au palier 360 px.
+8. **Cible principale : la tablette (768 → 1180 px). Plancher de support : 280 px.**
+   Toute modification d'interface se vérifie aux deux bouts avant d'être poussée.
+9. **Ordre de lecture d'un onglet de relevé, non négociable** : recherche, relevé en
+   cours, relevés effectués du plus récent au plus ancien. C'est le geste de terrain :
+   on cherche, on saisit, on vérifie ce qu'on vient de faire.
+10. **La cascade descend, jamais l'inverse.** Changer le type vide le modèle et le
+   détail devenus impossibles. Une valeur venue d'un relevé enregistré échappe seule
+   à cette règle : elle est réaffichée marquée *(hors catalogue)* plutôt qu'effacée.
+   C'est `remplirSelect()` qui tient les deux régimes, selon que `valeurForcee` est
+   fournie ou non — le bug inverse a existé, et la cascade ne se réinitialisait plus.
+11. **Le catalogue ne vit pas dans le code.** Ajouter du matériel se fait dans
+   Configuration ou dans `parametres.csv`, jamais dans `config.js`.
+12. **Ne jamais présenter une précision meilleure que celle annoncée par le
    récepteur.** `precision_m` = meilleure `accuracy` observée. La dispersion est
    mesurée et stockée à part. Un recalage cartographique ne touche pas
    `precision_m` : il alimente `ecart_ajustement_m`.
-10. **La carte est la seule dépendance réseau.** Tout le reste fonctionne hors
+13. **La carte est la seule dépendance réseau.** Tout le reste fonctionne hors
    ligne. Une panne de tuiles doit rester un message, jamais un blocage.
-11. **Uniquement des fonds gratuits et sans clé.** Aucun service payant, aucun
+14. **Uniquement des fonds gratuits et sans clé.** Aucun service payant, aucun
    quota, aucun compte. Tout fond ajouté passe quatre contrôles, dont
    **attribution non vide** : c'est une obligation de licence.
-12. **L'attribution s'affiche en permanence sur la carte**, jamais dans un menu
+15. **L'attribution s'affiche en permanence sur la carte**, jamais dans un menu
    ni derrière un geste.
 
 ## Décisions prises
@@ -91,15 +107,31 @@
   évite une dépendance (`proj4js`) pour une seule projection.
 - **Pas de carte embarquée** : tuiles = requêtes réseau et dépendance externe, sans
   valeur ajoutée pour la saisie. Lien OpenStreetMap ouvert à la demande.
-- **Pas de photo** : incompatible avec la contrainte « un fichier CSV unique ».
+- **Catalogue dans son propre fichier** plutôt que dans `config.js` : la nomenclature
+  du matériel change d'une campagne et d'un service à l'autre, le schéma des champs
+  non. Les mélanger obligerait à modifier le code pour ajouter un diamètre.
+- **Table du catalogue construite au dépliage** : 316 lignes × 3 colonnes rendues
+  d'emblée, c'est près de mille nœuds inutiles sur une tablette. Les `<details>`
+  ne peuplent leur `<tbody>` qu'une fois ouverts.
+- **Édition du catalogue ligne à ligne, pas champ par champ** : un formulaire d'ajout
+  en trois cases et une croix par ligne. Rendre 316 lignes éditables coûterait
+  neuf cents champs de saisie pour un besoin qui est d'ajouter, pas de réécrire.
+  La réécriture en masse passe par le tableur et `parametres.csv`.
+- **Sur-zoom assumé sur la carte** : aucun fond gratuit ne descend sous ~50 m de
+  large, et la demande était une scène de dix mètres. La tuile la plus fine est
+  agrandie jusqu'à ×8, et **le facteur est affiché** : sans cette mention, une image
+  lissée se lit comme une mesure précise.
+- **Photo mise de côté** à la demande, après la refonte tablette. Le travail
+  commencé est dans le stash `WIP photo (mis de cote - redesign tablet)`.
 - **Séparateur `;` par défaut** : Excel français découpe sur `;`, pas sur `,`.
 - **BOM UTF-8** : sans lui, Excel FR casse les accents.
 
 ## Reste à faire (par ordre d'utilité)
 
-- [ ] **Valider la nomenclature métier** des listes déroulantes avec les services
-      Eau / Assainissement / SPANC — les valeurs actuelles sont plausibles mais
-      non validées.
+- [ ] **Valider le catalogue livré** avec les services Eau / Assainissement / SPANC.
+      Les 316 lignes fournies sont plausibles et couvrent les cas courants, mais
+      **elles ne sont pas validées métier** : c'est une amorce à corriger, pas une
+      nomenclature de référence.
 - [ ] Déploiement HTTPS pour l'usage terrain sur téléphone (`localhost` ne suffit pas).
 - [ ] Service worker : saisie hors-ligne dans les secteurs sans réseau.
 - [ ] Export GeoJSON en plus du CSV, pour injection directe dans un SIG.
@@ -109,7 +141,8 @@
 - [ ] **Vérifier sur le terrain les URL des flux IGN et OSM** : non testables
       depuis l'environnement de développement, dont la sortie réseau est fermée.
       Si la Géoplateforme a changé, corriger depuis Configuration, pas dans le code.
-- [ ] Champ photo si le besoin se confirme — implique de sortir du CSV unique.
+- [ ] Champ photo — travail commencé puis mis de côté, à reprendre sur demande.
+- [ ] Renommage global d'un type de matériel depuis l'interface (aujourd'hui : tableur).
 
 ## Points de vigilance
 
@@ -126,8 +159,11 @@
   C'est arrivé une fois (`step: 5`, `min: 5`, valeur 6) : toute la configuration
   n'était plus enregistrée, sans message. Un écouteur `invalid` le signale désormais.
 - **Vidage du cache navigateur = perte des données** si aucun CSV n'est lié.
-- **Trois liaisons à faire**, une par filière : un seul fichier lié ne couvre pas
-  les autres onglets. Le badge d'en-tête indique l'état du fichier de l'onglet actif.
+- **Quatre liaisons à faire** : une par filière, plus le catalogue. Un seul fichier
+  lié ne couvre pas les autres onglets. Le badge d'en-tête indique l'état du fichier
+  de l'onglet actif.
+- **Rétablir le catalogue livré écrase les ajouts.** L'action est confirmée, mais les
+  lignes ajoutées à la main sont perdues si `parametres.csv` n'a pas été exporté.
 - **Tout ajout d'interface se teste avec `tests/audit-responsive.mjs`** avant d'être
   poussé : il détecte débordement, texte tronqué, cible tactile trop petite et erreur
   JavaScript, sur dix configurations d'écran. C'est lui qui a révélé le défaut des

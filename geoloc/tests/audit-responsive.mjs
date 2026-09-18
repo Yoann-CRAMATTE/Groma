@@ -1,7 +1,8 @@
 /**
- * Audit d'affichage sur petits écrans.
+ * Audit d'affichage. La tablette est la cible principale ; les petites largeurs
+ * restent contrôlées parce que l'application doit rester utilisable au téléphone.
  *
- * Vérifie, à chaque largeur et sur les quatre onglets :
+ * Vérifie, à chaque format et sur les quatre onglets :
  *   - aucun débordement horizontal ;
  *   - aucun texte tronqué (scrollWidth > clientWidth) ;
  *   - aucune cible tactile sous 36 px de haut.
@@ -16,6 +17,11 @@
 import { chromium } from 'playwright';
 
 const BASE = process.env.GEOLOC_URL || 'http://localhost:8123/index.html';
+// Cible principale : tablettes courantes, dans les deux orientations.
+const TABLETTE = [
+  { width: 768, height: 1024 }, { width: 810, height: 1080 }, { width: 834, height: 1194 },
+  { width: 1024, height: 768 }, { width: 1180, height: 820 }
+];
 const PORTRAIT = [280, 320, 360, 390, 412, 430, 480, 540];
 const PAYSAGE = [{ width: 568, height: 320 }, { width: 653, height: 280 }];
 const ONGLETS = ['eau', 'assainissement', 'spanc', 'configuration'];
@@ -89,10 +95,44 @@ async function controler(page, ou) {
   signaler(ou, r.defile.map(x => 'défilement horizontal caché : ' + x));
 }
 
+const valeurs = (page, sel) => page.$$eval(sel + ' option',
+  os => os.map(o => o.value).filter(Boolean));
+
+/** Le niveau 2 ne doit proposer que les modèles du type choisi au niveau 1. */
+async function verifierCascade(page, etiquette) {
+  await page.click('#onglet-eau');
+  await page.selectOption('#eau-type_materiel', 'Compteur');
+  const compteurs = await valeurs(page, '#eau-modele');
+  await page.selectOption('#eau-type_materiel', 'Ventouse');
+  const ventouses = await valeurs(page, '#eau-modele');
+
+  if (!compteurs.length || !ventouses.length) {
+    defauts++; console.log('  ✗ ' + etiquette + ' — cascade : niveau 2 vide');
+  } else if (compteurs.join() === ventouses.join()) {
+    defauts++; console.log('  ✗ ' + etiquette + ' — cascade : niveau 2 ne filtre pas sur le niveau 1');
+  }
+
+  // Changer le niveau 1 doit invalider un niveau 3 devenu impossible.
+  await page.selectOption('#eau-type_materiel', 'Compteur');
+  await page.selectOption('#eau-modele', 'DN 20');
+  await page.selectOption('#eau-detail', 'Vitesse');
+  await page.selectOption('#eau-type_materiel', 'Ventouse');
+  if (await page.inputValue('#eau-detail')) {
+    defauts++; console.log('  ✗ ' + etiquette + ' — cascade : niveau 3 survit à un changement de niveau 1');
+  }
+  await page.selectOption('#eau-type_materiel', '');
+}
+
 async function parcourir(page, etiquette) {
   for (const onglet of ONGLETS) {
     await page.click('#onglet-' + onglet);
     await page.waitForTimeout(180);
+    // Les tables du catalogue ne se construisent qu'une fois dépliées : sans
+    // cela l'audit ne verrait jamais la plus dense des surfaces de l'onglet.
+    if (onglet === 'configuration') {
+      await page.$$eval('.cat-filiere', ns => ns.forEach(n => { n.open = true; }));
+      await page.waitForTimeout(220);
+    }
     await controler(page, etiquette + ' / ' + onglet);
   }
 
@@ -116,7 +156,7 @@ const nav = await chromium.launch({
 const TUILE_SIMULEE = '<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256">'
   + '<rect width="256" height="256" fill="#31402f"/></svg>';
 
-for (const vp of PORTRAIT.map(w => ({ width: w, height: 760 })).concat(PAYSAGE)) {
+for (const vp of TABLETTE.concat(PORTRAIT.map(w => ({ width: w, height: 760 }))).concat(PAYSAGE)) {
   const etiquette = vp.width + '×' + vp.height;
   const ctx = await nav.newContext({
     locale: 'fr-FR', viewport: vp,
@@ -133,13 +173,16 @@ for (const vp of PORTRAIT.map(w => ({ width: w, height: 760 })).concat(PAYSAGE))
   // un point relevé : la liste et ses actions font partie de la surface à vérifier
   await page.click('#eau-btn-gps');
   await page.waitForFunction(() => document.querySelector('#eau-pos-lat').textContent !== '—', { timeout: 10000 });
-  await page.selectOption('#eau-type_ouvrage', 'Réducteur de pression');
+  await page.selectOption('#eau-type_materiel', 'Réducteur de pression');
+  await page.selectOption('#eau-modele', 'DN 65');
+  await page.selectOption('#eau-detail', 'À pilote');
   await page.fill('#eau-commune', 'Réchésy');
   await page.fill('#eau-observations', 'Chambre enterrée sous trottoir, accès par tampon fonte');
   await page.click('#eau-btn-valider');
   await page.waitForTimeout(400);
 
   console.log('— ' + etiquette);
+  await verifierCascade(page, etiquette);
   await parcourir(page, etiquette);
   await ctx.close();
 }

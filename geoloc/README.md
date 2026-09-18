@@ -2,6 +2,7 @@
 
 Application web **vanilla** (aucune dépendance, aucun build) pour relever la position GPS
 d'ouvrages de terrain et les consigner dans **un fichier CSV par filière**.
+Pensée pour la **tablette**, utilisable jusqu'au petit smartphone.
 
 Trois filières de relevé — **EAU**, **ASSAINISSEMENT**, **SPANC** — plus un onglet
 **CONFIGURATION**. Les trois filières partagent exactement le même écran ; seuls leurs
@@ -9,10 +10,13 @@ champs métier, leur couleur et leurs données diffèrent.
 
 | Onglet | Couleur | Fichier | Références | Colonnes |
 |---|---|---|---|---|
-| EAU | `#0ea5e9` bleu | `eau.csv` | `AEP-0001` | 25 |
-| ASSAINISSEMENT | `#22c55e` vert | `assainissement.csv` | `AC-0001` | 25 |
-| SPANC | `#a855f7` violet | `spanc.csv` | `ANC-0001` | 27 |
-| CONFIGURATION | `#94a3b8` gris | — | — | — |
+| EAU | `#0ea5e9` bleu | `eau.csv` | `AEP-0001` | 27 |
+| ASSAINISSEMENT | `#22c55e` vert | `assainissement.csv` | `AC-0001` | 27 |
+| SPANC | `#a855f7` violet | `spanc.csv` | `ANC-0001` | 29 |
+| CONFIGURATION | `#94a3b8` gris | `parametres.csv` | — | 4 |
+
+Le matériel se choisit en **trois listes liées** — type, puis modèle, puis détail —
+alimentées par un catalogue éditable, stocké dans `parametres.csv`.
 
 ---
 
@@ -34,35 +38,64 @@ hébergement interne, ou tunnel) — `localhost` ne vaut que sur la machine elle
 
 ## Fichiers CSV
 
-**Un fichier par onglet**, lié et exporté indépendamment depuis Configuration.
+**Quatre fichiers** : un par onglet de relevé, plus `parametres.csv` qui porte le
+catalogue de matériel. Chacun est lié et exporté indépendamment depuis Configuration.
 Chaque CSV ne porte que les colonnes de sa filière — aucune colonne vide héritée
 des autres. La colonne `filiere` est conservée : elle sert de garde-fou à l'import.
 
 Format : **UTF-8 avec BOM**, séparateur `;` par défaut (configurable `;` / `,` / tabulation),
 fins de ligne CRLF, échappement RFC 4180. Ouvrable directement dans Excel français.
 
-### Colonnes communes aux trois fichiers
+### Colonnes communes aux trois fichiers de relevés
 
 ```
 id;filiere;date_saisie;operateur;
 latitude;longitude;altitude_m;
 precision_m;dispersion_m;methode_gps;nb_mesures;duree_gps_s;
 position_ajustee;ecart_ajustement_m;
-x_l93;y_l93;reference;commune;<champs métier de la filière>;observations
+x_l93;y_l93;
+type_materiel;modele;detail;
+reference;commune;<champs métier de la filière>;observations
 ```
+
+`type_materiel`, `modele` et `detail` sont les trois niveaux de la cascade : ils
+identifient l'ouvrage et remplacent l'ancienne colonne unique `type_ouvrage`.
 
 | Fichier | Champs métier |
 |---|---|
-| `eau.csv` | `type_ouvrage;diametre_mm;materiau;annee_pose;etat;accessibilite` |
-| `assainissement.csv` | `type_ouvrage;reseau;diametre_mm;materiau;profondeur_m;etat` |
-| `spanc.csv` | `type_installation;adresse;proprietaire;parcelle;nb_eh;conformite;date_controle;exutoire` |
+| `eau.csv` | `diametre_mm;materiau;annee_pose;etat;accessibilite` |
+| `assainissement.csv` | `reseau;diametre_mm;materiau;profondeur_m;etat` |
+| `spanc.csv` | `adresse;proprietaire;parcelle;nb_eh;conformite;date_controle;exutoire` |
+
+### `parametres.csv` — le catalogue de matériel
+
+Quatre colonnes, une ligne par combinaison atteignable :
+
+```
+filiere;type_materiel;modele;detail
+eau;Compteur;DN 20;Vitesse
+eau;Compteur;DN 20;Volumétrique
+eau;Ventouse;DN 60;Triple fonction
+```
+
+Il alimente les trois listes liées des onglets de relevé : choisir un type restreint
+les modèles, choisir un modèle restreint les détails. `detail` peut rester vide.
+
+Ce fichier est **séparé des relevés** : le catalogue évolue d'une campagne à l'autre
+sans toucher aux données déjà saisies. Il s'édite depuis Configuration → *Catalogue
+de matériel* (ajout ligne à ligne, suppression, rétablissement du catalogue livré),
+ou en masse dans un tableur puis réimporté.
+
+Une valeur enregistrée dans un relevé mais retirée du catalogue depuis n'est jamais
+effacée en silence : à la relecture du point, elle réapparaît marquée
+*(hors catalogue)*.
 
 ### Deux modes d'écriture
 
 | Mode | Navigateurs | Comportement |
 |---|---|---|
 | **Fichier lié** (File System Access API) | Chrome, Edge (bureau et Android) | Configuration → carte de la filière → *Créer / remplacer* ou *Lier un existant*. Le CSV de cette filière est réécrit intégralement à chaque enregistrement, suppression ou import. Les trois liaisons sont indépendantes. |
-| **Export manuel** | Firefox, Safari, iOS | *Exporter* par filière, ou *Exporter les 3*. |
+| **Export manuel** | Firefox, Safari, iOS | *Exporter* par filière, ou *Exporter les 3*. Le catalogue a son propre *Exporter*. |
 
 Dans les deux cas, `localStorage` fait autorité : aucune saisie n'est perdue si
 l'écriture disque échoue. Les fichiers liés survivent au rechargement (handles
@@ -77,6 +110,7 @@ colonne `filiere` est accepté et rattaché à la filière ciblée.
 
 > Le stockage interne (`localStorage`) reste un stock unique, discriminé par la
 > colonne `filiere`. C'est le format d'export qui est éclaté en trois fichiers.
+> Le catalogue, lui, est stocké à part : ce n'est pas une donnée de relevé.
 
 ---
 
@@ -125,11 +159,19 @@ Le bouton **Ajuster sur la carte** ouvre une fenêtre où **le repère reste fix
 centre et la carte se déplace dessous** : on amène le point exactement sur le regard,
 la vanne ou le tampon visible sur la photo aérienne.
 
+- La fenêtre s'ouvre **au plus serré, sur une scène d'une dizaine de mètres** :
+  c'est l'échelle à laquelle on distingue le tampon du regard voisin.
 - Fonds fournis : **photo aérienne** et **plan IGN** (Géoplateforme), plus
   **OpenStreetMap** en secours — voir la section suivante.
 - La position mesurée reste affichée en bleu, entourée de son rayon de précision.
 - L'écart au GPS s'affiche en direct et passe en orange dès qu'il dépasse ce rayon.
 - **Revenir au GPS** annule le recalage.
+
+Aucun fond gratuit ne fournit nativement des tuiles à cette échelle. Au-delà de son
+zoom maximal, la carte réclame la tuile la plus fine disponible et l'agrandit
+(jusqu'à ×8) : le calage géographique reste exact, l'image devient interpolée. Le
+facteur est écrit à côté de l'échelle — *image agrandie ×4* — pour qu'une netteté
+d'affichage ne se lise pas comme une précision de mesure.
 
 Un recalage ne modifie pas `precision_m` : la précision décrit la qualité de la
 *mesure*, qu'un déplacement manuel n'améliore ni ne dégrade. Il est tracé à part :
@@ -195,14 +237,20 @@ seul le fond manque. Le reste de l'application n'émet aucune requête.
 
 ---
 
-## Affichage — petits smartphones
+## Affichage — tablette d'abord
 
-Contrainte de conception : l'application doit rester utilisable sur les plus petits
-écrans du parc. Elle est vérifiée à **280, 320, 360, 390, 412, 430, 480 et 540 px**
-de large, ainsi qu'en **orientation paysage** (568×320 et 653×280).
+L'outil de terrain visé est la **tablette** : la mise en page est réglée pour elle
+(768×1024, 810×1080, 834×1194, et les deux orientations jusqu'à 1180×820). Chaque
+onglet de relevé se lit de haut en bas — **recherche**, **relevé en cours**,
+**relevés déjà effectués**, du plus récent au plus ancien.
+
+L'application reste vérifiée à **280, 320, 360, 390, 412, 430, 480 et 540 px** de
+large et en **paysage court** (568×320, 653×280) : elle doit rester utilisable au
+téléphone quand la tablette n'est pas là.
 
 | Palier | Adaptation |
 |---|---|
+| ≥ 768 px | Cascade sur trois colonnes, boutons GPS sur un rang, cartes de fichiers sur deux colonnes, champs et boutons à 48 px. |
 | ≤ 480 px | Libellés d'onglets abrégés : `EAU` · `ASSAIN.` · `SPANC` · `CONFIG`. Le libellé complet reste exposé aux lecteurs d'écran via `aria-label`. Seuil mesuré : « CONFIGURATION » déborde encore de sa colonne à 430 px. |
 | < 480 px | Le message de confirmation passe en bandeau pleine largeur (centré, il se repliait en colonne étroite). |
 | < 360 px | Gouttière à 10 px, marges et typographie compactées, boutons des cartes fichier en grille à deux colonnes, en-tête de carte sur deux lignes. |
@@ -226,9 +274,11 @@ npm install playwright
 node geoloc/tests/audit-responsive.mjs
 ```
 
-Le script parcourt les quatre onglets à chaque largeur et signale débordement, texte
-tronqué, cible tactile trop petite et erreur JavaScript. Sortie non nulle en cas de
-défaut. **Playwright n'est pas une dépendance de l'application** : il ne sert qu'à ce
+Le script parcourt les quatre onglets à chaque format — tables du catalogue dépliées
+comprises — et signale débordement, texte tronqué, cible tactile trop petite et
+erreur JavaScript. Il contrôle aussi que la cascade filtre réellement : le niveau 2
+doit dépendre du niveau 1, et le niveau 3 tomber quand le niveau 1 change. Sortie non
+nulle en cas de défaut. **Playwright n'est pas une dépendance de l'application** : il ne sert qu'à ce
 contrôle.
 
 ---
@@ -255,6 +305,7 @@ geoloc/
 ├── css/style.css
 ├── js/
 │   ├── config.js        # schéma : onglets, champs, couleurs, colonnes CSV
+│   ├── catalogue.js     # catalogue matériel 3 niveaux + parametres.csv
 │   ├── lambert93.js     # WGS84 → Lambert 93
 │   ├── carte.js         # visualiseur de tuiles WMTS/XYZ, sans dépendance
 │   ├── csv.js           # sérialisation / lecture RFC 4180
@@ -271,14 +322,24 @@ Tout passe par `js/config.js` : ajouter une entrée dans `champs` de la filière
 concernée. Formulaire, colonne CSV, filtre et affichage suivent automatiquement.
 Aucun HTML à modifier.
 
+**Ajouter du matériel ne passe pas par le code** : c'est le catalogue, éditable
+depuis Configuration ou via `parametres.csv`.
+
 ## Limites connues
 
 - La carte d'ajustement exige du réseau ; aucune tuile n'est mise en cache pour
   l'instant (pas de mode hors-ligne cartographique).
-- Pas de photo rattachée aux points (incompatible avec un CSV unique).
+- Pas de photo rattachée aux points.
 - Pas de saisie hors-ligne installable (pas de service worker) — à ajouter si le
   besoin terrain le confirme.
 - L'import fusionne sur l'identifiant `id` ; deux relevés du même ouvrage saisis sur
   deux appareils différents produisent deux lignes.
 - Les trois fichiers sont indépendants : aucune vue consolidée des trois filières
   n'est produite. À faire dans le SIG ou le tableur si besoin.
+- Le catalogue s'édite ligne à ligne : renommer un type partout se fait dans
+  `parametres.csv` au tableur, pas dans l'interface.
+- Aucun fond gratuit ne descend nativement sous ~50 m de large. Pour atteindre les
+  dix mètres visés, la carte agrandit la tuile la plus fine disponible : le
+  géoréférencement reste juste, l'image est interpolée. Le facteur d'agrandissement
+  est affiché pour que personne ne prenne cette netteté apparente pour de la
+  précision.
