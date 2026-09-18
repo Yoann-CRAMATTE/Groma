@@ -3,9 +3,9 @@
 > Mémoire de travail. À relire en début de session **avant** d'ouvrir le code,
 > à mettre à jour en fin de session. Évite de relire toute l'application à chaque fois.
 
-**Dernière mise à jour :** 18/09/2026 (v0.3)
+**Dernière mise à jour :** 18/09/2026 (v0.4)
 **Branche :** `claude/geoloc-web-app-duccxo`
-**Statut :** v0.3 fonctionnelle, testée en navigateur headless de 280 px à 1100 px, portrait et paysage.
+**Statut :** v0.4 fonctionnelle, testée en navigateur headless de 280 px à 1100 px, portrait et paysage.
 
 ---
 
@@ -19,11 +19,12 @@
 | `js/lambert93.js` | WGS84 → EPSG:2154, constantes IGN | oui, vérifié |
 | `js/csv.js` | Sérialisation / lecture RFC 4180, BOM UTF-8, détection de séparateur | oui, aller-retour testé |
 | `js/store.js` | `localStorage` (points, config, compteurs) + IndexedDB (un handle par filière) | oui |
-| `js/geo.js` | API Geolocation + contrôle du contexte sécurisé | oui |
+| `js/geo.js` | API Geolocation, relevé ponctuel et série affinée | oui, agrégation testée |
+| `js/carte.js` | Visualiseur de tuiles WMTS/XYZ écrit à la main | oui, projection vérifiée |
 | `js/app.js` | Construction du DOM, formulaires, liste, configuration | oui |
 | `serveur.py` | Serveur local — indispensable, le GPS refuse `file://` | oui |
 | `docs/RGPD.md` | Point de vigilance sur les données SPANC | oui |
-| `tests/audit-responsive.mjs` | Contrôle d'affichage, 280 → 540 px et paysage | oui |
+| `tests/audit-responsive.mjs` | Contrôle d'affichage, 280 → 540 px, paysage, modale | oui |
 
 ## Invariants à ne pas casser
 
@@ -46,6 +47,12 @@
    Un `top: 53px` en dur avait déjà cassé au palier 360 px.
 8. **Plancher de support : 280 px de large.** Toute modification d'interface se
    vérifie à cette largeur avant d'être poussée.
+9. **Ne jamais présenter une précision meilleure que celle annoncée par le
+   récepteur.** `precision_m` = meilleure `accuracy` observée. La dispersion est
+   mesurée et stockée à part. Un recalage cartographique ne touche pas
+   `precision_m` : il alimente `ecart_ajustement_m`.
+10. **La carte est la seule dépendance réseau.** Tout le reste fonctionne hors
+   ligne. Une panne de tuiles doit rester un message, jamais un blocage.
 
 ## Décisions prises
 
@@ -63,6 +70,13 @@
   coupé en « ASSAINISS… » n'apprend rien. Le libellé complet reste dans `aria-label`.
 - **En paysage court, l'en-tête glisse hors écran** au lieu de rester collé : sur
   320 px de haut, 84 px de barres fixes rendaient le formulaire inutilisable.
+- **Visualiseur de tuiles écrit à la main** plutôt que Leaflet : le besoin se limite
+  à déplacer un fond et lire le centre, soit environ 250 lignes contre une
+  dépendance de 140 ko à suivre dans le temps.
+- **Fond IGN plutôt qu'OSM** : l'orthophoto permet de voir le regard ou le tampon,
+  et c'est le service public destiné à cet usage. Les URL restent remplaçables.
+- **Repère fixe, carte mobile** : sur un téléphone, déplacer un marqueur au doigt
+  le cache sous le doigt. Déplacer le fond sous une croix fixe, non.
 - **Lambert 93 calculé côté client** plutôt qu'importé : la conversion est courte et
   évite une dépendance (`proj4js`) pour une seule projection.
 - **Pas de carte embarquée** : tuiles = requêtes réseau et dépendance externe, sans
@@ -81,6 +95,9 @@
 - [ ] Export GeoJSON en plus du CSV, pour injection directe dans un SIG.
 - [ ] Dédoublonnage à l'import sur `reference` en plus de `id` (saisie multi-appareils).
 - [ ] Export consolidé des trois filières, si le besoin d'une vue unique revient.
+- [ ] Mise en cache des tuiles pour l'ajustement hors réseau.
+- [ ] Vérifier sur le terrain les URL des flux IGN : non testables depuis
+      l'environnement de développement, dont la sortie réseau est fermée.
 - [ ] Champ photo si le besoin se confirme — implique de sortir du CSV unique.
 
 ## Points de vigilance
@@ -91,6 +108,12 @@
 - **Contexte sécurisé obligatoire** pour le GPS. Cause n°1 de « ça ne marche pas ».
 - **Précision GPS** : seuil d'alerte configurable (20 m par défaut). Un smartphone
   en ville dense descend rarement sous 5 m ; sous couvert forestier, 30 m et plus.
+- **La mesure affinée ne fait pas de miracle.** Les fixes successifs sont corrélés :
+  le gain vient de la convergence du récepteur, pas du moyennage. Ne pas laisser
+  croire à une précision centimétrique.
+- **Un champ `number` avec `step` incompatible bloque le formulaire en silence.**
+  C'est arrivé une fois (`step: 5`, `min: 5`, valeur 6) : toute la configuration
+  n'était plus enregistrée, sans message. Un écouteur `invalid` le signale désormais.
 - **Vidage du cache navigateur = perte des données** si aucun CSV n'est lié.
 - **Trois liaisons à faire**, une par filière : un seul fichier lié ne couvre pas
   les autres onglets. Le badge d'en-tête indique l'état du fichier de l'onglet actif.

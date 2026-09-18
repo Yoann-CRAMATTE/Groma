@@ -109,9 +109,14 @@
   ];
 
   // Colonnes techniques injectées automatiquement (non saisies).
+  // Le bloc méthode / mesures / dispersion trace COMMENT le point a été pris :
+  // sans lui, impossible de savoir si une coordonnée vaut 3 m ou 30 m.
   var COLONNES_TECHNIQUES = [
     'id', 'filiere', 'date_saisie', 'operateur',
-    'latitude', 'longitude', 'altitude_m', 'precision_m', 'x_l93', 'y_l93'
+    'latitude', 'longitude', 'altitude_m',
+    'precision_m', 'dispersion_m', 'methode_gps', 'nb_mesures', 'duree_gps_s',
+    'position_ajustee', 'ecart_ajustement_m',
+    'x_l93', 'y_l93'
   ];
 
   /**
@@ -156,7 +161,9 @@
     precisionMax: 20,
     hautePrecision: true,
     timeoutGps: 20,
+    dureeAffinage: 30,
     afficherLambert: true,
+    fondCarte: 'photo',
     separateur: ';'
   };
 

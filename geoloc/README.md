@@ -9,9 +9,9 @@ champs métier, leur couleur et leurs données diffèrent.
 
 | Onglet | Couleur | Fichier | Références | Colonnes |
 |---|---|---|---|---|
-| EAU | `#0ea5e9` bleu | `eau.csv` | `AEP-0001` | 19 |
-| ASSAINISSEMENT | `#22c55e` vert | `assainissement.csv` | `AC-0001` | 19 |
-| SPANC | `#a855f7` violet | `spanc.csv` | `ANC-0001` | 21 |
+| EAU | `#0ea5e9` bleu | `eau.csv` | `AEP-0001` | 25 |
+| ASSAINISSEMENT | `#22c55e` vert | `assainissement.csv` | `AC-0001` | 25 |
+| SPANC | `#a855f7` violet | `spanc.csv` | `ANC-0001` | 27 |
 | CONFIGURATION | `#94a3b8` gris | — | — | — |
 
 ---
@@ -44,8 +44,11 @@ fins de ligne CRLF, échappement RFC 4180. Ouvrable directement dans Excel fran�
 ### Colonnes communes aux trois fichiers
 
 ```
-id;filiere;date_saisie;operateur;latitude;longitude;altitude_m;precision_m;x_l93;y_l93;
-reference;commune;<champs métier de la filière>;observations
+id;filiere;date_saisie;operateur;
+latitude;longitude;altitude_m;
+precision_m;dispersion_m;methode_gps;nb_mesures;duree_gps_s;
+position_ajustee;ecart_ajustement_m;
+x_l93;y_l93;reference;commune;<champs métier de la filière>;observations
 ```
 
 | Fichier | Champs métier |
@@ -74,6 +77,77 @@ colonne `filiere` est accepté et rattaché à la filière ciblée.
 
 > Le stockage interne (`localStorage`) reste un stock unique, discriminé par la
 > colonne `filiere`. C'est le format d'export qui est éclaté en trois fichiers.
+
+---
+
+## Relevé de la position
+
+Trois gestes, du plus rapide au plus sûr :
+
+| Action | Ce qu'elle fait |
+|---|---|
+| **Relevé rapide** | Une seule mesure, immédiate. Suffit pour un ouvrage bien dégagé. |
+| **Précision maximale** | Mesure continue pendant la durée configurée (30 s par défaut), puis agrégation. Bouton d'arrêt anticipé. |
+| **Ajuster sur la carte** | Recalage manuel sur photo aérienne ou plan IGN. |
+
+### Ce que fait « Précision maximale », et ce qu'elle ne fait pas
+
+Le récepteur est écouté en continu. Les mesures nettement plus mauvaises que la
+meilleure (au-delà du double de son rayon annoncé) sont écartées, les autres sont
+moyennées avec une pondération en `1/précision²`.
+
+**La précision enregistrée reste la meilleure `accuracy` annoncée par le récepteur,
+jamais une valeur calculée.** Moyenner des fixes GPS successifs ne divise pas
+l'erreur par la racine du nombre de mesures : ces fixes sont fortement corrélés
+(même constellation, même multitrajet). Le gain réel vient surtout du temps laissé
+au récepteur pour converger. Prétendre le contraire produirait des coordonnées
+faussement rassurantes.
+
+En contrepartie, chaque point porte de quoi juger sa qualité :
+
+| Colonne | Contenu |
+|---|---|
+| `precision_m` | Meilleur rayon annoncé par le récepteur |
+| `dispersion_m` | Écart quadratique moyen des mesures retenues au point final — mesuré, pas estimé |
+| `methode_gps` | `ponctuelle` ou `affinee` |
+| `nb_mesures` | Nombre de fixes collectés |
+| `duree_gps_s` | Durée réelle de la série |
+
+Une dispersion faible avec une précision annoncée élevée signale un récepteur stable
+mais pessimiste ; l'inverse signale une mesure agitée. Les deux valeurs se lisent
+ensemble.
+
+---
+
+## Ajustement sur la carte
+
+Le bouton **Ajuster sur la carte** ouvre une fenêtre où **le repère reste fixe au
+centre et la carte se déplace dessous** : on amène le point exactement sur le regard,
+la vanne ou le tampon visible sur la photo aérienne.
+
+- Fonds : **photo aérienne** (zoom 20, environ 10 cm par pixel à cette latitude) et
+  **plan IGN** (zoom 19), servis par la Géoplateforme IGN.
+- La position mesurée reste affichée en bleu, entourée de son rayon de précision.
+- L'écart au GPS s'affiche en direct et passe en orange dès qu'il dépasse ce rayon.
+- **Revenir au GPS** annule le recalage.
+
+Un recalage ne modifie pas `precision_m` : la précision décrit la qualité de la
+*mesure*, qu'un déplacement manuel n'améliore ni ne dégrade. Il est tracé à part :
+
+| Colonne | Contenu |
+|---|---|
+| `position_ajustee` | `oui` / `non` |
+| `ecart_ajustement_m` | Distance entre la mesure GPS et la position validée |
+
+### Dépendance réseau
+
+C'est la **seule** partie de l'application qui sort sur le réseau. Sans connexion, la
+fenêtre le dit et reste utilisable : repère, coordonnées et validation fonctionnent,
+seul le fond manque. Le reste de l'application n'émet aucune requête.
+
+> Les URL des flux IGN sont regroupées dans `js/carte.js` (objet `FONDS`) et se
+> remplacent par n'importe quel service WMTS ou XYZ. Les conditions d'usage du
+> service retenu sont à vérifier auprès de son fournisseur.
 
 ---
 
@@ -138,6 +212,7 @@ geoloc/
 ├── js/
 │   ├── config.js        # schéma : onglets, champs, couleurs, colonnes CSV
 │   ├── lambert93.js     # WGS84 → Lambert 93
+│   ├── carte.js         # visualiseur de tuiles WMTS/XYZ, sans dépendance
 │   ├── csv.js           # sérialisation / lecture RFC 4180
 │   ├── store.js         # localStorage + IndexedDB + fichier lié
 │   ├── geo.js           # API Geolocation
@@ -154,7 +229,8 @@ Aucun HTML à modifier.
 
 ## Limites connues
 
-- Pas de carte embarquée : les coordonnées ouvrent un lien OpenStreetMap externe.
+- La carte d'ajustement exige du réseau ; aucune tuile n'est mise en cache pour
+  l'instant (pas de mode hors-ligne cartographique).
 - Pas de photo rattachée aux points (incompatible avec un CSV unique).
 - Pas de saisie hors-ligne installable (pas de service worker) — à ajouter si le
   besoin terrain le confirme.

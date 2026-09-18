@@ -33,16 +33,38 @@ async function inspecter(page) {
     const deborde = [];
     const tronque = [];
     const petites = [];
+    const defile = [];
+
+    const nommer = n => (n.className && typeof n.className === 'string'
+      ? '.' + n.className.split(' ')[0] : n.tagName);
+
+    // Un élément écrêté par un ancêtre (carte pannable, zone défilante) sort du
+    // cadre par construction : ce n'est pas un défaut de mise en page.
+    const ecrete = n => {
+      for (let p = n.parentElement; p; p = p.parentElement) {
+        const o = getComputedStyle(p);
+        if (o.overflow !== 'visible' || o.overflowX !== 'visible' || o.overflowY !== 'visible') return true;
+      }
+      return false;
+    };
 
     document.querySelectorAll('*').forEach(n => {
       const r = n.getBoundingClientRect();
       if (r.width === 0 || r.height === 0) return;
-      const nom = (n.className && typeof n.className === 'string' ? '.' + n.className.split(' ')[0] : n.tagName);
+      const nom = nommer(n);
       const txt = n.textContent.trim().slice(0, 24);
 
-      if (r.right > window.innerWidth + 0.5 || r.left < -0.5) deborde.push(nom + ' « ' + txt + ' »');
-      // seulement les feuilles : un conteneur qui défile volontairement n'est pas un défaut
+      if ((r.right > window.innerWidth + 0.5 || r.left < -0.5) && !ecrete(n)) {
+        deborde.push(nom + ' « ' + txt + ' »');
+      }
+      // feuilles uniquement : un conteneur qui défile volontairement n'est pas un défaut
       if (!n.children.length && n.scrollWidth > n.clientWidth + 1) tronque.push(nom + ' « ' + txt + ' »');
+    });
+
+    // Un conteneur écrêtant ne doit pas cacher de défilement horizontal, sauf la
+    // carte, dont la surface pannable dépasse forcément son cadre.
+    document.querySelectorAll('.modale-fenetre, .bloc, .vue, main').forEach(n => {
+      if (n.scrollWidth > n.clientWidth + 1) defile.push(nommer(n) + ' (+' + (n.scrollWidth - n.clientWidth) + 'px)');
     });
 
     document.querySelectorAll('button, a, select, textarea, input:not([type=checkbox]):not([type=file])').forEach(n => {
@@ -50,26 +72,45 @@ async function inspecter(page) {
       if (r.height > 0 && r.height < 36) petites.push(n.tagName + ' ' + Math.round(r.height) + 'px');
     });
 
-    return { deborde, tronque, petites, scroll: document.documentElement.scrollWidth - window.innerWidth };
+    return { deborde, tronque, petites, defile, scroll: document.documentElement.scrollWidth - window.innerWidth };
   });
+}
+
+async function controler(page, ou) {
+  const r = await inspecter(page);
+  if (r.scroll > 0) { defauts++; console.log('  ✗ ' + ou + ' — débordement horizontal de ' + r.scroll + 'px'); }
+  signaler(ou, r.deborde.map(x => 'hors viewport : ' + x));
+  signaler(ou, r.tronque.map(x => 'texte tronqué : ' + x));
+  signaler(ou, r.petites.map(x => 'cible tactile : ' + x));
+  signaler(ou, r.defile.map(x => 'défilement horizontal caché : ' + x));
 }
 
 async function parcourir(page, etiquette) {
   for (const onglet of ONGLETS) {
     await page.click('#onglet-' + onglet);
     await page.waitForTimeout(180);
-    const r = await inspecter(page);
-    const ou = etiquette + ' / ' + onglet;
-    if (r.scroll > 0) { defauts++; console.log('  ✗ ' + ou + ' — débordement horizontal de ' + r.scroll + 'px'); }
-    signaler(ou, r.deborde.map(x => 'hors viewport : ' + x));
-    signaler(ou, r.tronque.map(x => 'texte tronqué : ' + x));
-    signaler(ou, r.petites.map(x => 'cible tactile : ' + x));
+    await controler(page, etiquette + ' / ' + onglet);
   }
+
+  // La modale d'ajustement est une surface d'interface à part entière.
+  // L'enregistrement précédent a réinitialisé la position : il faut la reprendre.
+  await page.click('#onglet-eau');
+  await page.click('#eau-btn-gps');
+  await page.waitForFunction(() => document.querySelector('#eau-pos-lat').textContent !== '—', { timeout: 10000 });
+  await page.click('#eau-btn-carte');
+  await page.waitForTimeout(500);
+  await controler(page, etiquette + ' / carte');
+  await page.click('#modale-fermer');
+  await page.waitForTimeout(150);
 }
 
 const nav = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH || undefined
 });
+
+// Tuiles simulées : l'audit ne doit dépendre ni du réseau ni du service IGN.
+const TUILE_SIMULEE = '<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256">'
+  + '<rect width="256" height="256" fill="#31402f"/></svg>';
 
 for (const vp of PORTRAIT.map(w => ({ width: w, height: 760 })).concat(PAYSAGE)) {
   const etiquette = vp.width + '×' + vp.height;
@@ -77,6 +118,9 @@ for (const vp of PORTRAIT.map(w => ({ width: w, height: 760 })).concat(PAYSAGE))
     locale: 'fr-FR', viewport: vp,
     permissions: ['geolocation'], geolocation: POSITION
   });
+  await ctx.route('**/data.geopf.fr/**', route =>
+    route.fulfill({ contentType: 'image/svg+xml', body: TUILE_SIMULEE }));
+
   const page = await ctx.newPage();
   page.on('pageerror', e => { defauts++; console.log('  ✗ ' + etiquette + ' — erreur JS : ' + e.message); });
 

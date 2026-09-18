@@ -4,6 +4,67 @@ Une entrée par session de travail, la plus récente en haut.
 
 ---
 
+## 18/09/2026 — Mesure affinée et ajustement cartographique (v0.4)
+
+**Demandes :** un bouton de relevé le plus précis possible sur les trois onglets de
+fonctionnement ; puis une fenêtre montrant la carte au zoom maximal avec le repère
+sur le point mesuré, l'utilisateur pouvant valider ou repositionner.
+
+### Acquisition affinée
+
+`geo.js` gagne `localiserPrecis()` : écoute continue du récepteur pendant une durée
+configurable (30 s par défaut), filtrage des fixes plus de deux fois moins bons que
+le meilleur, moyenne pondérée en `1/précision²`, arrêt anticipé possible.
+
+**Position technique tenue :** la précision enregistrée reste la meilleure `accuracy`
+annoncée, jamais une valeur calculée. Les fixes successifs d'un même récepteur sont
+corrélés, moyenner ne divise pas l'erreur par la racine du nombre de mesures. Ce qui
+est mesuré et stocké en plus : dispersion réelle, nombre de mesures, durée, méthode.
+
+Vérifié hors navigateur sur une série contrôlée : mesure aberrante annoncée à 60 m
+écartée, écart au point vrai ramené à 0,49 m, dispersion 1,42 m. Cas limites traités
+(mesure unique, aucune mesure).
+
+### Carte d'ajustement
+
+`carte.js`, visualiseur de tuiles écrit à la main (Web Mercator, grille PM) :
+environ 250 lignes, aucune dépendance. Repère fixe au centre, carte déplacée dessous
+au doigt ou à la souris, zoom, bascule photo aérienne / plan IGN, marqueur GPS avec
+son rayon de précision, écart au GPS en direct.
+
+Vérifié en navigateur avec des tuiles simulées : la tuile du centre calculée
+indépendamment correspond à celle demandée, un déplacement de 120 px donne 12,1 m
+pour 12,0 m attendus, le plan plafonne bien au zoom 19 et l'orthophoto au zoom 20.
+Mode dégradé testé : sans réseau, message explicite et fenêtre toujours utilisable.
+
+**Les flux IGN n'ont pas pu être appelés réellement** : la sortie réseau de
+l'environnement de développement est fermée. À confirmer sur le terrain.
+
+### Défaut corrigé au passage
+
+Le champ « durée de la mesure affinée » avait `min: 5` et `step: 5`, ce qui rendait
+la valeur 6 invalide. Le navigateur bloquait alors le `submit` **sans émettre
+d'événement** : toute la configuration, opérateur compris, cessait d'être
+enregistrée, en silence. Trouvé parce que l'opérateur manquait dans un CSV de test.
+Corrigé (`step: 1`) et, surtout, un écouteur `invalid` affiche désormais un message
+en français reconstruit depuis les contraintes.
+
+### Faux positif corrigé dans l'audit
+
+L'audit signalait 152 défauts sur les tuiles : elles débordent du cadre par
+construction, écrêtées par `overflow: hidden`. La règle « hors viewport » ignore
+désormais tout élément écrêté par un ancêtre, et un contrôle distinct vérifie
+qu'aucun conteneur ne cache de défilement horizontal.
+
+**Nouvelles colonnes :** `dispersion_m`, `methode_gps`, `nb_mesures`, `duree_gps_s`,
+`position_ajustee`, `ecart_ajustement_m`. Les fichiers passent à 25, 25 et 27
+colonnes.
+
+**Résultat :** audit sans défaut sur dix configurations, modale comprise, et les
+trois suites fonctionnelles passent sans erreur JavaScript.
+
+---
+
 ## 18/09/2026 — Affichage petits smartphones (v0.3)
 
 **Demande :** l'application doit obligatoirement être utilisable sur les petits
