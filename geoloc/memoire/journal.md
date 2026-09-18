@@ -4,6 +4,23 @@ Une entrée par session de travail, la plus récente en haut.
 
 ---
 
+## 18/09/2026 — Revue visuelle (v0.5.1)
+
+Captures de l'application complète avec un jeu de données réaliste. Deux défauts
+visibles seulement à l'usage, corrigés :
+
+- Après un relevé, le bouton « Relevé rapide » se renommait « Localiser » :
+  `lancerLocalisation()` restaurait l'ancien libellé, resté en dur depuis la version
+  à un seul bouton. Les deux libellés sont désormais des constantes.
+- Le bloc Position gardait un espace mort en l'absence de message : la ligne d'état
+  réserve sa hauteur. `:empty` la neutralise.
+
+Point signalé sans correction possible : `input type="date"` affiche son format
+selon la langue du navigateur, pas selon `lang="fr"` de la page. La valeur stockée
+reste au format ISO, le CSV n'est donc pas affecté.
+
+---
+
 ## 18/09/2026 — Fonds de carte gratuits et remplaçables (v0.5)
 
 **Demande :** n'utiliser systématiquement qu'un plan ou une vue aérienne gratuits.

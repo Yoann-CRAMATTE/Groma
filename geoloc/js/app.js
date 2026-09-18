@@ -11,6 +11,9 @@
   var Csv = global.GeoLocCsv;
   var Geo = global.GeoLocGeo;
   var Carte = global.GeoLocCarte;
+
+  var LIBELLE_RAPIDE = '⌖  Relevé rapide';
+  var LIBELLE_PRECIS = '◎  Précision maximale';
   var L93 = global.Lambert93;
 
   var etat = {
@@ -242,13 +245,13 @@
       el('div', { classe: 'actions-gps' }, [
         el('button', {
           classe: 'btn-gps', type: 'button', id: filiereId + '-btn-gps',
-          texte: '⌖  Relevé rapide',
+          texte: LIBELLE_RAPIDE,
           title: 'Une seule mesure, immédiate',
           onclick: function () { lancerLocalisation(filiereId); }
         }),
         el('button', {
           classe: 'btn-primaire btn-gps', type: 'button', id: filiereId + '-btn-precis',
-          texte: '◎  Précision maximale',
+          texte: LIBELLE_PRECIS,
           title: 'Mesure continue puis agrégation des meilleures positions',
           onclick: function () { basculerAffinage(filiereId); }
         })
@@ -336,7 +339,7 @@
       info.textContent = err.message;
     }).then(function () {
       bouton.disabled = false;
-      bouton.textContent = '⌖  Localiser';
+      bouton.textContent = LIBELLE_RAPIDE;
     });
   }
 
@@ -371,7 +374,7 @@
       clearInterval(tic);
       etat.affinage[filiereId] = null;
       rapide.disabled = false;
-      bouton.textContent = '◎  Précision maximale';
+      bouton.textContent = LIBELLE_PRECIS;
       bouton.classList.remove('btn-actif');
       jauge.hidden = true;
     }
