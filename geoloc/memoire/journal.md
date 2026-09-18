@@ -4,6 +4,36 @@ Une entrée par session de travail, la plus récente en haut.
 
 ---
 
+## 18/09/2026 — Un CSV par onglet (v0.2)
+
+**Demande :** « chaque onglet a son CSV ». Révision de la spec initiale, qui prévoyait
+un fichier unique pour les trois filières.
+
+**Modifié :**
+- `config.js` : `colonnesCsv(filiereId)` ne rend plus que les colonnes de la filière
+  demandée (19 / 19 / 21 au lieu de 28 communes avec des vides). `toutesColonnes()`
+  ajoutée pour le seul filtre plein texte. Nom de fichier suggéré par filière.
+- `store.js` : un handle IndexedDB par filière (`csv-eau`, `csv-assainissement`,
+  `csv-spanc`). `migrerAncienHandle()` efface le handle unique de la v0.1.
+- `app.js` : `synchroniserFichier(filiereId)` et `synchroniserTout()` ; le badge
+  d'en-tête suit l'onglet actif ; vue Configuration refaite en trois cartes de
+  filière (Créer / Lier / Délier / Exporter / Importer) plus « Exporter les 3 ».
+- `fusionnerCsv(texte, filiereId)` : rejette les lignes d'une autre filière,
+  rattache celles sans colonne `filiere` à la cible.
+- `style.css` : cartes `.fichier`, boutons `.btn-compact`, état de badge neutre.
+
+**Choix assumé :** le `localStorage` reste un stock unique discriminé par `filiere`.
+Seul le format d'export est éclaté. Éclater le stockage compliquerait purge,
+statistiques et filtre sans bénéfice.
+
+**Vérifications :** parcours complet en Chromium headless — trois CSV générés avec
+leurs colonnes propres, export unitaire et export des trois, import d'un `eau.csv`
+dans SPANC refusé, réimport dans EAU détecté comme doublon, import d'un CSV sans
+colonne `filiere` accepté, persistance après rechargement, aucune erreur JavaScript,
+aucun débordement horizontal en 390 px.
+
+---
+
 ## 18/09/2026 — Création du projet (v0.1)
 
 **Demande :** application web vanilla de relevé de localisation, un CSV unique,
@@ -16,7 +46,7 @@ de fonctionnement.
 - Schéma unique dans `js/config.js` pilotant formulaires, colonnes CSV et filtres.
 - Trois filières avec champs métier distincts, quatrième onglet de configuration.
 - Géolocalisation avec seuil d'alerte de précision et conversion Lambert 93.
-- CSV unique : 28 colonnes, UTF-8 BOM, séparateur configurable, RFC 4180.
+- CSV unique : 28 colonnes, UTF-8 BOM, séparateur configurable, RFC 4180 *(éclaté en trois fichiers en v0.2)*.
 - Écriture dans un fichier lié (Chrome/Edge) ou export manuel (autres navigateurs).
 - Import CSV avec fusion sur `id` et resynchronisation des compteurs de références.
 - Modification, duplication et suppression de points ; filtre plein texte.

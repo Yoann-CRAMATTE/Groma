@@ -2,7 +2,7 @@
 
 ## Constat
 
-L'onglet **SPANC** enregistre, pour chaque installation :
+L'onglet **SPANC** et son fichier `spanc.csv` enregistrent, pour chaque installation :
 
 - `proprietaire` — nom d'une personne physique
 - `adresse` — adresse du domicile
@@ -16,7 +16,7 @@ ouvrages publics et ne sont pas concernés.
 
 ## Ce que fait l'application
 
-- Les données restent dans le navigateur (`localStorage`) et dans le fichier CSV choisi.
+- Les données restent dans le navigateur (`localStorage`) et dans le fichier `spanc.csv` choisi.
 - Aucun envoi réseau : aucune requête sortante hors le lien OpenStreetMap ouvert
   manuellement par l'agent.
 - Aucun compte, aucune télémétrie, aucun script tiers.
@@ -33,10 +33,10 @@ Ces points relèvent de la collectivité, pas de l'outil :
   automatiquement.
 - **Information des personnes** — mention d'information lors du contrôle.
 - **Registre des traitements** — inscription du traitement.
-- **Sécurité du support** — le CSV et le navigateur ne sont pas chiffrés. Un poste
+- **Sécurité du support** — le fichier `spanc.csv` et le navigateur ne sont pas chiffrés. Un poste
   ou un téléphone perdu expose les données. Chiffrement du disque et verrouillage
   de session à prévoir.
-- **Destinataires** — qui reçoit le CSV, par quel canal.
+- **Destinataires** — qui reçoit le fichier `spanc.csv`, par quel canal. Le fichier étant séparé de ceux des ouvrages publics, il peut être diffusé indépendamment.
 
 > Rédigé comme point de vigilance technique. Ce document n'est pas un avis juridique :
 > le DPO de la collectivité tranche.

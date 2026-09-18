@@ -67,6 +67,7 @@ body { padding-bottom: 40px; }
 
 .badge-fichier[data-etat="lie"] { color: var(--succes); border-color: var(--succes); }
 .badge-fichier[data-etat="absent"] { color: var(--alerte); border-color: var(--alerte); }
+.badge-fichier[data-etat="neutre"] { color: var(--texte-faible); border-color: var(--bord); }
 
 /* ---------- Onglets ---------- */
 
@@ -287,6 +288,39 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   text-align: center;
   padding: 18px 0;
 }
+
+/* ---------- Fichiers CSV (un par filière) ---------- */
+
+.fichiers { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+
+.fichier {
+  border: 1px solid var(--bord);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--fond-3);
+}
+
+.fichier-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.fichier-nom { font-weight: 600; font-size: 0.9rem; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+
+.fichier-filiere {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.fichier .note { margin: 6px 0 0; }
+.fichier .actions { margin-top: 10px; gap: 8px; }
+
+.btn-compact { padding: 7px 12px; min-height: 36px; font-size: 0.78rem; font-weight: 500; }
 
 /* ---------- Configuration ---------- */
 

@@ -1,18 +1,18 @@
 # GéoLoc
 
 Application web **vanilla** (aucune dépendance, aucun build) pour relever la position GPS
-d'ouvrages de terrain et les consigner dans **un fichier CSV unique**.
+d'ouvrages de terrain et les consigner dans **un fichier CSV par filière**.
 
 Trois filières de relevé — **EAU**, **ASSAINISSEMENT**, **SPANC** — plus un onglet
 **CONFIGURATION**. Les trois filières partagent exactement le même écran ; seuls leurs
 champs métier, leur couleur et leurs données diffèrent.
 
-| Onglet | Couleur | Préfixe des références |
-|---|---|---|
-| EAU | `#0ea5e9` bleu | `AEP-0001` |
-| ASSAINISSEMENT | `#22c55e` vert | `AC-0001` |
-| SPANC | `#a855f7` violet | `ANC-0001` |
-| CONFIGURATION | `#94a3b8` gris | — |
+| Onglet | Couleur | Fichier | Références | Colonnes |
+|---|---|---|---|---|
+| EAU | `#0ea5e9` bleu | `eau.csv` | `AEP-0001` | 19 |
+| ASSAINISSEMENT | `#22c55e` vert | `assainissement.csv` | `AC-0001` | 19 |
+| SPANC | `#a855f7` violet | `spanc.csv` | `ANC-0001` | 21 |
+| CONFIGURATION | `#94a3b8` gris | — | — | — |
 
 ---
 
@@ -32,33 +32,48 @@ hébergement interne, ou tunnel) — `localhost` ne vaut que sur la machine elle
 
 ---
 
-## Fichier CSV unique
+## Fichiers CSV
 
-Un seul fichier contient les trois filières. Chaque ligne porte une colonne `filiere`
-et ne remplit que les colonnes de sa filière ; les autres restent vides.
+**Un fichier par onglet**, lié et exporté indépendamment depuis Configuration.
+Chaque CSV ne porte que les colonnes de sa filière — aucune colonne vide héritée
+des autres. La colonne `filiere` est conservée : elle sert de garde-fou à l'import.
 
 Format : **UTF-8 avec BOM**, séparateur `;` par défaut (configurable `;` / `,` / tabulation),
 fins de ligne CRLF, échappement RFC 4180. Ouvrable directement dans Excel français.
 
-### Colonnes (28)
+### Colonnes communes aux trois fichiers
 
 ```
 id;filiere;date_saisie;operateur;latitude;longitude;altitude_m;precision_m;x_l93;y_l93;
-reference;commune;type_ouvrage;diametre_mm;materiau;annee_pose;etat;accessibilite;
-reseau;profondeur_m;type_installation;adresse;proprietaire;parcelle;nb_eh;conformite;
-date_controle;exutoire;observations
+reference;commune;<champs métier de la filière>;observations
 ```
+
+| Fichier | Champs métier |
+|---|---|
+| `eau.csv` | `type_ouvrage;diametre_mm;materiau;annee_pose;etat;accessibilite` |
+| `assainissement.csv` | `type_ouvrage;reseau;diametre_mm;materiau;profondeur_m;etat` |
+| `spanc.csv` | `type_installation;adresse;proprietaire;parcelle;nb_eh;conformite;date_controle;exutoire` |
 
 ### Deux modes d'écriture
 
 | Mode | Navigateurs | Comportement |
 |---|---|---|
-| **Fichier lié** (File System Access API) | Chrome, Edge (bureau et Android) | Configuration → *Créer / remplacer* ou *Lier un fichier existant*. Le CSV est réécrit intégralement à chaque enregistrement, suppression ou import. |
-| **Export manuel** | Firefox, Safari, iOS | Configuration → *Exporter le CSV* télécharge le fichier complet. |
+| **Fichier lié** (File System Access API) | Chrome, Edge (bureau et Android) | Configuration → carte de la filière → *Créer / remplacer* ou *Lier un existant*. Le CSV de cette filière est réécrit intégralement à chaque enregistrement, suppression ou import. Les trois liaisons sont indépendantes. |
+| **Export manuel** | Firefox, Safari, iOS | *Exporter* par filière, ou *Exporter les 3*. |
 
 Dans les deux cas, `localStorage` fait autorité : aucune saisie n'est perdue si
-l'écriture disque échoue. Le fichier lié survit au rechargement (handle conservé en
-IndexedDB) ; le navigateur peut redemander l'autorisation d'écriture.
+l'écriture disque échoue. Les fichiers liés survivent au rechargement (handles
+conservés en IndexedDB) ; le navigateur peut redemander l'autorisation d'écriture.
+
+### Import
+
+Chaque carte de filière a son bouton *Importer*. Les lignes sont ajoutées au stock
+existant ; un identifiant `id` déjà présent est ignoré. **Un CSV portant une autre
+filière est refusé** : un `eau.csv` ne peut pas être injecté dans SPANC. Un CSV sans
+colonne `filiere` est accepté et rattaché à la filière ciblée.
+
+> Le stockage interne (`localStorage`) reste un stock unique, discriminé par la
+> colonne `filiere`. C'est le format d'export qui est éclaté en trois fichiers.
 
 ---
 
@@ -107,3 +122,5 @@ Aucun HTML à modifier.
   besoin terrain le confirme.
 - L'import fusionne sur l'identifiant `id` ; deux relevés du même ouvrage saisis sur
   deux appareils différents produisent deux lignes.
+- Les trois fichiers sont indépendants : aucune vue consolidée des trois filières
+  n'est produite. À faire dans le SIG ou le tableur si besoin.

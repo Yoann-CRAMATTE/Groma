@@ -23,6 +23,7 @@
       titre: 'Eau potable (AEP)',
       couleur: '#0ea5e9',
       prefixe: 'AEP',
+      fichier: 'eau.csv',
       champs: [
         {
           cle: 'type_ouvrage', label: "Type d'ouvrage", type: 'select', requis: true,
@@ -49,6 +50,7 @@
       titre: 'Assainissement collectif',
       couleur: '#22c55e',
       prefixe: 'AC',
+      fichier: 'assainissement.csv',
       champs: [
         {
           cle: 'type_ouvrage', label: "Type d'ouvrage", type: 'select', requis: true,
@@ -75,6 +77,7 @@
       titre: 'Assainissement non collectif',
       couleur: '#a855f7',
       prefixe: 'ANC',
+      fichier: 'spanc.csv',
       // Adresse + propriétaire = données à caractère personnel (RGPD) : cf. docs/RGPD.md
       donneesPersonnelles: true,
       champs: [
@@ -109,16 +112,26 @@
   ];
 
   /**
-   * Union ordonnée de toutes les colonnes : un seul CSV pour les trois filières,
-   * chaque ligne ne remplit que les colonnes de sa filière.
+   * Colonnes du CSV d'une filière : chaque onglet a son propre fichier, donc
+   * seulement ses colonnes — pas de colonnes vides héritées des autres filières.
+   * La colonne « filiere » reste présente : elle sert de garde-fou à l'import.
    */
-  function colonnesCsv() {
+  function colonnesCsv(filiereId) {
+    var f = filiere(filiereId);
+    if (!f) return [];
     var cols = COLONNES_TECHNIQUES.slice();
     CHAMPS_COMMUNS.forEach(function (c) { if (cols.indexOf(c.cle) === -1) cols.push(c.cle); });
-    FILIERES.forEach(function (f) {
-      f.champs.forEach(function (c) { if (cols.indexOf(c.cle) === -1) cols.push(c.cle); });
-    });
+    f.champs.forEach(function (c) { if (cols.indexOf(c.cle) === -1) cols.push(c.cle); });
     cols.push(CHAMP_OBSERVATIONS.cle);
+    return cols;
+  }
+
+  /** Union de toutes les colonnes — utilisée par le filtre plein texte, pas par les CSV. */
+  function toutesColonnes() {
+    var cols = [];
+    FILIERES.forEach(function (f) {
+      colonnesCsv(f.id).forEach(function (c) { if (cols.indexOf(c) === -1) cols.push(c); });
+    });
     return cols;
   }
 
@@ -151,6 +164,7 @@
     COLONNES_TECHNIQUES: COLONNES_TECHNIQUES,
     CONFIG_DEFAUT: CONFIG_DEFAUT,
     colonnesCsv: colonnesCsv,
+    toutesColonnes: toutesColonnes,
     filiere: filiere,
     champsDe: champsDe
   };

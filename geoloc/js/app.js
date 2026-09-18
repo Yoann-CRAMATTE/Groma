@@ -70,50 +70,75 @@
 
   // ---------------------------------------------------------------- fichier CSV
 
-  function contenuCsv() {
-    return Csv.serialiser(Cfg.colonnesCsv(), etat.points, etat.config.separateur);
+  function contenuCsv(filiereId) {
+    return Csv.serialiser(Cfg.colonnesCsv(filiereId), pointsDe(filiereId), etat.config.separateur);
   }
 
-  /** Réécrit intégralement le CSV lié ; silencieux si aucun fichier n'est lié. */
-  function synchroniserFichier() {
+  /** Réécrit intégralement le CSV d'une filière ; silencieux si aucun fichier n'est lié. */
+  function synchroniserFichier(filiereId) {
     if (!Store.fsaDisponible()) return Promise.resolve('absent');
-    return Store.ecrireFichier(contenuCsv()).then(function (r) {
-      if (r === 'permission') toast('Accès au fichier CSV refusé : relier le fichier dans Configuration.', 'erreur');
-      else if (r === 'erreur') toast("Écriture du CSV impossible. Les données restent enregistrées dans le navigateur.", 'erreur');
+    return Store.ecrireFichier(filiereId, contenuCsv(filiereId)).then(function (r) {
+      var f = Cfg.filiere(filiereId);
+      if (r === 'permission') toast('Accès au CSV ' + f.label + ' refusé : reliez le fichier dans Configuration.', 'erreur');
+      else if (r === 'erreur') toast('Écriture du CSV ' + f.label + ' impossible. Les données restent enregistrées dans le navigateur.', 'erreur');
       rafraichirBadgeFichier();
       return r;
     });
   }
 
+  /** Après une purge ou un changement de séparateur : les trois fichiers sont concernés. */
+  function synchroniserTout() {
+    return Promise.all(Cfg.FILIERES.map(function (f) { return synchroniserFichier(f.id); }));
+  }
+
+  /** Le badge suit l'onglet actif : chaque filière a son propre fichier. */
   function rafraichirBadgeFichier() {
     var badge = document.getElementById('badge-fichier');
+    var filiereId = etat.ongletActif;
+
+    if (!filiereId || filiereId === 'configuration') {
+      badge.setAttribute('data-etat', 'neutre');
+      badge.textContent = '3 fichiers CSV';
+      badge.title = 'Un fichier par filière, géré ci-dessous.';
+      return;
+    }
     if (!Store.fsaDisponible()) {
       badge.setAttribute('data-etat', 'absent');
       badge.textContent = 'Export manuel';
       badge.title = "Ce navigateur n'écrit pas directement sur le disque : utilisez Exporter le CSV.";
       return;
     }
-    Store.handleCourant().then(function (h) {
+    Store.handleCourant(filiereId).then(function (h) {
+      if (etat.ongletActif !== filiereId) return; // l'utilisateur a changé d'onglet entre-temps
       if (h) {
         badge.setAttribute('data-etat', 'lie');
         badge.textContent = h.name;
-        badge.title = 'Fichier CSV lié — mis à jour à chaque enregistrement.';
+        badge.title = 'Fichier lié pour cette filière — mis à jour à chaque enregistrement.';
       } else {
         badge.setAttribute('data-etat', 'absent');
         badge.textContent = 'CSV non lié';
-        badge.title = 'Liez un fichier CSV dans Configuration.';
+        badge.title = 'Liez un fichier CSV pour cette filière dans Configuration.';
       }
     });
   }
 
-  function telechargerCsv() {
-    var blob = new Blob([contenuCsv()], { type: 'text/csv;charset=utf-8' });
+  function telechargerCsv(filiereId) {
+    var f = Cfg.filiere(filiereId);
+    var blob = new Blob([contenuCsv(filiereId)], { type: 'text/csv;charset=utf-8' });
     var url = URL.createObjectURL(blob);
-    var a = el('a', { href: url, download: 'geoloc-' + new Date().toISOString().slice(0, 10) + '.csv' });
+    var nom = f.fichier.replace(/\.csv$/, '') + '-' + new Date().toISOString().slice(0, 10) + '.csv';
+    var a = el('a', { href: url, download: nom });
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  /** Téléchargements échelonnés : Chrome bloque les déclenchements simultanés. */
+  function telechargerTousCsv() {
+    Cfg.FILIERES.forEach(function (f, i) {
+      setTimeout(function () { telechargerCsv(f.id); }, i * 350);
+    });
   }
 
   // ---------------------------------------------------------------- onglets
@@ -156,6 +181,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('.vue'), function (v) {
       v.hidden = v.id !== 'vue-' + id;
     });
+    rafraichirBadgeFichier();
     if (id === 'configuration') rafraichirStats();
     else rafraichirListe(id);
     try { localStorage.setItem('geoloc.onglet', id); } catch (e) { /* mode privé */ }
@@ -401,9 +427,9 @@
     reinitialiserFormulaire(filiereId);
     rafraichirListe(filiereId);
 
-    synchroniserFichier().then(function (r) {
-      if (r === 'ok') toast(reference + ' enregistré et écrit dans le CSV.', 'succes');
-      else if (r === 'absent') toast(reference + ' enregistré. Aucun CSV lié : pensez à exporter.', 'info');
+    synchroniserFichier(filiereId).then(function (r) {
+      if (r === 'ok') toast(reference + ' enregistré et écrit dans ' + Cfg.filiere(filiereId).fichier + '.', 'succes');
+      else if (r === 'absent') toast(reference + ' enregistré. Aucun CSV lié pour cette filière : pensez à exporter.', 'info');
       else toast(reference + ' enregistré localement.', 'info');
     });
   }
@@ -467,7 +493,7 @@
     var tous = pointsDe(filiereId);
     var visibles = tous.filter(function (p) {
       if (!q) return true;
-      return Cfg.colonnesCsv().some(function (c) {
+      return Cfg.colonnesCsv(filiereId).some(function (c) {
         return p[c] && String(p[c]).toLowerCase().indexOf(q) !== -1;
       });
     }).sort(function (a, b) { return (b.date_saisie || '').localeCompare(a.date_saisie || ''); });
@@ -530,7 +556,7 @@
     Store.ecrirePoints(etat.points);
     if (etat.edition[filiereId] === id) reinitialiserFormulaire(filiereId);
     rafraichirListe(filiereId);
-    synchroniserFichier();
+    synchroniserFichier(filiereId);
     toast('Point supprimé.', 'info');
   }
 
@@ -580,35 +606,26 @@
     ]);
 
     var blocFichier = el('section', { classe: 'bloc' }, [
-      el('h2', { texte: 'Fichier CSV unique' }),
-      el('p', { classe: 'note', id: 'cfg-etat-fichier' }),
-      el('div', { classe: 'actions' }, [
-        el('button', { type: 'button', id: 'cfg-btn-creer', texte: 'Créer / remplacer le fichier', onclick: actionCreerFichier }),
-        el('button', { type: 'button', id: 'cfg-btn-ouvrir', texte: 'Lier un fichier existant', onclick: actionOuvrirFichier }),
-        el('button', { type: 'button', id: 'cfg-btn-delier', texte: 'Délier', onclick: actionDelierFichier }),
-        el('button', { type: 'button', classe: 'btn-primaire', texte: 'Exporter le CSV', onclick: telechargerCsv })
+      el('div', { classe: 'bloc-titre' }, [
+        el('h2', { texte: 'Fichiers CSV' }),
+        el('button', { type: 'button', classe: 'btn-compact', texte: 'Exporter les 3', onclick: telechargerTousCsv })
       ]),
-      el('p', { classe: 'note', texte: "L'écriture directe dans un fichier n'existe que sur Chrome et Edge (bureau et Android). Ailleurs, « Exporter le CSV » télécharge le fichier complet." })
+      el('p', { classe: 'note', texte: 'Un fichier par filière. Chaque CSV ne contient que les colonnes de sa filière.' }),
+      el('div', { classe: 'fichiers' }, Cfg.FILIERES.map(construireCarteFichier)),
+      el('p', { classe: 'note', id: 'cfg-note-fsa' }),
+      el('input', {
+        type: 'file', id: 'cfg-import', accept: '.csv,text/csv',
+        style: 'display:none', onchange: actionImporter
+      })
     ]);
-
-    var entreeImport = el('input', {
-      type: 'file', id: 'cfg-import', accept: '.csv,text/csv',
-      style: 'display:none',
-      onchange: actionImporter
-    });
 
     var blocDonnees = el('section', { classe: 'bloc' }, [
       el('h2', { texte: 'Données' }),
       el('div', { classe: 'stats', id: 'cfg-stats' }),
       el('div', { classe: 'actions' }, [
-        el('button', {
-          type: 'button', texte: 'Importer un CSV',
-          onclick: function () { document.getElementById('cfg-import').click(); }
-        }),
         el('button', { type: 'button', classe: 'btn-danger', texte: 'Effacer toutes les données', onclick: actionPurger })
       ]),
-      entreeImport,
-      el('p', { classe: 'note', texte: "L'import ajoute les lignes du fichier aux points existants ; les identifiants déjà présents sont ignorés." })
+      el('p', { classe: 'note', texte: "L'import ajoute les lignes au stock existant ; les identifiants déjà présents sont ignorés, et un CSV d'une autre filière est refusé." })
     ]);
 
     var blocRgpd = el('section', { classe: 'bloc' }, [
@@ -640,6 +657,43 @@
     ]);
   }
 
+  /** Une carte par filière : nom du fichier, état de liaison et actions associées. */
+  function construireCarteFichier(f) {
+    return el('div', { classe: 'fichier', style: 'border-left-color:' + f.couleur }, [
+      el('div', { classe: 'fichier-entete' }, [
+        el('span', { classe: 'fichier-nom', texte: f.fichier }),
+        el('span', { classe: 'fichier-filiere', style: 'color:' + f.couleur, texte: f.label })
+      ]),
+      el('p', { classe: 'note', id: 'cfg-etat-' + f.id }),
+      el('div', { classe: 'actions' }, [
+        el('button', {
+          type: 'button', classe: 'btn-compact', 'data-fsa': 'true',
+          texte: 'Créer / remplacer', onclick: function () { actionCreerFichier(f.id); }
+        }),
+        el('button', {
+          type: 'button', classe: 'btn-compact', 'data-fsa': 'true',
+          texte: 'Lier un existant', onclick: function () { actionOuvrirFichier(f.id); }
+        }),
+        el('button', {
+          type: 'button', classe: 'btn-compact', 'data-fsa': 'true',
+          texte: 'Délier', onclick: function () { actionDelierFichier(f.id); }
+        }),
+        el('button', {
+          type: 'button', classe: 'btn-compact', texte: 'Exporter',
+          onclick: function () { telechargerCsv(f.id); }
+        }),
+        el('button', {
+          type: 'button', classe: 'btn-compact', texte: 'Importer',
+          onclick: function () {
+            var entree = document.getElementById('cfg-import');
+            entree.setAttribute('data-filiere', f.id);
+            entree.click();
+          }
+        })
+      ])
+    ]);
+  }
+
   function remplirConfiguration() {
     var c = etat.config;
     document.getElementById('cfg-operateur').value = c.operateur;
@@ -666,7 +720,7 @@
     };
     Store.ecrireConfig(etat.config);
     remplirCommunes();
-    synchroniserFichier();
+    synchroniserTout();
     toast('Configuration enregistrée.', 'succes');
   }
 
@@ -694,67 +748,79 @@
   }
 
   function rafraichirEtatFichier() {
-    var n = document.getElementById('cfg-etat-fichier');
-    if (!n) return;
+    var note = document.getElementById('cfg-note-fsa');
+    if (!note) return;
+
     if (!Store.fsaDisponible()) {
-      n.textContent = "Ce navigateur ne permet pas l'écriture directe dans un fichier. Les données sont conservées localement ; utilisez « Exporter le CSV ».";
-      ['cfg-btn-creer', 'cfg-btn-ouvrir', 'cfg-btn-delier'].forEach(function (id) {
-        var b = document.getElementById(id);
-        if (b) b.disabled = true;
+      note.textContent = "Ce navigateur ne permet pas l'écriture directe dans un fichier. Les données restent dans le navigateur ; utilisez « Exporter ».";
+      Array.prototype.forEach.call(document.querySelectorAll('[data-fsa]'), function (b) { b.disabled = true; });
+      Cfg.FILIERES.forEach(function (f) {
+        var n = document.getElementById('cfg-etat-' + f.id);
+        if (n) n.textContent = 'Export manuel uniquement.';
       });
       return;
     }
-    Store.handleCourant().then(function (h) {
-      n.textContent = h
-        ? 'Fichier lié : ' + h.name + ' — réécrit à chaque enregistrement, suppression ou import.'
-        : 'Aucun fichier lié. Les points sont conservés dans le navigateur en attendant.';
+
+    note.textContent = "L'écriture directe n'existe que sur Chrome et Edge (bureau et Android). Un fichier lié est réécrit intégralement à chaque enregistrement, suppression ou import de sa filière.";
+    Cfg.FILIERES.forEach(function (f) {
+      Store.handleCourant(f.id).then(function (h) {
+        var n = document.getElementById('cfg-etat-' + f.id);
+        if (!n) return;
+        n.textContent = h ? 'Lié à ' + h.name : 'Aucun fichier lié.';
+      });
     });
   }
 
-  function actionCreerFichier() {
-    Store.choisirFichier().then(function () {
-      return synchroniserFichier();
+  function actionCreerFichier(filiereId) {
+    Store.choisirFichier(filiereId).then(function () {
+      return synchroniserFichier(filiereId);
     }).then(function () {
       rafraichirBadgeFichier();
       rafraichirEtatFichier();
-      toast('Fichier CSV lié et initialisé.', 'succes');
+      toast('CSV ' + Cfg.filiere(filiereId).label + ' lié et initialisé.', 'succes');
     }).catch(function () { /* l'utilisateur a annulé le sélecteur */ });
   }
 
-  function actionOuvrirFichier() {
-    Store.ouvrirFichierExistant().then(function () {
-      return Store.lireFichier();
+  function actionOuvrirFichier(filiereId) {
+    Store.ouvrirFichierExistant(filiereId).then(function () {
+      return Store.lireFichier(filiereId);
     }).then(function (texte) {
-      if (texte && texte.trim()) fusionnerCsv(texte);
-      return synchroniserFichier();
+      if (texte && texte.trim()) fusionnerCsv(texte, filiereId);
+      return synchroniserFichier(filiereId);
     }).then(function () {
       rafraichirBadgeFichier();
       rafraichirEtatFichier();
       rafraichirStats();
-      Cfg.FILIERES.forEach(function (f) { rafraichirListe(f.id); });
+      rafraichirListe(filiereId);
     }).catch(function () { /* annulé */ });
   }
 
-  function actionDelierFichier() {
-    Store.oublierFichier().then(function () {
+  function actionDelierFichier(filiereId) {
+    Store.oublierFichier(filiereId).then(function () {
       rafraichirBadgeFichier();
       rafraichirEtatFichier();
-      toast('Fichier délié. Les données restent dans le navigateur.', 'info');
+      toast('CSV ' + Cfg.filiere(filiereId).label + ' délié. Les données restent dans le navigateur.', 'info');
     });
   }
 
-  /** Ajoute les lignes d'un CSV externe sans écraser ce qui existe déjà. */
-  function fusionnerCsv(texte) {
+  /**
+   * Ajoute les lignes d'un CSV à une filière sans écraser l'existant.
+   * Une ligne portant une autre filière est rejetée : chaque fichier est mono-filière.
+   */
+  function fusionnerCsv(texte, filiereId) {
     var lignes = Csv.parser(texte, Csv.detecterSeparateur(texte));
     var connus = {};
     etat.points.forEach(function (p) { connus[p.id] = true; });
 
     var ajoutes = 0;
     var ignores = 0;
+    var horsFiliere = 0;
+
     lignes.forEach(function (l) {
-      if (!l.filiere || !Cfg.filiere(l.filiere)) { ignores++; return; }
+      if (l.filiere && l.filiere !== filiereId) { horsFiliere++; return; }
       if (l.id && connus[l.id]) { ignores++; return; }
       if (!l.id) l.id = idUnique();
+      l.filiere = filiereId;
       connus[l.id] = true;
       etat.points.push(l);
       ajoutes++;
@@ -762,19 +828,30 @@
 
     Store.ecrirePoints(etat.points);
     Store.resynchroniserCompteurs(etat.points);
-    toast(ajoutes + ' point(s) importé(s)' + (ignores ? ', ' + ignores + ' ignoré(s)' : '') + '.', ajoutes ? 'succes' : 'info');
+
+    if (horsFiliere && !ajoutes) {
+      toast('Fichier refusé : ' + horsFiliere + " ligne(s) d'une autre filière.", 'erreur');
+    } else {
+      var details = [];
+      if (ignores) details.push(ignores + ' doublon(s)');
+      if (horsFiliere) details.push(horsFiliere + ' hors filière');
+      toast(ajoutes + ' point(s) importé(s) dans ' + Cfg.filiere(filiereId).label
+        + (details.length ? ' — ' + details.join(', ') + ' ignoré(s)' : '') + '.', ajoutes ? 'succes' : 'info');
+    }
     return ajoutes;
   }
 
   function actionImporter(ev) {
+    var filiereId = ev.target.getAttribute('data-filiere');
     var fichier = ev.target.files && ev.target.files[0];
-    if (!fichier) return;
+    if (!fichier || !Cfg.filiere(filiereId)) { ev.target.value = ''; return; }
+
     fichier.text().then(function (texte) {
-      fusionnerCsv(texte);
-      return synchroniserFichier();
+      fusionnerCsv(texte, filiereId);
+      return synchroniserFichier(filiereId);
     }).then(function () {
       rafraichirStats();
-      Cfg.FILIERES.forEach(function (f) { rafraichirListe(f.id); });
+      rafraichirListe(filiereId);
     }).catch(function () {
       toast('Lecture du fichier impossible.', 'erreur');
     }).then(function () { ev.target.value = ''; });
@@ -788,7 +865,7 @@
     Store.toutEffacer();
     Cfg.FILIERES.forEach(function (f) { reinitialiserFormulaire(f.id); rafraichirListe(f.id); });
     rafraichirStats();
-    synchroniserFichier();
+    synchroniserTout();
     toast('Données effacées.', 'info');
   }
 
@@ -811,7 +888,7 @@
 
     remplirCommunes();
     remplirConfiguration();
-    rafraichirBadgeFichier();
+    Store.migrerAncienHandle();
 
     var dernier = null;
     try { dernier = localStorage.getItem('geoloc.onglet'); } catch (e) { /* mode privé */ }

@@ -124,44 +124,48 @@
     ecrireJson(CLE_COMPTEUR, compteurs);
   }
 
-  // --- Fichier CSV lié (File System Access API, Chrome / Edge / Android) ---
+  // --- Fichiers CSV liés, un par filière (File System Access API, Chrome / Edge / Android) ---
+
+  function cleHandle(filiereId) {
+    return 'csv-' + filiereId;
+  }
 
   function fsaDisponible() {
     return typeof global.showSaveFilePicker === 'function';
   }
 
-  function choisirFichier() {
+  var TYPES_CSV = [{ description: 'Fichier CSV', accept: { 'text/csv': ['.csv'] } }];
+
+  function choisirFichier(filiereId) {
+    var f = global.GeoLocConfig.filiere(filiereId);
     return global.showSaveFilePicker({
-      suggestedName: 'geoloc.csv',
-      types: [{ description: 'Fichier CSV', accept: { 'text/csv': ['.csv'] } }]
+      suggestedName: f ? f.fichier : 'geoloc.csv',
+      types: TYPES_CSV
     }).then(function (handle) {
-      return idbSet('csv', handle).then(function () { return handle; });
+      return idbSet(cleHandle(filiereId), handle).then(function () { return handle; });
     });
   }
 
-  function ouvrirFichierExistant() {
-    return global.showOpenFilePicker({
-      multiple: false,
-      types: [{ description: 'Fichier CSV', accept: { 'text/csv': ['.csv'] } }]
-    }).then(function (handles) {
+  function ouvrirFichierExistant(filiereId) {
+    return global.showOpenFilePicker({ multiple: false, types: TYPES_CSV }).then(function (handles) {
       var handle = handles[0];
-      return idbSet('csv', handle).then(function () { return handle; });
+      return idbSet(cleHandle(filiereId), handle).then(function () { return handle; });
     });
   }
 
-  function handleCourant() {
-    return idbGet('csv').then(function (h) { return h || null; });
+  function handleCourant(filiereId) {
+    return idbGet(cleHandle(filiereId)).then(function (h) { return h || null; });
   }
 
-  function oublierFichier() {
-    return idbDel('csv');
+  function oublierFichier(filiereId) {
+    return idbDel(cleHandle(filiereId));
   }
 
   /**
    * @returns {Promise<'ok'|'permission'|'absent'|'erreur'>} état de l'écriture
    */
-  function ecrireFichier(contenu) {
-    return handleCourant().then(function (handle) {
+  function ecrireFichier(filiereId, contenu) {
+    return handleCourant(filiereId).then(function (handle) {
       if (!handle) return 'absent';
       return handle.queryPermission({ mode: 'readwrite' }).then(function (etat) {
         if (etat === 'granted') return 'granted';
@@ -175,11 +179,18 @@
     }).catch(function () { return 'erreur'; });
   }
 
-  function lireFichier() {
-    return handleCourant().then(function (handle) {
+  function lireFichier(filiereId) {
+    return handleCourant(filiereId).then(function (handle) {
       if (!handle) return null;
       return handle.getFile().then(function (f) { return f.text(); });
     });
+  }
+
+  /** Reliquat de la v0.1 : un handle unique 'csv' pour les trois filières. */
+  function migrerAncienHandle() {
+    return idbGet('csv').then(function (h) {
+      return h ? idbDel('csv') : null;
+    }).catch(function () { return null; });
   }
 
   function toutEffacer() {
@@ -201,6 +212,7 @@
     oublierFichier: oublierFichier,
     ecrireFichier: ecrireFichier,
     lireFichier: lireFichier,
+    migrerAncienHandle: migrerAncienHandle,
     toutEffacer: toutEffacer
   };
 })(window);

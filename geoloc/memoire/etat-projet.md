@@ -3,9 +3,9 @@
 > Mémoire de travail. À relire en début de session **avant** d'ouvrir le code,
 > à mettre à jour en fin de session. Évite de relire toute l'application à chaque fois.
 
-**Dernière mise à jour :** 18/09/2026
+**Dernière mise à jour :** 18/09/2026 (v0.2)
 **Branche :** `claude/geoloc-web-app-duccxo`
-**Statut :** v0.1 fonctionnelle, testée en navigateur headless.
+**Statut :** v0.2 fonctionnelle, testée en navigateur headless.
 
 ---
 
@@ -18,7 +18,7 @@
 | `js/config.js` | **Source de vérité du schéma** : filières, champs, couleurs, colonnes CSV | oui |
 | `js/lambert93.js` | WGS84 → EPSG:2154, constantes IGN | oui, vérifié |
 | `js/csv.js` | Sérialisation / lecture RFC 4180, BOM UTF-8, détection de séparateur | oui, aller-retour testé |
-| `js/store.js` | `localStorage` (points, config, compteurs) + IndexedDB (handle fichier) | oui |
+| `js/store.js` | `localStorage` (points, config, compteurs) + IndexedDB (un handle par filière) | oui |
 | `js/geo.js` | API Geolocation + contrôle du contexte sécurisé | oui |
 | `js/app.js` | Construction du DOM, formulaires, liste, configuration | oui |
 | `serveur.py` | Serveur local — indispensable, le GPS refuse `file://` | oui |
@@ -28,10 +28,13 @@
 
 1. **`js/config.js` pilote tout.** Ajouter un champ = une entrée dans `champs`.
    Le formulaire, la colonne CSV, le filtre et l'affichage suivent seuls.
-2. **Un seul CSV** pour les trois filières : union des colonnes, colonne `filiere`
-   pour discriminer. Ne pas éclater en trois fichiers.
-3. **`localStorage` fait autorité.** Le fichier disque est une projection réécrite
-   intégralement ; un échec d'écriture ne doit jamais perdre une saisie terrain.
+2. **Un CSV par filière** (`eau.csv`, `assainissement.csv`, `spanc.csv`), chacun
+   limité à ses propres colonnes. La colonne `filiere` reste présente comme
+   garde-fou à l'import. Le stockage interne, lui, reste un stock unique.
+3. **`localStorage` fait autorité.** Chaque fichier disque est une projection
+   réécrite intégralement ; un échec d'écriture ne doit jamais perdre une saisie
+   terrain. Seule la filière touchée est réécrite (sauf purge et changement de
+   séparateur, qui réécrivent les trois).
 4. **Aucune dépendance, aucun build.** Scripts classiques, pas de modules ES
    (compatibilité maximale, y compris ouverture directe pour inspection).
 5. **Aucune donnée utilisateur via `innerHTML`.** Tout passe par `el()` / `textContent`.
@@ -44,6 +47,11 @@
 - **File System Access API + repli export** : le navigateur ne peut pas écrire
   librement sur le disque. Chrome/Edge écrivent dans le fichier lié ; ailleurs,
   téléchargement manuel. Pas de troisième voie sans serveur.
+- **Trois fichiers, un stock** : éclater aussi le `localStorage` n'apporterait rien
+  et compliquerait purge, statistiques et filtre. C'est le format d'export qui est
+  triple, pas le modèle de données.
+- **Import mono-filière** : une ligne portant une autre `filiere` est rejetée. Sans
+  ce contrôle, un `eau.csv` importé dans SPANC passerait sans bruit.
 - **Lambert 93 calculé côté client** plutôt qu'importé : la conversion est courte et
   évite une dépendance (`proj4js`) pour une seule projection.
 - **Pas de carte embarquée** : tuiles = requêtes réseau et dépendance externe, sans
@@ -61,6 +69,7 @@
 - [ ] Service worker : saisie hors-ligne dans les secteurs sans réseau.
 - [ ] Export GeoJSON en plus du CSV, pour injection directe dans un SIG.
 - [ ] Dédoublonnage à l'import sur `reference` en plus de `id` (saisie multi-appareils).
+- [ ] Export consolidé des trois filières, si le besoin d'une vue unique revient.
 - [ ] Champ photo si le besoin se confirme — implique de sortir du CSV unique.
 
 ## Points de vigilance
@@ -72,3 +81,5 @@
 - **Précision GPS** : seuil d'alerte configurable (20 m par défaut). Un smartphone
   en ville dense descend rarement sous 5 m ; sous couvert forestier, 30 m et plus.
 - **Vidage du cache navigateur = perte des données** si aucun CSV n'est lié.
+- **Trois liaisons à faire**, une par filière : un seul fichier lié ne couvre pas
+  les autres onglets. Le badge d'en-tête indique l'état du fichier de l'onglet actif.
