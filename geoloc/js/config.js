@@ -164,6 +164,8 @@
     dureeAffinage: 30,
     afficherLambert: true,
     fondCarte: 'photo',
+    // Liste vide = fonds gratuits par défaut de carte.js. Remplie, elle les remplace.
+    fondsCarte: [],
     separateur: ';'
   };
 

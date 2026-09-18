@@ -577,6 +577,27 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .carte-message:empty { display: none; }
 
+/* Mention de licence : visible en permanence, jamais masquée par un geste. */
+.carte-attribution {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  padding: 3px 7px;
+  font-size: 0.65rem;
+  color: var(--texte);
+  background: rgba(11, 15, 20, 0.78);
+  border-top-left-radius: 6px;
+  pointer-events: none;
+  z-index: 3;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.carte-attribution:empty { display: none; }
+
 .carte-barre {
   display: flex;
   justify-content: space-between;
@@ -641,6 +662,31 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .carte-infos .ecart-fort { color: var(--alerte); }
 
 .btn-carte { margin-top: 10px; width: 100%; }
+
+/* ---------- Fonds de carte (configuration) ---------- */
+
+.fonds { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+
+.fond {
+  border: 1px solid var(--bord);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 11px 12px;
+  background: var(--fond-3);
+}
+
+.fond--invalide { border-left-color: var(--danger); }
+
+.fond-probleme { color: var(--danger); margin-top: 8px; }
+
+.fond .actions { margin-top: 10px; }
+
+.champ-url {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 0.78rem;
+  min-height: 62px;
+  word-break: break-all;
+}
 
 /* ---------- Toast ---------- */
 

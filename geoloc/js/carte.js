@@ -42,20 +42,48 @@
     + '&STYLE=normal&TILEMATRIXSET=PM&LAYER={couche}&FORMAT={format}'
     + '&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}';
 
+  /**
+   * Fonds par défaut : uniquement des services gratuits et sans clé d'accès.
+   * « Gratuit » ne veut pas dire « sans conditions » : l'attribution est une
+   * obligation de licence, elle est affichée en permanence sur la carte.
+   * Toute cette liste est remplaçable depuis l'onglet Configuration.
+   */
   var FONDS = {
     photo: {
       libelle: 'Photo aérienne',
       url: GEOPF.replace('{couche}', 'ORTHOIMAGERY.ORTHOPHOTOS').replace('{format}', 'image/jpeg'),
       zoomMax: 20,
-      credit: 'IGN — Géoplateforme'
+      credit: '© IGN — Géoplateforme'
     },
     plan: {
       libelle: 'Plan IGN',
       url: GEOPF.replace('{couche}', 'GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2').replace('{format}', 'image/png'),
       zoomMax: 19,
-      credit: 'IGN — Géoplateforme'
+      credit: '© IGN — Géoplateforme'
+    },
+    // Secours si la Géoplateforme est injoignable. Attention : la politique d'usage
+    // des tuiles d'openstreetmap.org proscrit les usages applicatifs intensifs.
+    osm: {
+      libelle: 'OpenStreetMap',
+      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      zoomMax: 19,
+      credit: '© Contributeurs OpenStreetMap (ODbL)'
     }
   };
+
+  /** Contrôle minimal d'un fond saisi par l'utilisateur. */
+  function validerFond(f) {
+    if (!f || typeof f.url !== 'string') return 'URL manquante.';
+    if (!/^https:\/\//.test(f.url)) return 'URL : HTTPS obligatoire.';
+    if (f.url.indexOf('{z}') === -1 || f.url.indexOf('{x}') === -1 || f.url.indexOf('{y}') === -1) {
+      return 'URL : les repères {z}, {x} et {y} sont obligatoires.';
+    }
+    if (!f.libelle) return 'Libellé manquant.';
+    if (!f.credit) return 'Attribution manquante : elle est exigée par la licence du fond.';
+    var z = Number(f.zoomMax);
+    if (!z || z < 1 || z > 22) return 'Zoom maximal attendu entre 1 et 22.';
+    return null;
+  }
 
   // --- Carte ----------------------------------------------------------------
 
@@ -81,6 +109,12 @@
     var surcouche = document.createElement('div');
     surcouche.className = 'carte-surcouche';
     hote.appendChild(surcouche);
+
+    // Attribution affichée en permanence : c'est une obligation de licence,
+    // pas une mention d'ambiance reléguée dans un menu.
+    var attribution = document.createElement('p');
+    attribution.className = 'carte-attribution';
+    hote.appendChild(attribution);
 
     // Compte les tuiles en échec : sans réseau, la carte doit le dire au lieu de rester grise.
     var demandees = 0;
@@ -154,6 +188,7 @@
         fragment.appendChild(n);
       });
 
+      attribution.textContent = fonds[fondActif].credit || '';
       couche.style.transform = '';
       couche.replaceChildren(fragment);
       signalerEtat();
@@ -261,6 +296,7 @@
         hote.removeEventListener('wheel', molette);
         couche.remove();
         surcouche.remove();
+      attribution.remove();
       }
     };
 
@@ -276,6 +312,7 @@
 
   global.GeoLocCarte = {
     creerCarte: creerCarte,
+    validerFond: validerFond,
     distance: distance,
     resolution: resolution,
     FONDS: FONDS

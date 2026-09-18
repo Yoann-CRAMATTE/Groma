@@ -125,8 +125,8 @@ Le bouton **Ajuster sur la carte** ouvre une fenêtre où **le repère reste fix
 centre et la carte se déplace dessous** : on amène le point exactement sur le regard,
 la vanne ou le tampon visible sur la photo aérienne.
 
-- Fonds : **photo aérienne** (zoom 20, environ 10 cm par pixel à cette latitude) et
-  **plan IGN** (zoom 19), servis par la Géoplateforme IGN.
+- Fonds fournis : **photo aérienne** et **plan IGN** (Géoplateforme), plus
+  **OpenStreetMap** en secours — voir la section suivante.
 - La position mesurée reste affichée en bleu, entourée de son rayon de précision.
 - L'écart au GPS s'affiche en direct et passe en orange dès qu'il dépasse ce rayon.
 - **Revenir au GPS** annule le recalage.
@@ -139,15 +139,59 @@ Un recalage ne modifie pas `precision_m` : la précision décrit la qualité de 
 | `position_ajustee` | `oui` / `non` |
 | `ecart_ajustement_m` | Distance entre la mesure GPS et la position validée |
 
+### Fonds de carte — gratuits, et vérifiables
+
+Seuls des services **gratuits et sans clé d'accès** sont fournis par défaut :
+
+| Fond | Source | Zoom max | Attribution |
+|---|---|---|---|
+| Photo aérienne | Géoplateforme IGN | 20 (≈ 10 cm/px à cette latitude) | © IGN — Géoplateforme |
+| Plan IGN | Géoplateforme IGN | 19 | © IGN — Géoplateforme |
+| OpenStreetMap | tile.openstreetmap.org | 19 | © Contributeurs OpenStreetMap (ODbL) |
+
+Aucun service payant, aucun quota, aucun compte. L'attribution s'affiche **en
+permanence** en bas de la carte : c'est une obligation de licence, pas une mention
+décorative reléguée dans un menu.
+
+**Gratuit ne veut pas dire sans conditions :**
+
+- Les tuiles d'`openstreetmap.org` sont servies par une fondation à but non lucratif
+  et leur politique d'usage **proscrit les usages applicatifs intensifs**. C'est un
+  secours de dépannage, pas un fond de production pour un service qui relève des
+  centaines d'ouvrages par semaine.
+- Un service public peut modifier ses conditions. **Les URL n'ont pas pu être
+  appelées réellement depuis l'environnement de développement** (sortie réseau
+  fermée) : à confirmer avant tout déploiement en service.
+
+#### Changer de fond sans toucher au code
+
+Configuration → **Fonds de carte** permet d'ajouter, modifier ou retirer un fond :
+libellé, URL de tuile, zoom maximal et attribution. La liste remplace alors les fonds
+par défaut ; **Rétablir les fonds gratuits** revient à l'état d'origine.
+
+L'URL accepte n'importe quel service **XYZ ou WMTS** et doit contenir les repères
+`{z}`, `{x}` et `{y}` :
+
+```
+https://exemple.fr/tuiles/{z}/{x}/{y}.png
+```
+
+Quatre contrôles avant enregistrement : HTTPS obligatoire, repères présents, zoom
+entre 1 et 22, **attribution non vide**. Un fond sans attribution est refusé — la
+licence l'exige, l'application ne laisse pas l'oublier.
+
+Cela permet notamment de basculer sur un serveur de tuiles interne à la collectivité,
+ou sur un autre flux public, si la Géoplateforme change de conditions.
+
 ### Dépendance réseau
 
 C'est la **seule** partie de l'application qui sort sur le réseau. Sans connexion, la
 fenêtre le dit et reste utilisable : repère, coordonnées et validation fonctionnent,
 seul le fond manque. Le reste de l'application n'émet aucune requête.
 
-> Les URL des flux IGN sont regroupées dans `js/carte.js` (objet `FONDS`) et se
-> remplacent par n'importe quel service WMTS ou XYZ. Les conditions d'usage du
-> service retenu sont à vérifier auprès de son fournisseur.
+> Les fonds par défaut sont définis dans `js/carte.js` (objet `FONDS`). Les
+> remplacer durablement pour un poste se fait depuis Configuration, sans éditer
+> le code.
 
 ---
 

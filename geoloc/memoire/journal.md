@@ -4,6 +4,47 @@ Une entrée par session de travail, la plus récente en haut.
 
 ---
 
+## 18/09/2026 — Fonds de carte gratuits et remplaçables (v0.5)
+
+**Demande :** n'utiliser systématiquement qu'un plan ou une vue aérienne gratuits.
+
+**Constat :** c'était déjà le cas (Géoplateforme IGN, sans clé), mais **rien dans
+l'application ne le garantissait dans le temps**. Si le service change de conditions
+ou tombe, il faut modifier `carte.js` sur chaque poste.
+
+**Fait :**
+- Troisième fond gratuit ajouté, **OpenStreetMap**, en secours de la Géoplateforme.
+- **Attribution affichée en permanence** en bas de la carte. C'est une obligation de
+  licence, elle ne peut pas rester dans une note sous la barre d'outils. La mention
+  redondante qui s'y trouvait a été supprimée.
+- **Éditeur de fonds dans Configuration** : libellé, URL de tuile, zoom maximal,
+  attribution. Fonctionne avec tout service XYZ ou WMTS. Bouton de rétablissement
+  des fonds gratuits par défaut.
+- **Quatre contrôles avant enregistrement** : HTTPS obligatoire, repères `{z}`,
+  `{x}`, `{y}` présents, zoom entre 1 et 22, et **attribution non vide** — un fond
+  sans attribution est refusé.
+- Champ URL en zone multiligne monospace : une URL WMTS dépasse deux cents
+  caractères, illisible dans un champ d'une ligne sur téléphone.
+
+**Défauts corrigés au passage :**
+- Les libellés de l'éditeur n'avaient pas d'attribut `for` : aucun lien entre libellé
+  et champ pour un lecteur d'écran. Chaque champ porte désormais un identifiant.
+- L'audit comptait comme « texte tronqué » le contenu défilant d'un champ de saisie.
+  Un `input` fait défiler sa valeur par conception ; seul un libellé coupé est un
+  défaut. Règle corrigée.
+
+**Vérifications :** bascule entre les quatre fonds, attribution suivant le fond
+actif, refus d'une URL en HTTP, refus d'un fond sans attribution, persistance d'un
+fond personnalisé, tuiles réellement demandées à l'URL saisie, rétablissement des
+défauts, aucun libellé orphelin, audit d'affichage sans défaut sur dix
+configurations.
+
+**Non vérifiable ici :** les appels réels aux services IGN et OSM. La sortie réseau
+de l'environnement de développement est fermée ; les tuiles sont simulées par
+interception. À confirmer sur le terrain.
+
+---
+
 ## 18/09/2026 — Mesure affinée et ajustement cartographique (v0.4)
 
 **Demandes :** un bouton de relevé le plus précis possible sur les trois onglets de

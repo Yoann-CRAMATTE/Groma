@@ -57,8 +57,12 @@ async function inspecter(page) {
       if ((r.right > window.innerWidth + 0.5 || r.left < -0.5) && !ecrete(n)) {
         deborde.push(nom + ' « ' + txt + ' »');
       }
-      // feuilles uniquement : un conteneur qui défile volontairement n'est pas un défaut
-      if (!n.children.length && n.scrollWidth > n.clientWidth + 1) tronque.push(nom + ' « ' + txt + ' »');
+      // Feuilles uniquement, champs de saisie exclus : un input fait défiler sa
+      // valeur par conception, seul un libellé coupé est un défaut.
+      const saisie = /^(INPUT|TEXTAREA|SELECT)$/.test(n.tagName);
+      if (!saisie && !n.children.length && n.scrollWidth > n.clientWidth + 1) {
+        tronque.push(nom + ' « ' + txt + ' »');
+      }
     });
 
     // Un conteneur écrêtant ne doit pas cacher de défilement horizontal, sauf la

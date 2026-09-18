@@ -3,9 +3,9 @@
 > Mémoire de travail. À relire en début de session **avant** d'ouvrir le code,
 > à mettre à jour en fin de session. Évite de relire toute l'application à chaque fois.
 
-**Dernière mise à jour :** 18/09/2026 (v0.4)
+**Dernière mise à jour :** 18/09/2026 (v0.5)
 **Branche :** `claude/geoloc-web-app-duccxo`
-**Statut :** v0.4 fonctionnelle, testée en navigateur headless de 280 px à 1100 px, portrait et paysage.
+**Statut :** v0.5 fonctionnelle, testée en navigateur headless de 280 px à 1100 px, portrait et paysage.
 
 ---
 
@@ -20,7 +20,7 @@
 | `js/csv.js` | Sérialisation / lecture RFC 4180, BOM UTF-8, détection de séparateur | oui, aller-retour testé |
 | `js/store.js` | `localStorage` (points, config, compteurs) + IndexedDB (un handle par filière) | oui |
 | `js/geo.js` | API Geolocation, relevé ponctuel et série affinée | oui, agrégation testée |
-| `js/carte.js` | Visualiseur de tuiles WMTS/XYZ écrit à la main | oui, projection vérifiée |
+| `js/carte.js` | Visualiseur de tuiles WMTS/XYZ, fonds gratuits, validation | oui, projection vérifiée |
 | `js/app.js` | Construction du DOM, formulaires, liste, configuration | oui |
 | `serveur.py` | Serveur local — indispensable, le GPS refuse `file://` | oui |
 | `docs/RGPD.md` | Point de vigilance sur les données SPANC | oui |
@@ -53,6 +53,11 @@
    `precision_m` : il alimente `ecart_ajustement_m`.
 10. **La carte est la seule dépendance réseau.** Tout le reste fonctionne hors
    ligne. Une panne de tuiles doit rester un message, jamais un blocage.
+11. **Uniquement des fonds gratuits et sans clé.** Aucun service payant, aucun
+   quota, aucun compte. Tout fond ajouté passe quatre contrôles, dont
+   **attribution non vide** : c'est une obligation de licence.
+12. **L'attribution s'affiche en permanence sur la carte**, jamais dans un menu
+   ni derrière un geste.
 
 ## Décisions prises
 
@@ -73,8 +78,13 @@
 - **Visualiseur de tuiles écrit à la main** plutôt que Leaflet : le besoin se limite
   à déplacer un fond et lire le centre, soit environ 250 lignes contre une
   dépendance de 140 ko à suivre dans le temps.
-- **Fond IGN plutôt qu'OSM** : l'orthophoto permet de voir le regard ou le tampon,
-  et c'est le service public destiné à cet usage. Les URL restent remplaçables.
+- **Fond IGN en premier, OSM en secours** : l'orthophoto permet de voir le regard
+  ou le tampon, et c'est le service public destiné à cet usage. OSM dépanne si la
+  Géoplateforme tombe, mais sa politique d'usage proscrit les usages applicatifs
+  intensifs : ce n'est pas un fond de production.
+- **Fonds éditables depuis Configuration** plutôt que figés dans le code : un
+  service public peut changer ses conditions. Sans cette porte de sortie, il
+  faudrait modifier `carte.js` sur chaque poste.
 - **Repère fixe, carte mobile** : sur un téléphone, déplacer un marqueur au doigt
   le cache sous le doigt. Déplacer le fond sous une croix fixe, non.
 - **Lambert 93 calculé côté client** plutôt qu'importé : la conversion est courte et
@@ -96,8 +106,9 @@
 - [ ] Dédoublonnage à l'import sur `reference` en plus de `id` (saisie multi-appareils).
 - [ ] Export consolidé des trois filières, si le besoin d'une vue unique revient.
 - [ ] Mise en cache des tuiles pour l'ajustement hors réseau.
-- [ ] Vérifier sur le terrain les URL des flux IGN : non testables depuis
-      l'environnement de développement, dont la sortie réseau est fermée.
+- [ ] **Vérifier sur le terrain les URL des flux IGN et OSM** : non testables
+      depuis l'environnement de développement, dont la sortie réseau est fermée.
+      Si la Géoplateforme a changé, corriger depuis Configuration, pas dans le code.
 - [ ] Champ photo si le besoin se confirme — implique de sortir du CSV unique.
 
 ## Points de vigilance
