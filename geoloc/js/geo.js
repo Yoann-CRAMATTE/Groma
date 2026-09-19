@@ -181,7 +181,10 @@
             meilleure: meilleure,
             derniere: c.accuracy,
             ecoule: (Date.now() - debut) / 1000,
-            total: duree / 1000
+            total: duree / 1000,
+            // Agrégat provisoire : permet de poser le viseur dès le premier fixe
+            // et de le laisser se resserrer pendant que la série se poursuit.
+            position: agreger(mesures, debut)
           });
         }
       },

@@ -110,9 +110,10 @@ async function fermerMesure(page) {
   await page.waitForTimeout(200);
 }
 
+/** L'acquisition part seule à l'ouverture : il n'y a qu'à attendre le fixe. */
 async function releverPosition(page) {
-  await page.click('#eau-btn-gps');
   await page.waitForFunction(() => document.querySelector('#eau-pos-lat').textContent !== '—', { timeout: 10000 });
+  await page.waitForTimeout(250);
 }
 
 /** Le niveau 2 ne doit proposer que les modèles du type choisi au niveau 1. */
@@ -155,19 +156,12 @@ async function parcourir(page, etiquette) {
     await controler(page, etiquette + ' / ' + onglet);
   }
 
-  // Les deux fenêtres sont des surfaces d'interface à part entière, et la carte
-  // s'ouvre par-dessus la mesure : les deux états se contrôlent.
+  // La fenêtre de mesure porte la carte : une seule surface à contrôler, mais
+  // c'est la plus dense de l'application.
   await page.click('#onglet-eau');
   await ouvrirMesure(page);
   await releverPosition(page);
   await controler(page, etiquette + ' / mesure');
-
-  await page.click('#eau-btn-carte');
-  await page.waitForTimeout(500);
-  await controler(page, etiquette + ' / carte');
-  await page.click('#modale-fermer');
-  await page.waitForTimeout(150);
-
   await fermerMesure(page);
 }
 

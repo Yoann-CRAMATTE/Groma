@@ -4,6 +4,68 @@ Une entrée par session de travail, la plus récente en haut.
 
 ---
 
+## 19/09/2026 — Fenêtre de mesure carte-first (v0.9)
+
+**Demande :** à l'ouverture de la fenêtre de mesure, la géolocalisation se fait tout
+de suite et la carte s'affiche, viseur directement sur la position. Instructions et
+champs à remplir en dessous, en vertical pour le mobile. Si le positionnement n'est
+pas assez juste, on bouge la petite carte pour recentrer. Carte au zoom maximal.
+Infos de position (latitude, longitude, altitude, précision) sous la carte, puis
+l'observation et le bouton d'envoi. **Plus de boutons « Relevé rapide », « Précision
+maximale », « Centrer sur le point »** : la carte elle-même est l'outil de
+positionnement.
+
+**Fait :**
+- `contenuMesure()` réordonné : carte + viseur, barre de carte, coordonnées et écart,
+  état GPS, tableau de position, cascade, observation, boutons.
+- Les trois boutons d'acquisition disparaissent. `lancerLocalisation()` et
+  `basculerAffinage()` sont remplacés par `demarrerAcquisition()`, appelé par
+  `afficherMesure()` : la série part seule à l'ouverture.
+- La modale carte séparée (`#modale-carte`) est supprimée d'`index.html`, avec
+  `ouvrirCarte` / `fermerCarte` / `validerCarte`. La carte vit dans la fenêtre de
+  mesure, une instance à la fois.
+- `geo.js` : `surProgres` expose désormais l'agrégat courant (`position`). C'est ce
+  qui permet de poser le viseur dès le premier fixe et de le laisser se resserrer
+  pendant que la série continue, au lieu d'attendre trente secondes.
+- `positionRetenue()` : ce qui est enregistré est le centre de la carte. Au-delà de
+  50 cm d'écart avec la mesure, `position_ajustee = oui` et l'écart est tracé.
+
+**Deux drapeaux, pas un.** `adopte` (la série remplace la mesure de référence) et
+`recentre` (la carte suit la mesure) sont distincts. Un geste sur la carte coupe
+`recentre` seul : le GPS continue d'affiner la précision pendant que le viseur reste
+où l'agent l'a posé. Les confondre aurait obligé à choisir entre « recaler à la main »
+et « laisser le GPS s'améliorer ».
+
+**En modification, le GPS n'écrase rien.** `afficherMesure(..., { adopte: false })` :
+la série tourne pour être disponible, mais la position enregistrée reste en place.
+Le bouton GPS de la carte l'adopte si l'agent le décide.
+
+**Deux défauts trouvés au test, corrigés :**
+- *La carte n'ouvrait pas au zoom maximal.* Le plafond dépend de la latitude du
+  centre, et `centrer()` fixe le centre **avant** de borner le zoom demandé : un
+  `zoomMax()` calculé d'avance valait pour la latitude précédente. D'où
+  `ZOOM_MAXIMAL = 99`, réclamé et borné par la carte elle-même. Sans position
+  connue à l'ouverture, le zoom se pose au premier fixe (`zoomPose`).
+- *Un échec GPS laissait l'agent sans issue.* Les boutons d'acquisition ayant
+  disparu, rien ne permettait de relancer. Le bouton GPS de la carte devient la
+  reprise quand aucune mesure n'existe, et le message d'échec y renvoie.
+
+**Le bouton porte « ⌖ GPS », pas « ⌖ » seul.** Le glyphe U+2316 manque à certaines
+polices Android, et le message d'échec renvoie à ce bouton : un carré vide aurait
+rendu la consigne incompréhensible.
+
+**Vérifié :** audit responsive sur les quinze formats, aucun défaut, aucune erreur JS.
+Test fonctionnel dédié : acquisition sans clic, recalage au doigt, retour au GPS,
+écriture de la position recalée avec son écart, conservation de la position en
+modification, et comportement complet quand le GPS ne répond pas.
+
+**Laissé de côté :** au zoom maximal (5 cm/px), le disque de précision de 6 m couvre
+tout le cadre et teinte l'orthophoto qu'on cherche justement à lire pour recaler.
+L'information est juste — elle dit que le GPS ne sait pas mieux — mais elle gêne le
+geste. Noté dans le reste à faire plutôt que tranché seul.
+
+---
+
 ## 19/09/2026 — Écran allégé, saisie en fenêtre, favoris (v0.8)
 
 **Demande :** sur l'onglet EAU — un bouton « Créer une mesure », la liste en dessous,

@@ -3,13 +3,14 @@
 > Mémoire de travail. À relire en début de session **avant** d'ouvrir le code,
 > à mettre à jour en fin de session. Évite de relire toute l'application à chaque fois.
 
-**Dernière mise à jour :** 19/09/2026 (v0.8)
+**Dernière mise à jour :** 19/09/2026 (v0.9)
 **Branche :** `claude/geoloc-web-app-duccxo`
-**Statut :** v0.8 fonctionnelle. L'écran d'un onglet = **bouton « Créer une mesure »,
-recherche, liste**. Toute la saisie est passée dans une fenêtre par-dessus. Étoile par
-ligne : elle met en favori **la combinaison** type/modèle/détail, reposable d'un appui
-dans la fenêtre. Testée en navigateur headless sur quinze formats, de 280 px à
-1180 px, portrait et paysage.
+**Statut :** v0.9 fonctionnelle. L'écran d'un onglet = **bouton « Créer une mesure »,
+recherche, liste**. Toute la saisie est passée dans une fenêtre par-dessus, et cette
+fenêtre est **carte-first** : la carte s'ouvre en haut au zoom maximal, viseur fixe au
+centre, l'acquisition GPS part seule, puis viennent position, cascade et observation.
+Étoile par ligne : elle met en favori **la combinaison** type/modèle/détail. Testée en
+navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysage.
 
 ---
 
@@ -64,6 +65,11 @@ dans la fenêtre. Testée en navigateur headless sur quinze formats, de 280 px �
    fond est ce qu'on *consulte* ; la saisie vit dans une fenêtre par-dessus.
    **Les trois onglets partagent ce code** (`construireVueFiliere`) : une
    modification de mise en forme tombe sur les trois sans recopie.
+9 bis. **Ordre de la fenêtre de mesure, non négociable** : carte au zoom maximal avec
+   viseur fixe, barre de carte (fonds, zoom, GPS), coordonnées et écart, état GPS,
+   tableau de position, cascade, observation, boutons. La carte **est** l'outil de
+   positionnement : aucun bouton d'acquisition, l'agent recale en déplaçant le fond
+   sous le viseur.
 10. **La cascade descend, jamais l'inverse.** Changer le type vide le modèle et le
    détail devenus impossibles. Une valeur venue d'un relevé enregistré échappe seule
    à cette règle : elle est réaffichée marquée *(hors catalogue)* plutôt qu'effacée.
@@ -75,6 +81,13 @@ dans la fenêtre. Testée en navigateur headless sur quinze formats, de 280 px �
    récepteur.** `precision_m` = meilleure `accuracy` observée. La dispersion est
    mesurée et stockée à part. Un recalage cartographique ne touche pas
    `precision_m` : il alimente `ecart_ajustement_m`.
+12 bis. **Le viseur fait foi, la mesure GPS reste la référence.** Ce qui est écrit,
+   c'est le centre de la carte (`positionRetenue()`). Au-delà de 50 cm d'écart avec
+   la mesure, `position_ajustee` passe à `oui` et l'écart est tracé. Deux drapeaux
+   pilotent ça dans `carteEtat` : `adopte` (la série GPS remplace la mesure de
+   référence) et `recentre` (la carte suit la mesure). Un geste sur la carte coupe
+   `recentre` mais pas `adopte` : le GPS continue d'affiner pendant que le viseur
+   reste où l'agent l'a posé.
 13. **La carte est la seule dépendance réseau.** Tout le reste fonctionne hors
    ligne. Une panne de tuiles doit rester un message, jamais un blocage.
 14. **Uniquement des fonds gratuits et sans clé.** Aucun service payant, aucun
@@ -174,6 +187,10 @@ dans la fenêtre. Testée en navigateur headless sur quinze formats, de 280 px �
 - [ ] Renommage global d'un type de matériel depuis l'interface (aujourd'hui : tableur).
 - [ ] Consigne aux agents sur ce qu'on n'écrit pas dans `observations` (cf. RGPD).
 - [ ] Réordonner les favoris (aujourd'hui : ordre d'ajout).
+- [ ] **Arbitrer le disque de précision au zoom maximal** : à 5 cm/px, un rayon de
+      6 m couvre tout le cadre et teinte l'orthophoto qu'on cherche justement à
+      lire. L'information est juste, mais elle gêne le geste de recalage. Options :
+      contour seul au-delà d'un seuil, ou disque conservé. À trancher avec l'usage.
 
 ## Points de vigilance
 

@@ -223,17 +223,8 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* ---------- Acquisition GPS ---------- */
 
-.actions-gps { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-.btn-gps { font-size: 0.95rem; min-height: 52px; }
-
-/* Série en cours : le bouton devient l'arrêt. */
-.btn-actif {
-  background: var(--alerte);
-  border-color: var(--alerte);
-  color: #17120a;
-}
-
+/* L'acquisition n'a plus de bouton : elle part à l'ouverture de la fenêtre de
+   mesure. Seule la jauge dit que la série tourne encore. */
 .progression {
   height: 4px;
   background: var(--fond-3);
@@ -808,6 +799,37 @@ body[data-modale] { overflow: hidden; }
 
 .carte-message:empty { display: none; }
 
+/* Dans la fenêtre de mesure, la carte partage la hauteur avec le formulaire :
+   elle occupe le haut de l'écran sans repousser la cascade hors de vue. */
+.carte--mesure { height: clamp(190px, 34vh, 320px); }
+
+/* Tant qu'aucun fixe n'est arrivé, le viseur ne désigne rien : on masque la
+   carte plutôt que de laisser croire que la croix est déjà posée. */
+.carte-attente {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(11, 15, 20, 0.82);
+  color: var(--texte-faible);
+  font-size: 0.86rem;
+  letter-spacing: 0.04em;
+}
+
+.carte-attente[hidden] { display: none; }
+
+/* Libellé en toutes lettres : le glyphe ⌖ manque à certaines polices Android,
+   et le message d'échec du GPS renvoie à ce bouton. */
+.carte-zoom .carte-gps {
+  width: auto;
+  padding: 0 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 /* Mention de licence : visible en permanence, jamais masquée par un geste. */
 .carte-attribution {
   position: absolute;
@@ -960,10 +982,6 @@ body[data-modale] { overflow: hidden; }
   /* Trois listes côte à côte : la cascade se lit en une ligne, gauche à droite. */
   .cascade { grid-template-columns: repeat(3, 1fr); padding: 14px; }
 
-  /* Relevé rapide, précision maximale et carte tiennent sur un rang. */
-  .actions-gps { grid-template-columns: repeat(3, 1fr); }
-  .btn-gps { min-height: 56px; }
-
   input, select, textarea { min-height: 48px; font-size: 1rem; }
   button { min-height: 48px; }
 
@@ -971,6 +989,7 @@ body[data-modale] { overflow: hidden; }
   .cat-table-hote { max-height: 420px; }
 
   .carte { height: clamp(320px, 52vh, 560px); }
+  .carte--mesure { height: clamp(240px, 38vh, 400px); }
   .modale-fenetre { max-width: 720px; padding: 20px; }
   .btn-creer { min-height: 60px; }
 
@@ -1010,6 +1029,9 @@ body[data-modale] { overflow: hidden; }
   main { padding-top: 10px; }
   .bloc { padding: 10px 12px; margin-bottom: 10px; }
   textarea { min-height: 56px; }
+
+  /* Écran couché : la carte doit laisser voir la cascade sans tout faire défiler. */
+  .carte--mesure { height: clamp(150px, 44vh, 210px); }
 }
 
 /* iPhone SE, Galaxy Fold replié : chaque pixel de largeur compte. */
@@ -1035,13 +1057,10 @@ body[data-modale] { overflow: hidden; }
   .fichier .actions button { width: 100%; }
   .fichier .actions button:last-child { grid-column: 1 / -1; }
 
-  /* « Précision maximale » ne tient pas à côté de « Relevé rapide ». */
-  .actions-gps { grid-template-columns: 1fr; gap: 8px; }
-  .btn-gps { min-height: 48px; font-size: 0.9rem; }
-
   .modale { padding: 8px; }
   .modale-fenetre { padding: 11px; }
   .carte { height: clamp(200px, 40vh, 320px); }
+  .carte--mesure { height: clamp(170px, 30vh, 260px); }
   .carte-barre { gap: 8px; }
   .carte-fond { padding: 7px 9px; font-size: 0.72rem; }
   .carte-echelle { margin-left: 0; }

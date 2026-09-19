@@ -17,8 +17,11 @@
   // gagne plus en justesse, on grossit seulement l'interpolation de l'image.
   var ETENDUE_CARTE_M = 10;
 
-  var LIBELLE_RAPIDE = '⌖  Relevé rapide';
-  var LIBELLE_PRECIS = '◎  Précision maximale';
+  // Le plafond de zoom dépend de la latitude du centre, que `centrer` fixe avant
+  // de borner la valeur demandée : réclamer plus que le maximum est le seul
+  // moyen sûr d'obtenir le maximum réel du nouveau centre.
+  var ZOOM_MAXIMAL = 99;
+
   var L93 = global.Lambert93;
 
   var etat = {
@@ -356,9 +359,11 @@
   // -------------------------------------------------- fenêtre de mesure
 
   /**
-   * Toute la saisie tient dans une fenêtre : position d'abord, matériel ensuite.
-   * C'est l'ordre du terrain — on arrive sur l'ouvrage, on se géolocalise, puis
-   * on regarde ce qu'on a sous les yeux. L'écran de fond, lui, reste la liste.
+   * Toute la saisie tient dans une fenêtre, et la carte en occupe le haut :
+   * c'est l'ordre du terrain — on arrive sur l'ouvrage, le GPS part tout seul,
+   * le viseur se pose, on le recale à la main si le fixe tombe à côté, puis on
+   * décrit ce qu'on a sous les yeux. Aucun bouton d'acquisition : la carte
+   * *est* l'outil de positionnement.
    */
   function contenuMesure(f) {
     var lignes = [
@@ -373,31 +378,47 @@
       ]));
     });
 
+    // La croix est fixe au centre : c'est la carte qui glisse dessous, donc le
+    // point retenu est toujours celui que l'agent voit au milieu de l'écran.
+    var carteHote = el('div', { classe: 'carte carte--mesure', id: f.id + '-carte' }, [
+      el('div', { classe: 'carte-croix', 'aria-hidden': 'true' }),
+      el('p', { classe: 'carte-message', id: f.id + '-carte-message' }),
+      el('div', { classe: 'carte-attente', id: f.id + '-carte-attente' }, [
+        el('span', { texte: 'Acquisition GPS…' })
+      ])
+    ]);
+
     var position = el('div', { classe: 'zone-position' }, [
-      el('div', { classe: 'actions-gps' }, [
-        el('button', {
-          classe: 'btn-gps', type: 'button', id: f.id + '-btn-gps',
-          texte: LIBELLE_RAPIDE,
-          title: 'Une seule mesure, immédiate',
-          onclick: function () { lancerLocalisation(f.id); }
-        }),
-        el('button', {
-          classe: 'btn-primaire btn-gps', type: 'button', id: f.id + '-btn-precis',
-          texte: LIBELLE_PRECIS,
-          title: 'Mesure continue puis agrégation des meilleures positions',
-          onclick: function () { basculerAffinage(f.id); }
-        }),
-        el('button', {
-          classe: 'btn-carte btn-gps', type: 'button', id: f.id + '-btn-carte',
-          texte: '🗺  Centrer sur le point', disabled: 'disabled',
-          onclick: function () { ouvrirCarte(f.id); }
-        })
-      ]),
+      carteHote,
       el('div', { classe: 'progression', id: f.id + '-progression', hidden: 'hidden' }, [
         el('div', { classe: 'progression-barre', id: f.id + '-progression-barre' })
       ]),
-      dl,
-      el('p', { classe: 'etat-gps', id: f.id + '-etat-gps' })
+      el('div', { classe: 'carte-barre' }, [
+        el('div', { classe: 'carte-fonds', id: f.id + '-carte-fonds', role: 'group', 'aria-label': 'Fond de carte' }),
+        el('div', { classe: 'carte-zoom' }, [
+          el('button', {
+            type: 'button', id: f.id + '-carte-gps', classe: 'carte-gps',
+            'aria-label': 'Reposer le viseur sur la mesure GPS', title: 'Revenir au GPS',
+            texte: '⌖ GPS', disabled: 'disabled',
+            onclick: function () { revenirAuGps(f.id); }
+          }),
+          el('button', {
+            type: 'button', id: f.id + '-carte-moins', 'aria-label': 'Dézoomer', texte: '−',
+            onclick: function () { zoomerCarte(f.id, -1); }
+          }),
+          el('button', {
+            type: 'button', id: f.id + '-carte-plus', 'aria-label': 'Zoomer', texte: '+',
+            onclick: function () { zoomerCarte(f.id, 1); }
+          })
+        ])
+      ]),
+      el('p', { classe: 'carte-infos' }, [
+        el('span', { classe: 'carte-coord', id: f.id + '-carte-coord', texte: '—' }),
+        el('span', { classe: 'carte-ecart', id: f.id + '-carte-ecart', texte: '—' }),
+        el('span', { classe: 'carte-echelle', id: f.id + '-carte-echelle', texte: '—' })
+      ]),
+      el('p', { classe: 'etat-gps', id: f.id + '-etat-gps' }),
+      dl
     ]);
 
     // Les listes liées décrivent l'ouvrage, la note dit ce qui cloche. Le reste
@@ -449,19 +470,57 @@
     ]);
   }
 
-  /** Une saisie est entamée dès qu'il y a une position ou un début de description. */
+  /**
+   * Une saisie est entamée dès qu'un champ est rempli ou que le viseur a été
+   * recalé à la main. La position GPS seule ne compte pas : elle arrive toute
+   * seule à l'ouverture, elle ne représente aucun travail de l'agent.
+   */
   function mesureEntamee(filiereId) {
-    if (etat.positions[filiereId]) return true;
+    if (carteEtat && carteEtat.filiereId === filiereId && carteEtat.deplacee) return true;
     var valeurs = lireFormulaire(filiereId);
     return Object.keys(valeurs).some(function (k) { return !!valeurs[k]; });
   }
 
-  function afficherMesure(filiereId, titre) {
+  /**
+   * @param {{adopte:boolean}} options `adopte` faux en modification : la série
+   *        GPS tourne pour être disponible, mais ne remplace pas d'office la
+   *        position déjà enregistrée.
+   */
+  function afficherMesure(filiereId, titre, options) {
+    var o = options || {};
+    var adopte = o.adopte !== false;
     var modale = document.getElementById(filiereId + '-modale-mesure');
     document.getElementById(filiereId + '-titre-mesure').textContent = titre;
     rafraichirFavoris(filiereId);
     modale.hidden = false;
     majVerrouDefilement();
+
+    // La carte ne se construit qu'une fois la fenêtre visible : sans largeur ni
+    // hauteur, aucune tuile n'est calculable.
+    detruireCarteMesure();
+    carteEtat = {
+      filiereId: filiereId,
+      adopte: adopte,
+      recentre: adopte,
+      deplacee: false,
+      centreImpose: null,
+      gps: null,
+      zoomPose: false
+    };
+    creerCarteMesure(filiereId);
+
+    var base = etat.positions[filiereId] || dernierePositionConnue(filiereId);
+    if (base) {
+      centrerCarte(base.latitude, base.longitude, ZOOM_MAXIMAL);
+      carteEtat.zoomPose = true;
+    }
+
+    majMarqueurs(filiereId);
+    majAttente(filiereId);
+    rafraichirInfosCarte(filiereId);
+    afficherPosition(filiereId);
+    demarrerAcquisition(filiereId);
+
     // Le focus va sur la fenêtre, pas sur le premier bouton : sur un écran court,
     // amener un bouton en vue fait défiler le contenu et escamote titre et croix.
     var fenetre = document.getElementById(filiereId + '-fenetre-mesure');
@@ -480,6 +539,7 @@
     if (!sansConfirmation && mesureEntamee(filiereId)
       && !confirm('Abandonner cette mesure ? Ce qui a été saisi sera perdu.')) return;
 
+    detruireCarteMesure();
     reinitialiserFormulaire(filiereId);
     modale.hidden = true;
     majVerrouDefilement();
@@ -525,112 +585,96 @@
 
   // ---------------------------------------------------------------- GPS
 
-  function lancerLocalisation(filiereId) {
-    var bouton = document.getElementById(filiereId + '-btn-gps');
+  /**
+   * L'acquisition part seule à l'ouverture de la fenêtre et se poursuit en
+   * série : le viseur se pose au premier fixe, puis se resserre. Rien à
+   * déclencher, rien à arrêter — enregistrer clôt la série là où elle en est.
+   */
+  function demarrerAcquisition(filiereId) {
     var info = document.getElementById(filiereId + '-etat-gps');
-    bouton.disabled = true;
-    bouton.textContent = '⌖  Acquisition…';
-    info.setAttribute('data-niveau', 'info');
-    info.textContent = 'Recherche du signal GPS…';
-
-    Geo.localiser(etat.config).then(function (pos) {
-      pos.methode = 'ponctuelle';
-      pos.mesures = 1;
-      pos.dispersion = null;
-      pos.duree = null;
-      etat.positions[filiereId] = pos;
-      afficherPosition(filiereId, pos);
-      if (pos.precision > etat.config.precisionMax) {
-        info.setAttribute('data-niveau', 'alerte');
-        info.textContent = 'Précision ' + Math.round(pos.precision) + ' m — au-delà du seuil de '
-          + etat.config.precisionMax + ' m. Relevé possible, mais à contrôler.';
-      } else {
-        info.setAttribute('data-niveau', 'ok');
-        info.textContent = 'Position acquise à ' + dateCourteFr(pos.horodatage)
-          + ' — précision ' + Math.round(pos.precision) + ' m.';
-      }
-    }).catch(function (err) {
-      info.setAttribute('data-niveau', 'erreur');
-      info.textContent = err.message;
-    }).then(function () {
-      bouton.disabled = false;
-      bouton.textContent = LIBELLE_RAPIDE;
-    });
-  }
-
-  /** Démarre la série, ou la clôt si elle tourne déjà. */
-  function basculerAffinage(filiereId) {
-    var serie = etat.affinage[filiereId];
-    if (serie) { serie.arreter(); return; }
-
-    var bouton = document.getElementById(filiereId + '-btn-precis');
-    var rapide = document.getElementById(filiereId + '-btn-gps');
-    var info = document.getElementById(filiereId + '-etat-gps');
-    var barre = document.getElementById(filiereId + '-progression-barre');
     var jauge = document.getElementById(filiereId + '-progression');
+    var barre = document.getElementById(filiereId + '-progression-barre');
 
-    rapide.disabled = true;
-    bouton.textContent = '■  Arrêter et valider';
-    bouton.classList.add('btn-actif');
+    info.setAttribute('data-niveau', 'info');
+    info.textContent = 'Recherche du signal GPS… restez immobile au-dessus de l\'ouvrage.';
     jauge.hidden = false;
     barre.style.width = '0%';
-    info.setAttribute('data-niveau', 'info');
-    info.textContent = 'Acquisition en cours… restez immobile au-dessus de l\'ouvrage.';
 
-    // Rafraîchit la barre même sans nouvelle mesure : le GPS peut rester muet.
+    // La barre avance même sans nouvelle mesure : le GPS peut rester muet.
     var debut = Date.now();
     var total = Math.max(5, etat.config.dureeAffinage || 30);
     var tic = setInterval(function () {
-      var part = Math.min(100, (Date.now() - debut) / (total * 1000) * 100);
-      barre.style.width = part + '%';
+      barre.style.width = Math.min(100, (Date.now() - debut) / (total * 1000) * 100) + '%';
     }, 200);
 
-    function nettoyer() {
-      clearInterval(tic);
-      etat.affinage[filiereId] = null;
-      rapide.disabled = false;
-      bouton.textContent = LIBELLE_PRECIS;
-      bouton.classList.remove('btn-actif');
-      jauge.hidden = true;
-    }
-
-    var serie2 = Geo.localiserPrecis(etat.config, function (p) {
+    var serie = Geo.localiserPrecis(etat.config, function (p) {
+      if (p.position) appliquerFixGps(filiereId, p.position);
+      info.setAttribute('data-niveau', 'info');
       info.textContent = p.mesures + ' mesure(s) — meilleure ' + Math.round(p.meilleure)
-        + ' m, dernière ' + Math.round(p.derniere) + ' m';
+        + ' m, dernière ' + Math.round(p.derniere) + ' m.';
     });
-    etat.affinage[filiereId] = serie2;
+    etat.affinage[filiereId] = serie;
+    rafraichirInfosCarte(filiereId);
 
-    serie2.promesse.then(function (pos) {
-      etat.positions[filiereId] = pos;
-      afficherPosition(filiereId, pos);
-
-      var messages = [Math.round(pos.duree) + ' s, ' + pos.mesures + ' mesure(s) dont '
-        + pos.retenues + ' retenue(s)', 'précision ' + Math.round(pos.precision) + ' m',
-        'dispersion ' + pos.dispersion.toFixed(1) + ' m'];
+    serie.promesse.then(function (pos) {
+      appliquerFixGps(filiereId, pos);
+      var resume = Math.round(pos.duree) + ' s, ' + pos.mesures + ' mesure(s) dont '
+        + pos.retenues + ' retenue(s) — précision ' + Math.round(pos.precision)
+        + ' m, dispersion ' + pos.dispersion.toFixed(1) + ' m';
 
       if (pos.precision > etat.config.precisionMax) {
         info.setAttribute('data-niveau', 'alerte');
-        info.textContent = messages.join(' — ') + '. Au-delà du seuil de '
+        info.textContent = resume + '. Au-delà du seuil de '
           + etat.config.precisionMax + ' m : à contrôler.';
       } else {
         info.setAttribute('data-niveau', 'ok');
-        info.textContent = messages.join(' — ') + '.';
+        info.textContent = resume + '.';
       }
     }).catch(function (err) {
       info.setAttribute('data-niveau', 'erreur');
-      info.textContent = err.message;
-    }).then(nettoyer);
+      // Sans bouton d'acquisition, le bouton GPS de la carte est la seule reprise.
+      info.textContent = err.message + ' Relancez avec le bouton GPS de la carte.';
+    }).then(function () {
+      clearInterval(tic);
+      etat.affinage[filiereId] = null;
+      jauge.hidden = true;
+      rafraichirInfosCarte(filiereId);
+    });
   }
 
-  function afficherPosition(filiereId, pos) {
-    var boutonCarte = document.getElementById(filiereId + '-btn-carte');
-    if (boutonCarte) boutonCarte.disabled = !pos;
+  /**
+   * Un relevé arrive. Il nourrit toujours la mesure de référence, mais il ne
+   * déplace le viseur que si l'agent ne l'a pas encore pris en main : un
+   * recalage manuel ne doit pas être effacé par le fixe suivant.
+   */
+  function appliquerFixGps(filiereId, pos) {
+    if (!carteEtat || carteEtat.filiereId !== filiereId) return;
+    carteEtat.gps = pos;
+    if (carteEtat.adopte) etat.positions[filiereId] = pos;
 
+    majMarqueurs(filiereId);
+    majAttente(filiereId);
+    if (carteEtat.recentre) {
+      // Le premier fixe pose aussi le zoom : sans centre connu à l'ouverture, le
+      // plafond n'était pas calculable.
+      centrerCarte(pos.latitude, pos.longitude, carteEtat.zoomPose ? undefined : ZOOM_MAXIMAL);
+      carteEtat.zoomPose = true;
+    }
+    rafraichirInfosCarte(filiereId);
+    afficherPosition(filiereId);
+  }
+
+  /** Le tableau de position montre ce qui sera écrit — viseur compris. */
+  function afficherPosition(filiereId) {
     function poser(suffixe, valeur) {
       var n = document.getElementById(filiereId + '-pos-' + suffixe);
-      n.textContent = valeur === '' || valeur === null ? '—' : valeur;
-      n.className = (valeur === '' || valeur === null) ? 'vide' : '';
+      if (!n) return;
+      var vide = valeur === '' || valeur === null || valeur === undefined;
+      n.textContent = vide ? '—' : valeur;
+      n.className = vide ? 'vide' : '';
     }
+
+    var pos = positionRetenue(filiereId);
     if (!pos) {
       ['lat', 'lon', 'alt', 'prec', 'disp', 'nb', 'x93', 'y93'].forEach(function (s) { poser(s, null); });
       return;
@@ -650,6 +694,28 @@
       poser('x93', null);
       poser('y93', null);
     }
+  }
+
+  /**
+   * Ce qui sera enregistré : la mesure GPS, recalée sur le viseur dès que
+   * l'agent a déplacé la carte. La précision annoncée décrit la qualité de la
+   * MESURE : un recalage manuel ne l'améliore pas, l'écart est tracé à part.
+   */
+  function positionRetenue(filiereId) {
+    var base = etat.positions[filiereId];
+    if (!base) return null;
+    if (!carte || !carteEtat || carteEtat.filiereId !== filiereId) return base;
+
+    var c = carte.centre();
+    var ecart = Carte.distance(c, base);
+    if (ecart < 0.5) return base;
+
+    var pos = Object.assign({}, base);
+    pos.latitude = c.latitude;
+    pos.longitude = c.longitude;
+    pos.ajustee = true;
+    pos.ecartAjustement = ecart;
+    return pos;
   }
 
   // ---------------------------------------------------------------- formulaire
@@ -694,7 +760,8 @@
     });
     etat.edition[filiereId] = null;
     etat.positions[filiereId] = null;
-    afficherPosition(filiereId, null);
+    afficherPosition(filiereId);
+    majAttente(filiereId);
     var info = document.getElementById(filiereId + '-etat-gps');
     info.textContent = '';
     info.removeAttribute('data-niveau');
@@ -710,7 +777,7 @@
     }
 
     var enEdition = etat.edition[filiereId];
-    var pos = etat.positions[filiereId];
+    var pos = positionRetenue(filiereId);
     if (!pos && !enEdition) {
       toast('Relevez la position avant d\'enregistrer.', 'erreur');
       return;
@@ -872,13 +939,11 @@
         ecartAjustement: p.ecart_ajustement_m ? Number(p.ecart_ajustement_m) : 0,
         horodatage: p.date_saisie
       };
-      afficherPosition(filiereId, etat.positions[filiereId]);
     }
     document.getElementById(filiereId + '-btn-valider').textContent = 'Mettre à jour ' + (p.reference || '');
-    var info = document.getElementById(filiereId + '-etat-gps');
-    info.setAttribute('data-niveau', 'info');
-    info.textContent = 'Modification en cours. « Localiser » remplace la position enregistrée.';
-    afficherMesure(filiereId, 'Modifier ' + (p.reference || 'ce relevé'));
+    // `adopte` faux : la position enregistrée reste en place, le GPS tourne sans
+    // l'écraser. Le bouton ⌖ de la carte l'adopte si l'agent le décide.
+    afficherMesure(filiereId, 'Modifier ' + (p.reference || 'ce relevé'), { adopte: false });
   }
 
   /**
@@ -892,7 +957,7 @@
     poserCascade(filiereId, p);
 
     afficherMesure(filiereId, 'Nouvelle mesure');
-    toast('Matériel repris. Relevez la nouvelle position.', 'info');
+    toast('Matériel repris. Le GPS relève la nouvelle position.', 'info');
   }
 
   function supprimerPoint(filiereId, id) {
@@ -910,7 +975,8 @@
   // ---------------------------------------------------------------- carte
 
   var carte = null;
-  var carteEtat = null; // { filiereId, origine, declencheur }
+  // { filiereId, adopte, recentre, deplacee, centreImpose, gps }
+  var carteEtat = null;
 
   /**
    * Fonds réellement utilisés : ceux saisis en configuration, sinon ceux fournis
@@ -935,30 +1001,151 @@
     return cm < 100 ? Math.round(cm) + ' cm/px' : metresParPixel.toFixed(1) + ' m/px';
   }
 
-  function rafraichirInfosCarte() {
+  function creerCarteMesure(filiereId) {
+    var hote = document.getElementById(filiereId + '-carte');
+    var message = document.getElementById(filiereId + '-carte-message');
+    message.textContent = '';
+
+    var fonds = fondsUtilisables();
+    carte = Carte.creerCarte(hote, {
+      urls: fonds,
+      fond: fonds[etat.config.fondCarte] ? etat.config.fondCarte : Object.keys(fonds)[0],
+      etendueMinM: ETENDUE_CARTE_M,
+      surChangement: function () { surChangementCarte(filiereId); },
+      surTuiles: function (t) {
+        message.textContent = t.perdu
+          ? 'Fond de carte indisponible — réseau absent ou service injoignable. '
+            + 'Le viseur et les coordonnées restent utilisables.'
+          : '';
+      }
+    });
+    construireChoixFonds(filiereId);
+  }
+
+  function detruireCarteMesure() {
+    if (carte) { carte.detruire(); carte = null; }
+    carteEtat = null;
+  }
+
+  /** Recentrage commandé par l'application : ne compte pas comme un geste. */
+  function centrerCarte(lat, lon, z) {
+    if (!carte || !carteEtat) return;
+    carteEtat.centreImpose = { latitude: lat, longitude: lon };
+    carte.centrer(lat, lon, z);
+  }
+
+  /**
+   * Le centre n'a pu bouger que par un geste : tout recentrage applicatif passe
+   * par centrerCarte(). Dès que l'agent déplace la carte, le suivi automatique
+   * s'arrête — mais la série GPS continue d'affiner la mesure de référence.
+   */
+  function surChangementCarte(filiereId) {
+    if (!carte || !carteEtat || carteEtat.filiereId !== filiereId) return;
+    var c = carte.centre();
+    var impose = carteEtat.centreImpose;
+
+    if (impose && (Math.abs(c.latitude - impose.latitude) > 1e-9
+      || Math.abs(c.longitude - impose.longitude) > 1e-9)) {
+      carteEtat.centreImpose = { latitude: c.latitude, longitude: c.longitude };
+      carteEtat.recentre = false;
+      carteEtat.deplacee = true;
+    }
+    rafraichirInfosCarte(filiereId);
+    afficherPosition(filiereId);
+  }
+
+  function zoomerCarte(filiereId, delta) {
+    if (!carte) return;
+    carte.zoomer(delta);
+    rafraichirInfosCarte(filiereId);
+  }
+
+  /**
+   * Repose le viseur sur le GPS et lui rend la main. Si rien n'a jamais été
+   * relevé, c'est au contraire une relance : sans bouton d'acquisition, c'est
+   * la seule sortie après un échec du GPS.
+   */
+  function revenirAuGps(filiereId) {
+    if (!carte || !carteEtat) return;
+    if (carteEtat.gps) etat.positions[filiereId] = carteEtat.gps;
+    var base = etat.positions[filiereId];
+    if (!base) {
+      if (!etat.affinage[filiereId]) demarrerAcquisition(filiereId);
+      return;
+    }
+
+    carteEtat.adopte = true;
+    carteEtat.recentre = true;
+    carteEtat.deplacee = false;
+    centrerCarte(base.latitude, base.longitude);
+    majMarqueurs(filiereId);
+    rafraichirInfosCarte(filiereId);
+    afficherPosition(filiereId);
+  }
+
+  function majMarqueurs(filiereId) {
+    if (!carte) return;
+    var base = etat.positions[filiereId];
+    if (!base) { carte.marqueurs([]); return; }
+
+    carte.marqueurs([
+      { latitude: base.latitude, longitude: base.longitude, type: 'gps', titre: 'Position mesurée' },
+      { latitude: base.latitude, longitude: base.longitude, type: 'precision',
+        rayonM: Math.max(base.precision || 0, 0.5), titre: 'Rayon de précision annoncé' }
+    ]);
+  }
+
+  /** Voile posé sur la carte tant qu'aucun fixe n'est arrivé. */
+  function majAttente(filiereId) {
+    var n = document.getElementById(filiereId + '-carte-attente');
+    if (n) n.hidden = !!etat.positions[filiereId];
+  }
+
+  /**
+   * Centre de repli avant le premier fixe : le dernier relevé de la filière.
+   * On travaille presque toujours dans le même secteur — mieux vaut ça qu'une
+   * volée de tuiles au milieu de l'Atlantique.
+   */
+  function dernierePositionConnue(filiereId) {
+    var candidats = pointsDe(filiereId).filter(function (p) { return p.latitude && p.longitude; })
+      .sort(function (a, b) { return (b.date_saisie || '').localeCompare(a.date_saisie || ''); });
+    if (!candidats.length) return null;
+    return { latitude: Number(candidats[0].latitude), longitude: Number(candidats[0].longitude) };
+  }
+
+  function rafraichirInfosCarte(filiereId) {
     if (!carte || !carteEtat) return;
     var c = carte.centre();
+    var base = etat.positions[filiereId];
 
-    document.getElementById('carte-coord').textContent =
+    document.getElementById(filiereId + '-carte-coord').textContent =
       nombre(c.latitude, 6) + '  ·  ' + nombre(c.longitude, 6);
 
-    var ecart = Carte.distance(c, carteEtat.origine);
-    var champ = document.getElementById('carte-ecart');
-    champ.textContent = ecart < 0.5 ? 'sur le point GPS' : 'déplacé de ' + ecart.toFixed(1) + ' m';
-    champ.className = 'carte-ecart' + (ecart > carteEtat.origine.precision ? ' ecart-fort' : '');
+    var champ = document.getElementById(filiereId + '-carte-ecart');
+    if (!base) {
+      champ.textContent = 'en attente du GPS';
+      champ.className = 'carte-ecart';
+    } else {
+      var ecart = Carte.distance(c, base);
+      champ.textContent = ecart < 0.5 ? 'sur le point GPS' : 'viseur décalé de ' + ecart.toFixed(1) + ' m';
+      champ.className = 'carte-ecart' + (ecart > (base.precision || 0) ? ' ecart-fort' : '');
+    }
 
     // Le facteur d'agrandissement est affiché : au-delà du zoom natif du fond,
     // l'image est interpolée et ne prouve plus rien de ce qu'elle montre.
     var sur = carte.surZoom();
-    document.getElementById('carte-echelle').textContent =
+    document.getElementById(filiereId + '-carte-echelle').textContent =
       formaterEchelle(carte.resolution()) + (sur ? '  ·  image agrandie ×' + Math.pow(2, sur) : '');
 
-    document.getElementById('carte-moins').disabled = false;
-    document.getElementById('carte-plus').disabled = carte.zoom() >= carte.zoomMax();
+    document.getElementById(filiereId + '-carte-plus').disabled = carte.zoom() >= carte.zoomMax();
+    // Muet seulement pendant la première acquisition : après, il recentre sur la
+    // mesure, ou relance la série si celle-ci n'a rien donné.
+    document.getElementById(filiereId + '-carte-gps').disabled =
+      !base && !carteEtat.gps && !!etat.affinage[filiereId];
   }
 
-  function construireChoixFonds() {
-    var hote = document.getElementById('carte-fonds');
+  function construireChoixFonds(filiereId) {
+    var hote = document.getElementById(filiereId + '-carte-fonds');
     vider(hote);
     carte.fonds().forEach(function (f) {
       hote.appendChild(el('button', {
@@ -969,125 +1156,16 @@
           carte.fond(f.id);
           etat.config.fondCarte = f.id;
           Store.ecrireConfig(etat.config);
-          construireChoixFonds();
-          rafraichirInfosCarte();
+          construireChoixFonds(filiereId);
+          rafraichirInfosCarte(filiereId);
         }
       }));
     });
   }
 
-  function ouvrirCarte(filiereId) {
-    var pos = etat.positions[filiereId];
-    if (!pos) { toast('Relevez d\'abord une position.', 'erreur'); return; }
-
-    var modale = document.getElementById('modale-carte');
-    var hote = document.getElementById('carte-hote');
-    var message = document.getElementById('carte-message');
-
-    carteEtat = {
-      filiereId: filiereId,
-      origine: {
-        latitude: pos.latitude,
-        longitude: pos.longitude,
-        precision: pos.precision || 0
-      },
-      declencheur: document.getElementById(filiereId + '-btn-carte')
-    };
-
-    modale.hidden = false;
-    majVerrouDefilement();
-    message.textContent = '';
-
-    var fonds = fondsUtilisables();
-    carte = Carte.creerCarte(hote, {
-      urls: fonds,
-      fond: fonds[etat.config.fondCarte] ? etat.config.fondCarte : Object.keys(fonds)[0],
-      etendueMinM: ETENDUE_CARTE_M,
-      surChangement: rafraichirInfosCarte,
-      surTuiles: function (t) {
-        message.textContent = t.perdu
-          ? 'Fond de carte indisponible — réseau absent ou service injoignable. '
-            + 'Le repère et les coordonnées restent utilisables.'
-          : '';
-      }
-    });
-
-    carte.marqueurs([
-      { latitude: pos.latitude, longitude: pos.longitude, type: 'gps', titre: 'Position mesurée' },
-      { latitude: pos.latitude, longitude: pos.longitude, type: 'precision',
-        rayonM: Math.max(pos.precision || 0, 0.5), titre: 'Rayon de précision annoncé' }
-    ]);
-    carte.centrer(pos.latitude, pos.longitude, carte.zoomMax());
-
-    construireChoixFonds();
-    rafraichirInfosCarte();
-    document.getElementById('carte-valider').focus();
-  }
-
-  function fermerCarte() {
-    var modale = document.getElementById('modale-carte');
-    if (modale.hidden) return;
-    modale.hidden = true;
-    majVerrouDefilement();
-    if (carte) { carte.detruire(); carte = null; }
-    var declencheur = carteEtat && carteEtat.declencheur;
-    carteEtat = null;
-    if (declencheur) declencheur.focus();
-  }
-
-  function validerCarte() {
-    if (!carte || !carteEtat) return;
-    var c = carte.centre();
-    var filiereId = carteEtat.filiereId;
-    var pos = etat.positions[filiereId];
-    var ecart = Carte.distance(c, carteEtat.origine);
-
-    if (ecart >= 0.5) {
-      // La précision GPS décrit la qualité de la MESURE : un recalage manuel ne
-      // l'améliore pas et ne la dégrade pas. On trace l'écart séparément.
-      pos.latitude = c.latitude;
-      pos.longitude = c.longitude;
-      pos.ajustee = true;
-      pos.ecartAjustement = ecart;
-    }
-
-    afficherPosition(filiereId, pos);
-
-    var info = document.getElementById(filiereId + '-etat-gps');
-    if (ecart >= 0.5) {
-      info.setAttribute('data-niveau', 'info');
-      info.textContent = 'Position recalée sur la carte : ' + ecart.toFixed(1)
-        + ' m par rapport à la mesure GPS (précision annoncée '
-        + Math.round(carteEtat.origine.precision) + ' m).';
-      toast('Position ajustée de ' + ecart.toFixed(1) + ' m.', 'succes');
-    } else {
-      toast('Position GPS conservée.', 'info');
-    }
-    fermerCarte();
-  }
-
-  function brancherCarte() {
-    document.getElementById('modale-fermer').addEventListener('click', fermerCarte);
-    document.getElementById('modale-fond').addEventListener('click', fermerCarte);
-    document.getElementById('carte-valider').addEventListener('click', validerCarte);
-
-    document.getElementById('carte-recentrer').addEventListener('click', function () {
-      if (!carte || !carteEtat) return;
-      carte.centrer(carteEtat.origine.latitude, carteEtat.origine.longitude);
-      rafraichirInfosCarte();
-    });
-
-    document.getElementById('carte-plus').addEventListener('click', function () {
-      if (carte) { carte.zoomer(1); rafraichirInfosCarte(); }
-    });
-    document.getElementById('carte-moins').addEventListener('click', function () {
-      if (carte) { carte.zoomer(-1); rafraichirInfosCarte(); }
-    });
-
-    // La carte est par-dessus la mesure : Échap referme la plus haute d'abord.
+  function brancherClavier() {
     document.addEventListener('keydown', function (ev) {
       if (ev.key !== 'Escape') return;
-      if (!document.getElementById('modale-carte').hidden) { fermerCarte(); return; }
       Cfg.FILIERES.forEach(function (f) { fermerMesure(f.id); });
     });
   }
@@ -1872,7 +1950,7 @@
     activerOnglet(valide ? dernier : Cfg.FILIERES[0].id);
 
     suivreHauteurEntete();
-    brancherCarte();
+    brancherClavier();
     avertirContexte();
   }
 
