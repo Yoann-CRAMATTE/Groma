@@ -4,6 +4,46 @@ Une entrée par session de travail, la plus récente en haut.
 
 ---
 
+## 19/09/2026 — Retour de la note de terrain (v0.7.1)
+
+**Demande :** « remets les observations, il en faut une sur le terrain. »
+
+Retour immédiat sur la suppression du matin. C'était le cas prévu dans la mémoire du
+projet — « si le besoin d'observation revient du terrain, c'est un quatrième niveau de
+cascade ou un retour du textarea, à trancher ». Le terrain a tranché.
+
+**Pourquoi c'est justifié et pas un aller-retour pour rien :** le catalogue décrit ce
+qu'*est* un ouvrage. Il ne dira jamais que le tampon est scellé, que l'accès passe par
+la cour du 12, ou que la vanne est bloquée. Aucune nomenclature ne prévoit ça, et un
+quatrième niveau de cascade ne l'aurait pas capturé non plus — ces constats sont par
+nature non énumérables. Le champ libre est la bonne forme.
+
+**Fait :**
+- `CHAMP_OBSERVATIONS` remis dans `config.js`, avec un placeholder qui oriente vers
+  le constat plutôt que vers la description (« Accès, état, repère… »).
+- Vingt-et-unième colonne dans les trois CSV.
+- `textarea` de deux lignes sous la cascade, redimensionnable. Deux lignes et pas
+  trois : plus haut, la note repousse la liste des relevés hors de l'écran, et c'est
+  la liste qu'on consulte le plus.
+- `ecrireFormulaire()` revient pour poser la cascade puis les champs simples.
+- La note reparaît dans la liste, entre guillemets, et **la recherche porte dessus**.
+- **« Dupliquer » ne la recopie pas** : elle vaut pour un ouvrage précis. La reprendre
+  en série fabriquerait des constats faux sur des points jamais observés.
+
+**Point RGPD rouvert, et c'est le vrai coût de ce champ.** L'onglet SPANC ne saisit ni
+nom ni adresse depuis la v0.7. Mais rien n'empêche un agent d'écrire « M. Dupont refuse
+le contrôle » ou « absent, revenir après 18 h » dans `observations` — soit un nom et
+une habitude de vie dans un fichier qui n'en prévoit pas, sans que rien ne le signale.
+L'application ne peut pas l'empêcher sans devenir inutilisable. C'est une consigne à
+donner aux agents, ajoutée dans `docs/RGPD.md` et signalée dans l'avertissement de
+l'interface. À porter dans la procédure de contrôle, pas dans le code.
+
+**Vérifié :** audit d'affichage sur quinze formats, aucun défaut ; test fonctionnel
+étendu — la note se saisit, se vide à l'enregistrement, s'affiche dans la liste, se
+retrouve par la recherche et revient intacte à la relecture d'un relevé.
+
+---
+
 ## 19/09/2026 — Suppression du formulaire métier (v0.7)
 
 **Demande :** capture d'écran du bloc de champs sous la cascade — « supprime cette

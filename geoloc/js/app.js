@@ -284,6 +284,14 @@
     ]);
   }
 
+  function construireChampNote(filiereId, champ) {
+    var idChamp = filiereId + '-' + champ.cle;
+    return el('div', { classe: 'champ champ-note' }, [
+      el('label', { for: idChamp, texte: champ.label }),
+      el('textarea', { id: idChamp, name: champ.cle, rows: 2, placeholder: champ.placeholder })
+    ]);
+  }
+
   /**
    * Bloc « relevé » : on prend la position d'abord, on décrit le matériel ensuite.
    * C'est l'ordre du terrain — on arrive sur l'ouvrage, on se géolocalise, puis
@@ -329,15 +337,16 @@
       el('p', { classe: 'etat-gps', id: f.id + '-etat-gps' })
     ]);
 
-    // Les trois listes liées sont toute la saisie : le reste de la ligne est
-    // produit par l'application (position, méthode, horodatage, référence).
+    // Les listes liées décrivent l'ouvrage, la note dit ce qui cloche. Le reste
+    // de la ligne est produit par l'application (position, méthode, horodatage).
     var cascade = el('div', { classe: 'cascade' });
+    var notes = [];
     Cfg.champsDe(f.id).forEach(function (c) {
-      cascade.appendChild(construireChampCascade(f.id, c));
+      if (c.type === 'cascade') cascade.appendChild(construireChampCascade(f.id, c));
+      else notes.push(construireChampNote(f.id, c));
     });
 
-    var formulaire = el('form', { id: f.id + '-form', autocomplete: 'off' }, [
-      cascade,
+    var formulaire = el('form', { id: f.id + '-form', autocomplete: 'off' }, [cascade].concat(notes).concat([
       el('div', { classe: 'actions' }, [
         el('button', { classe: 'btn-primaire btn-enregistrer', type: 'submit', id: f.id + '-btn-valider', texte: 'Enregistrer le relevé' }),
         el('button', {
@@ -345,7 +354,7 @@
           onclick: function () { reinitialiserFormulaire(f.id); }
         })
       ])
-    ]);
+    ]));
     formulaire.addEventListener('submit', function (ev) {
       ev.preventDefault();
       enregistrerPoint(f.id);
@@ -525,6 +534,16 @@
     return valeurs;
   }
 
+  /** La cascade se pose niveau par niveau ; les autres champs suivent. */
+  function ecrireFormulaire(filiereId, valeurs) {
+    poserCascade(filiereId, valeurs);
+    Cfg.champsDe(filiereId).forEach(function (c) {
+      if (c.type === 'cascade') return;
+      var n = document.getElementById(filiereId + '-' + c.cle);
+      if (n) n.value = valeurs[c.cle] === undefined ? '' : valeurs[c.cle];
+    });
+  }
+
   function validerFormulaire(filiereId, valeurs) {
     var manquants = [];
     Cfg.champsDe(filiereId).forEach(function (c) {
@@ -539,7 +558,7 @@
   function reinitialiserFormulaire(filiereId) {
     var serie = etat.affinage[filiereId];
     if (serie) { serie.arreter(); etat.affinage[filiereId] = null; }
-    poserCascade(filiereId, {});
+    ecrireFormulaire(filiereId, {});
     Cfg.champsDe(filiereId).forEach(function (c) {
       var n = document.getElementById(filiereId + '-' + c.cle);
       if (n) n.setAttribute('aria-invalid', 'false');
@@ -631,6 +650,7 @@
 
     var materiel = materielDe(p);
     if (materiel) enfants.push(el('div', { classe: 'point-materiel', texte: materiel }));
+    if (p.observations) enfants.push(el('div', { classe: 'point-detail', texte: '« ' + p.observations + ' »' }));
 
     if (p.latitude && p.longitude) {
       enfants.push(el('div', { classe: 'point-coord' }, [
@@ -695,7 +715,7 @@
     var p = etat.points.filter(function (x) { return x.id === id; })[0];
     if (!p) return;
     etat.edition[filiereId] = id;
-    poserCascade(filiereId, p);
+    ecrireFormulaire(filiereId, p);
     if (p.latitude && p.longitude) {
       etat.positions[filiereId] = {
         latitude: Number(p.latitude),
@@ -719,7 +739,10 @@
     document.getElementById(filiereId + '-bloc-releve').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  /** Reprend le matériel sans la position : cas des ouvrages posés en série. */
+  /**
+   * Reprend le matériel seul — ni position, ni note : une observation vaut pour
+   * un ouvrage précis, la recopier en série produirait du faux.
+   */
   function dupliquerPoint(filiereId, id) {
     var p = etat.points.filter(function (x) { return x.id === id; })[0];
     if (!p) return;
@@ -1019,8 +1042,10 @@
         texte: "L'onglet SPANC relève des installations situées chez des particuliers. "
           + "Aucun nom ni aucune adresse n'est saisi, mais une position à quelques mètres "
           + "désigne un foyer : c'est une donnée à caractère personnel au sens du RGPD. "
-          + "Elle reste dans ce navigateur et dans le fichier CSV. Durée de conservation, "
-          + "base légale et information des personnes relèvent de la collectivité."
+          + "Le champ Observations est le point sensible — un nom ou une habitude de vie "
+          + "notés là s'y retrouvent sans que rien ne le signale. Durée de conservation, "
+          + "base légale, information des personnes et consigne aux agents relèvent de la "
+          + "collectivité."
       })
     ]);
 

@@ -6,9 +6,10 @@ L'onglet **SPANC** et son fichier `spanc.csv` enregistrent, pour chaque installa
 
 - `latitude` / `longitude` / `x_l93` / `y_l93` — localisation de l'installation
 - `type_materiel` / `modele` / `detail` — nature du dispositif en place
+- `observations` — note libre de l'agent
 - `date_saisie` / `operateur` — qui est passé, et quand
 
-Depuis la v0.7, **ni nom, ni adresse, ni parcelle ne sont saisis**. Cela ne sort pas
+Depuis la v0.7, **ni nom, ni adresse, ni parcelle ne sont saisis** dans un champ dédié. Cela ne sort pas
 le traitement du RGPD : une installation d'assainissement non collectif se trouve chez
 un particulier, et une position à quelques mètres près désigne un foyer aussi sûrement
 qu'une adresse. Associée à la nature du dispositif, elle reste une donnée à caractère
@@ -45,6 +46,11 @@ Ces points relèvent de la collectivité, pas de l'outil :
 - **Destinataires** — qui reçoit le fichier `spanc.csv`, par quel canal. Le fichier étant séparé de ceux des ouvrages publics, il peut être diffusé indépendamment.
 - **Recoupement** — croiser `spanc.csv` avec le cadastre ou un fichier d'usagers
   reconstitue l'identité des propriétaires. C'est un traitement en soi, à couvrir.
+- **Le champ `observations` est le point faible.** Rien n'empêche un agent d'y
+  écrire « M. Dupont refuse le contrôle » ou « absent, revenir après 18 h ». Ce
+  serait alors un nom et une habitude de vie dans un fichier qui n'en prévoit pas.
+  L'application ne peut pas le contrôler : ça relève de la consigne donnée aux
+  agents, à porter dans la procédure de contrôle.
 
 > Rédigé comme point de vigilance technique. Ce document n'est pas un avis juridique :
 > le DPO de la collectivité tranche.

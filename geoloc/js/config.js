@@ -1,13 +1,14 @@
 /**
  * Schéma du projet : il pilote les formulaires, les colonnes CSV et le filtre.
- * La saisie se réduit à l'identification du matériel — tout le reste d'une ligne
- * est produit par l'application : position, méthode de mesure, horodatage.
+ * La saisie se réduit à l'identification du matériel et à une note libre — tout
+ * le reste d'une ligne est produit par l'application : position, méthode de
+ * mesure, horodatage, référence.
  */
 (function (global) {
   'use strict';
 
   /**
-   * Identification du matériel en trois listes liées, seuls champs saisis.
+   * Identification du matériel en trois listes liées.
    * Les valeurs ne sont pas ici : elles viennent du catalogue (`parametres.csv`),
    * modifiable sans toucher au code. Le niveau 1 seul est obligatoire — beaucoup
    * d'ouvrages anciens n'ont ni modèle ni détail identifiables sur le terrain.
@@ -17,6 +18,17 @@
     { cle: 'modele', label: 'Modèle', type: 'cascade' },
     { cle: 'detail', label: 'Détail', type: 'cascade' }
   ];
+
+  /**
+   * La note de terrain. Le catalogue décrit ce qu'est l'ouvrage, jamais ce qui
+   * cloche : tampon scellé, accès par la cour du 12, vanne bloquée, repère à
+   * reprendre. Sans ce champ, ces constats se perdent entre le relevé et le
+   * bureau — c'est ce qui a justifié son retour après la v0.7.
+   */
+  var CHAMP_OBSERVATIONS = {
+    cle: 'observations', label: 'Observations', type: 'textarea',
+    placeholder: "Accès, état, repère… ce que le catalogue ne dit pas"
+  };
 
   var FILIERES = [
     {
@@ -68,7 +80,9 @@
    */
   function colonnesCsv(filiereId) {
     if (!filiere(filiereId)) return [];
-    return COLONNES_TECHNIQUES.concat(CHAMPS_CASCADE.map(function (c) { return c.cle; }));
+    return COLONNES_TECHNIQUES
+      .concat(CHAMPS_CASCADE.map(function (c) { return c.cle; }))
+      .concat([CHAMP_OBSERVATIONS.cle]);
   }
 
   function filiere(id) {
@@ -77,7 +91,7 @@
 
   /** Champs saisis pour une filière, dans l'ordre d'affichage. */
   function champsDe(id) {
-    return filiere(id) ? CHAMPS_CASCADE.slice() : [];
+    return filiere(id) ? CHAMPS_CASCADE.concat([CHAMP_OBSERVATIONS]) : [];
   }
 
   var CONFIG_DEFAUT = {

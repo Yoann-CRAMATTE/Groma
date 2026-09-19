@@ -495,6 +495,13 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .cascade select { background: var(--fond-2); }
 .cascade select:disabled { opacity: 0.5; }
 
+/* ---------- Note de terrain ---------- */
+
+/* Deux lignes suffisent au constat qu'on tape debout ; la poignée reste là pour
+   les cas bavards. Plus haut, la note repousse la liste hors de l'écran. */
+.champ-note { margin-bottom: 4px; }
+.champ-note textarea { min-height: 62px; }
+
 /* ---------- Catalogue de matériel ---------- */
 
 .catalogue { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }

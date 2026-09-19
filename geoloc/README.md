@@ -10,15 +10,16 @@ catalogue de matériel, leur couleur et leur fichier diffèrent.
 
 | Onglet | Couleur | Fichier | Références | Colonnes |
 |---|---|---|---|---|
-| EAU | `#0ea5e9` bleu | `eau.csv` | `AEP-0001` | 20 |
-| ASSAINISSEMENT | `#22c55e` vert | `assainissement.csv` | `AC-0001` | 20 |
-| SPANC | `#a855f7` violet | `spanc.csv` | `ANC-0001` | 20 |
+| EAU | `#0ea5e9` bleu | `eau.csv` | `AEP-0001` | 21 |
+| ASSAINISSEMENT | `#22c55e` vert | `assainissement.csv` | `AC-0001` | 21 |
+| SPANC | `#a855f7` violet | `spanc.csv` | `ANC-0001` | 21 |
 | CONFIGURATION | `#94a3b8` gris | `parametres.csv` | — | 4 |
 
-**La saisie se réduit à trois listes liées** — type, puis modèle, puis détail —
-alimentées par un catalogue éditable, stocké dans `parametres.csv`. Tout le reste
-d'une ligne est produit par l'application : position, méthode de mesure, horodatage,
-référence. Sur le terrain, un relevé = un appui GPS et trois choix.
+**La saisie tient en trois listes liées** — type, puis modèle, puis détail —
+alimentées par un catalogue éditable stocké dans `parametres.csv`, **plus une note
+libre**. Tout le reste d'une ligne est produit par l'application : position, méthode
+de mesure, horodatage, référence. Sur le terrain, un relevé = un appui GPS, trois
+choix, et une phrase si l'ouvrage la mérite.
 
 ---
 
@@ -56,11 +57,13 @@ latitude;longitude;altitude_m;
 precision_m;dispersion_m;methode_gps;nb_mesures;duree_gps_s;
 position_ajustee;ecart_ajustement_m;
 x_l93;y_l93;
-type_materiel;modele;detail
+type_materiel;modele;detail;observations
 ```
 
-Seules les trois dernières sont saisies. `type_materiel`, `modele` et `detail` sont
-les niveaux de la cascade ; ils portent à eux seuls la description de l'ouvrage.
+Seules les quatre dernières sont saisies. `type_materiel`, `modele` et `detail` sont
+les niveaux de la cascade : ils décrivent **ce qu'est** l'ouvrage. `observations` dit
+**ce qui cloche** — tampon scellé, accès par la cour du 12, vanne bloquée. Le
+catalogue ne peut pas prévoir ça.
 
 Les trois filières ont aujourd'hui les mêmes colonnes mais gardent chacune leur
 fichier : `filiere` sert de garde-fou à l'import, et rien n'oblige les trois à rester
@@ -337,9 +340,8 @@ Ajouter une *colonne* au CSV, en revanche, se fait dans `js/config.js` :
   n'est produite. À faire dans le SIG ou le tableur si besoin.
 - Le catalogue s'édite ligne à ligne : renommer un type partout se fait dans
   `parametres.csv` au tableur, pas dans l'interface.
-- **Aucun champ libre** : ce qui ne rentre pas dans le catalogue ne se note pas.
-  C'est le prix de la saisie en trois gestes — si le besoin d'une observation
-  revient du terrain, il faudra rouvrir la question.
+- `observations` est un champ libre : rien n'y est contrôlé ni normalisé. Pour
+  exploiter ces notes en masse, il faudra les lire une à une.
 - Aucune commune n'est saisie : le rattachement administratif se fait dans le SIG,
   à partir des coordonnées.
 - Aucun fond gratuit ne descend nativement sous ~50 m de large. Pour atteindre les
