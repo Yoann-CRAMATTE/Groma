@@ -229,7 +229,7 @@
     var connue = options.indexOf(cible) !== -1;
 
     vider(noeud);
-    noeud.appendChild(el('option', { value: '', texte: options.length ? '—' : '(aucun)' }));
+    noeud.appendChild(el('option', { value: '', texte: '—' }));
     options.forEach(function (o) { noeud.appendChild(el('option', { value: o, texte: o })); });
 
     if (force && cible && !connue) {
@@ -270,38 +270,18 @@
 
   // ---------------------------------------------------------------- vue filière
 
-  function construireChamp(filiereId, champ) {
+  function construireChampCascade(filiereId, champ) {
     var idChamp = filiereId + '-' + champ.cle;
-    var saisie;
-
-    if (champ.type === 'cascade') {
-      saisie = el('select', {
-        id: idChamp, name: champ.cle,
-        onchange: function () { rafraichirCascade(filiereId); }
-      });
-    } else if (champ.type === 'select') {
-      saisie = el('select', { id: idChamp, name: champ.cle },
-        [el('option', { value: '', texte: '—' })].concat(
-          champ.options.map(function (o) { return el('option', { value: o, texte: o }); })
-        ));
-    } else if (champ.type === 'textarea') {
-      saisie = el('textarea', { id: idChamp, name: champ.cle, rows: 3 });
-    } else {
-      var attrs = { id: idChamp, name: champ.cle, type: champ.type };
-      if (champ.placeholder) attrs.placeholder = champ.placeholder;
-      if (champ.min !== undefined) attrs.min = champ.min;
-      if (champ.max !== undefined) attrs.max = champ.max;
-      if (champ.step !== undefined) attrs.step = champ.step;
-      if (champ.liste === 'communes') attrs.list = 'liste-communes';
-      if (champ.type === 'text') attrs.autocomplete = 'off';
-      saisie = el('input', attrs);
-    }
-
     var etiquette = el('label', { for: idChamp }, [champ.label]);
     if (champ.requis) etiquette.appendChild(el('span', { classe: 'requis', texte: ' *' }));
 
-    var classe = 'champ' + (champ.type === 'textarea' ? ' champ--large' : '');
-    return el('div', { classe: classe }, [etiquette, saisie]);
+    return el('div', { classe: 'champ' }, [
+      etiquette,
+      el('select', {
+        id: idChamp, name: champ.cle,
+        onchange: function () { rafraichirCascade(filiereId); }
+      })
+    ]);
   }
 
   /**
@@ -349,16 +329,15 @@
       el('p', { classe: 'etat-gps', id: f.id + '-etat-gps' })
     ]);
 
-    // Les trois listes liées d'abord, isolées : c'est l'identification de l'ouvrage.
+    // Les trois listes liées sont toute la saisie : le reste de la ligne est
+    // produit par l'application (position, méthode, horodatage, référence).
     var cascade = el('div', { classe: 'cascade' });
-    var grille = el('div', { classe: 'grille' });
     Cfg.champsDe(f.id).forEach(function (c) {
-      (c.type === 'cascade' ? cascade : grille).appendChild(construireChamp(f.id, c));
+      cascade.appendChild(construireChampCascade(f.id, c));
     });
 
     var formulaire = el('form', { id: f.id + '-form', autocomplete: 'off' }, [
       cascade,
-      grille,
       el('div', { classe: 'actions' }, [
         el('button', { classe: 'btn-primaire btn-enregistrer', type: 'submit', id: f.id + '-btn-valider', texte: 'Enregistrer le relevé' }),
         el('button', {
@@ -546,15 +525,6 @@
     return valeurs;
   }
 
-  function ecrireFormulaire(filiereId, valeurs) {
-    poserCascade(filiereId, valeurs);
-    Cfg.champsDe(filiereId).forEach(function (c) {
-      if (c.type === 'cascade') return;
-      var n = document.getElementById(filiereId + '-' + c.cle);
-      if (n) n.value = valeurs[c.cle] === undefined ? '' : valeurs[c.cle];
-    });
-  }
-
   function validerFormulaire(filiereId, valeurs) {
     var manquants = [];
     Cfg.champsDe(filiereId).forEach(function (c) {
@@ -569,7 +539,7 @@
   function reinitialiserFormulaire(filiereId) {
     var serie = etat.affinage[filiereId];
     if (serie) { serie.arreter(); etat.affinage[filiereId] = null; }
-    ecrireFormulaire(filiereId, {});
+    poserCascade(filiereId, {});
     Cfg.champsDe(filiereId).forEach(function (c) {
       var n = document.getElementById(filiereId + '-' + c.cle);
       if (n) n.setAttribute('aria-invalid', 'false');
@@ -650,29 +620,17 @@
     return [p.type_materiel, p.modele, p.detail].filter(Boolean).join(' › ');
   }
 
-  function resumePoint(filiereId, p) {
-    var parts = [];
-    Cfg.filiere(filiereId).champs.slice(0, 3).forEach(function (c) {
-      if (p[c.cle]) parts.push(c.label + ' : ' + p[c.cle]);
-    });
-    return parts.join(' · ');
-  }
-
   function construireLignePoint(filiereId, p) {
     var f = Cfg.filiere(filiereId);
     var enfants = [
       el('div', { classe: 'point-entete' }, [
-        el('span', { classe: 'point-ref', texte: [p.reference || '(sans référence)', p.commune].filter(Boolean).join(' — ') }),
+        el('span', { classe: 'point-ref', texte: p.reference || '(sans référence)' }),
         el('span', { classe: 'point-date', texte: dateCourteFr(p.date_saisie) })
       ])
     ];
 
     var materiel = materielDe(p);
     if (materiel) enfants.push(el('div', { classe: 'point-materiel', texte: materiel }));
-
-    var resume = resumePoint(filiereId, p);
-    if (resume) enfants.push(el('div', { classe: 'point-detail', texte: resume }));
-    if (p.observations) enfants.push(el('div', { classe: 'point-detail', texte: '« ' + p.observations + ' »' }));
 
     if (p.latitude && p.longitude) {
       enfants.push(el('div', { classe: 'point-coord' }, [
@@ -737,7 +695,7 @@
     var p = etat.points.filter(function (x) { return x.id === id; })[0];
     if (!p) return;
     etat.edition[filiereId] = id;
-    ecrireFormulaire(filiereId, p);
+    poserCascade(filiereId, p);
     if (p.latitude && p.longitude) {
       etat.positions[filiereId] = {
         latitude: Number(p.latitude),
@@ -761,15 +719,12 @@
     document.getElementById(filiereId + '-bloc-releve').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  /** Reprend les attributs métier sans la position : cas des ouvrages en série. */
+  /** Reprend le matériel sans la position : cas des ouvrages posés en série. */
   function dupliquerPoint(filiereId, id) {
     var p = etat.points.filter(function (x) { return x.id === id; })[0];
     if (!p) return;
     reinitialiserFormulaire(filiereId);
-    var copie = {};
-    Cfg.champsDe(filiereId).forEach(function (c) { copie[c.cle] = p[c.cle]; });
-    copie.reference = '';
-    ecrireFormulaire(filiereId, copie);
+    poserCascade(filiereId, p);
     toast('Attributs repris. Relevez la nouvelle position.', 'info');
     document.getElementById(filiereId + '-bloc-releve').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -982,11 +937,6 @@
       champConfig('collectivite', 'Collectivité', 'text', { placeholder: 'ex. CC Sundgau' })
     ]);
 
-    var communes = el('div', { classe: 'champ champ--large' }, [
-      el('label', { for: 'cfg-communes', texte: 'Communes proposées (séparées par une virgule)' }),
-      el('textarea', { id: 'cfg-communes', rows: 3, placeholder: 'Réchésy, Altkirch, Dannemarie…' })
-    ]);
-
     var gps = el('div', { classe: 'grille' }, [
       champConfig('precisionMax', 'Seuil d\'alerte de précision (m)', 'number', { min: 1, max: 500, step: 1 }),
       champConfig('timeoutGps', 'Délai maximal d\'acquisition (s)', 'number', { min: 5, max: 120, step: 1 }),
@@ -1066,13 +1016,16 @@
       el('h2', { texte: 'Données personnelles' }),
       el('p', {
         classe: 'note note-alerte',
-        texte: "L'onglet SPANC enregistre un nom de propriétaire, une adresse et une parcelle : ce sont des données à caractère personnel au sens du RGPD. Elles restent dans ce navigateur et dans le fichier CSV. Durée de conservation, base légale et information des personnes relèvent de la collectivité."
+        texte: "L'onglet SPANC relève des installations situées chez des particuliers. "
+          + "Aucun nom ni aucune adresse n'est saisi, mais une position à quelques mètres "
+          + "désigne un foyer : c'est une donnée à caractère personnel au sens du RGPD. "
+          + "Elle reste dans ce navigateur et dans le fichier CSV. Durée de conservation, "
+          + "base légale et information des personnes relèvent de la collectivité."
       })
     ]);
 
     var formulaire = el('form', { id: 'cfg-form' }, [
       identite,
-      el('div', { classe: 'grille' }, [communes]),
       gps,
       el('div', { classe: 'actions' }, [
         el('button', { classe: 'btn-primaire', type: 'submit', texte: 'Enregistrer la configuration' })
@@ -1524,7 +1477,6 @@
     var c = etat.config;
     document.getElementById('cfg-operateur').value = c.operateur;
     document.getElementById('cfg-collectivite').value = c.collectivite;
-    document.getElementById('cfg-communes').value = c.communes.join(', ');
     document.getElementById('cfg-precisionMax').value = c.precisionMax;
     document.getElementById('cfg-timeoutGps').value = c.timeoutGps;
     document.getElementById('cfg-dureeAffinage').value = c.dureeAffinage;
@@ -1537,8 +1489,6 @@
     etat.config = {
       operateur: document.getElementById('cfg-operateur').value.trim(),
       collectivite: document.getElementById('cfg-collectivite').value.trim(),
-      communes: document.getElementById('cfg-communes').value
-        .split(',').map(function (s) { return s.trim(); }).filter(Boolean),
       precisionMax: Math.max(1, Number(document.getElementById('cfg-precisionMax').value) || 20),
       timeoutGps: Math.max(5, Number(document.getElementById('cfg-timeoutGps').value) || 20),
       dureeAffinage: Math.max(5, Number(document.getElementById('cfg-dureeAffinage').value) || 30),
@@ -1547,16 +1497,9 @@
       separateur: document.getElementById('cfg-separateur').value
     };
     Store.ecrireConfig(etat.config);
-    remplirCommunes();
     synchroniserTout();
     synchroniserParametres();
     toast('Configuration enregistrée.', 'succes');
-  }
-
-  function remplirCommunes() {
-    var dl = document.getElementById('liste-communes');
-    vider(dl);
-    etat.config.communes.forEach(function (c) { dl.appendChild(el('option', { value: c })); });
   }
 
   function rafraichirStats() {
@@ -1745,7 +1688,6 @@
     Cfg.FILIERES.forEach(function (f) { hote.appendChild(construireVueFiliere(f)); });
     hote.appendChild(construireVueConfiguration());
 
-    remplirCommunes();
     remplirConfiguration();
     Cfg.FILIERES.forEach(function (f) { rafraichirCascade(f.id); });
     Store.migrerAncienHandle();

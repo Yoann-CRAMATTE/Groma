@@ -1,32 +1,22 @@
 /**
- * Schéma unique du projet : il pilote à la fois les formulaires, les colonnes CSV
- * et les filtres. Ajouter un champ ici suffit, aucun HTML à toucher.
+ * Schéma du projet : il pilote les formulaires, les colonnes CSV et le filtre.
+ * La saisie se réduit à l'identification du matériel — tout le reste d'une ligne
+ * est produit par l'application : position, méthode de mesure, horodatage.
  */
 (function (global) {
   'use strict';
 
   /**
-   * Identification du matériel en trois listes liées. Les valeurs ne sont pas
-   * dans ce fichier : elles viennent du catalogue (`parametres.csv`), modifiable
-   * sans toucher au code. Le niveau 1 seul est obligatoire — beaucoup d'ouvrages
-   * anciens n'ont ni modèle ni détail identifiables sur le terrain.
+   * Identification du matériel en trois listes liées, seuls champs saisis.
+   * Les valeurs ne sont pas ici : elles viennent du catalogue (`parametres.csv`),
+   * modifiable sans toucher au code. Le niveau 1 seul est obligatoire — beaucoup
+   * d'ouvrages anciens n'ont ni modèle ni détail identifiables sur le terrain.
    */
   var CHAMPS_CASCADE = [
     { cle: 'type_materiel', label: 'Type de matériel', type: 'cascade', requis: true },
     { cle: 'modele', label: 'Modèle', type: 'cascade' },
     { cle: 'detail', label: 'Détail', type: 'cascade' }
   ];
-
-  // Champs présents sur les trois filières, avant les champs métier.
-  var CHAMPS_COMMUNS = [
-    { cle: 'reference', label: 'Référence', type: 'text', placeholder: 'auto si vide' },
-    { cle: 'commune', label: 'Commune', type: 'text', liste: 'communes', requis: true }
-  ];
-
-  // Champ libre commun, toujours placé en dernier.
-  var CHAMP_OBSERVATIONS = { cle: 'observations', label: 'Observations', type: 'textarea' };
-
-  var ETATS = ['Bon', 'Moyen', 'Mauvais', 'Hors service', 'Non évalué'];
 
   var FILIERES = [
     {
@@ -36,20 +26,7 @@
       titre: 'Eau potable (AEP)',
       couleur: '#0ea5e9',
       prefixe: 'AEP',
-      fichier: 'eau.csv',
-      champs: [
-        { cle: 'diametre_mm', label: 'Diamètre (mm)', type: 'number', min: 0, step: 1 },
-        {
-          cle: 'materiau', label: 'Matériau', type: 'select',
-          options: ['Fonte', 'Fonte ductile', 'PVC', 'PEHD', 'Acier', 'Amiante-ciment', 'Plomb', 'Inconnu']
-        },
-        { cle: 'annee_pose', label: 'Année de pose', type: 'number', min: 1800, max: 2100, step: 1 },
-        { cle: 'etat', label: 'État', type: 'select', options: ETATS },
-        {
-          cle: 'accessibilite', label: 'Accessibilité', type: 'select',
-          options: ['Accessible', 'Difficile', 'Enterré / inaccessible', 'Sous chaussée']
-        }
-      ]
+      fichier: 'eau.csv'
     },
     {
       id: 'assainissement',
@@ -58,20 +35,7 @@
       titre: 'Assainissement collectif',
       couleur: '#22c55e',
       prefixe: 'AC',
-      fichier: 'assainissement.csv',
-      champs: [
-        {
-          cle: 'reseau', label: 'Type de réseau', type: 'select',
-          options: ['Eaux usées', 'Eaux pluviales', 'Unitaire', 'Inconnu']
-        },
-        { cle: 'diametre_mm', label: 'Diamètre (mm)', type: 'number', min: 0, step: 1 },
-        {
-          cle: 'materiau', label: 'Matériau', type: 'select',
-          options: ['Béton', 'PVC', 'PEHD', 'Grès', 'Fonte', 'Amiante-ciment', 'Maçonnerie', 'Inconnu']
-        },
-        { cle: 'profondeur_m', label: 'Profondeur (m)', type: 'number', min: 0, step: 0.01 },
-        { cle: 'etat', label: 'État', type: 'select', options: ETATS }
-      ]
+      fichier: 'assainissement.csv'
     },
     {
       id: 'spanc',
@@ -80,33 +44,17 @@
       titre: 'Assainissement non collectif',
       couleur: '#a855f7',
       prefixe: 'ANC',
-      fichier: 'spanc.csv',
-      // Adresse + propriétaire = données à caractère personnel (RGPD) : cf. docs/RGPD.md
-      donneesPersonnelles: true,
-      champs: [
-        { cle: 'adresse', label: 'Adresse', type: 'text' },
-        { cle: 'proprietaire', label: 'Propriétaire', type: 'text' },
-        { cle: 'parcelle', label: 'Parcelle cadastrale', type: 'text', placeholder: 'ex. AB 0142' },
-        { cle: 'nb_eh', label: 'Capacité (EH)', type: 'number', min: 0, step: 1 },
-        {
-          cle: 'conformite', label: 'Conformité', type: 'select',
-          options: ['Conforme', 'Non conforme sans danger ni risque', 'Non conforme - danger pour la santé',
-            'Non conforme - risque environnemental', 'Installation absente', 'Non contrôlé']
-        },
-        { cle: 'date_controle', label: 'Date du contrôle', type: 'date' },
-        {
-          cle: 'exutoire', label: 'Exutoire', type: 'select',
-          options: ['Infiltration sur parcelle', 'Fossé', 'Réseau pluvial', "Cours d'eau", "Puits d'infiltration", 'Inconnu']
-        }
-      ]
+      // Une installation ANC se trouve chez un particulier : la position seule
+      // désigne un foyer, même sans nom ni adresse. Cf. docs/RGPD.md.
+      fichier: 'spanc.csv'
     }
   ];
 
-  // Colonnes techniques injectées automatiquement (non saisies).
+  // Colonnes produites par l'application, jamais saisies.
   // Le bloc méthode / mesures / dispersion trace COMMENT le point a été pris :
   // sans lui, impossible de savoir si une coordonnée vaut 3 m ou 30 m.
   var COLONNES_TECHNIQUES = [
-    'id', 'filiere', 'date_saisie', 'operateur',
+    'id', 'filiere', 'reference', 'date_saisie', 'operateur',
     'latitude', 'longitude', 'altitude_m',
     'precision_m', 'dispersion_m', 'methode_gps', 'nb_mesures', 'duree_gps_s',
     'position_ajustee', 'ecart_ajustement_m',
@@ -114,28 +62,13 @@
   ];
 
   /**
-   * Colonnes du CSV d'une filière : chaque onglet a son propre fichier, donc
-   * seulement ses colonnes — pas de colonnes vides héritées des autres filières.
-   * La colonne « filiere » reste présente : elle sert de garde-fou à l'import.
+   * Colonnes du CSV d'une filière. Les trois filières ont aujourd'hui les mêmes,
+   * mais gardent chacune leur fichier : la colonne « filiere » sert de garde-fou
+   * à l'import, et rien n'oblige les trois à rester alignées.
    */
   function colonnesCsv(filiereId) {
-    var f = filiere(filiereId);
-    if (!f) return [];
-    var cols = COLONNES_TECHNIQUES.slice();
-    CHAMPS_CASCADE.forEach(function (c) { if (cols.indexOf(c.cle) === -1) cols.push(c.cle); });
-    CHAMPS_COMMUNS.forEach(function (c) { if (cols.indexOf(c.cle) === -1) cols.push(c.cle); });
-    f.champs.forEach(function (c) { if (cols.indexOf(c.cle) === -1) cols.push(c.cle); });
-    cols.push(CHAMP_OBSERVATIONS.cle);
-    return cols;
-  }
-
-  /** Union de toutes les colonnes — utilisée par le filtre plein texte, pas par les CSV. */
-  function toutesColonnes() {
-    var cols = [];
-    FILIERES.forEach(function (f) {
-      colonnesCsv(f.id).forEach(function (c) { if (cols.indexOf(c) === -1) cols.push(c); });
-    });
-    return cols;
+    if (!filiere(filiereId)) return [];
+    return COLONNES_TECHNIQUES.concat(CHAMPS_CASCADE.map(function (c) { return c.cle; }));
   }
 
   function filiere(id) {
@@ -144,15 +77,12 @@
 
   /** Champs saisis pour une filière, dans l'ordre d'affichage. */
   function champsDe(id) {
-    var f = filiere(id);
-    if (!f) return [];
-    return CHAMPS_CASCADE.concat(CHAMPS_COMMUNS).concat(f.champs).concat([CHAMP_OBSERVATIONS]);
+    return filiere(id) ? CHAMPS_CASCADE.slice() : [];
   }
 
   var CONFIG_DEFAUT = {
     operateur: '',
     collectivite: '',
-    communes: [],
     precisionMax: 20,
     hautePrecision: true,
     timeoutGps: 20,
@@ -166,12 +96,9 @@
 
   global.GeoLocConfig = {
     FILIERES: FILIERES,
-    CHAMPS_COMMUNS: CHAMPS_COMMUNS,
-    CHAMP_OBSERVATIONS: CHAMP_OBSERVATIONS,
     COLONNES_TECHNIQUES: COLONNES_TECHNIQUES,
     CONFIG_DEFAUT: CONFIG_DEFAUT,
     colonnesCsv: colonnesCsv,
-    toutesColonnes: toutesColonnes,
     filiere: filiere,
     champsDe: champsDe
   };

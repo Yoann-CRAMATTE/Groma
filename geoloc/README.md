@@ -5,18 +5,20 @@ d'ouvrages de terrain et les consigner dans **un fichier CSV par filière**.
 Pensée pour la **tablette**, utilisable jusqu'au petit smartphone.
 
 Trois filières de relevé — **EAU**, **ASSAINISSEMENT**, **SPANC** — plus un onglet
-**CONFIGURATION**. Les trois filières partagent exactement le même écran ; seuls leurs
-champs métier, leur couleur et leurs données diffèrent.
+**CONFIGURATION**. Les trois filières partagent exactement le même écran ; seuls leur
+catalogue de matériel, leur couleur et leur fichier diffèrent.
 
 | Onglet | Couleur | Fichier | Références | Colonnes |
 |---|---|---|---|---|
-| EAU | `#0ea5e9` bleu | `eau.csv` | `AEP-0001` | 27 |
-| ASSAINISSEMENT | `#22c55e` vert | `assainissement.csv` | `AC-0001` | 27 |
-| SPANC | `#a855f7` violet | `spanc.csv` | `ANC-0001` | 29 |
+| EAU | `#0ea5e9` bleu | `eau.csv` | `AEP-0001` | 20 |
+| ASSAINISSEMENT | `#22c55e` vert | `assainissement.csv` | `AC-0001` | 20 |
+| SPANC | `#a855f7` violet | `spanc.csv` | `ANC-0001` | 20 |
 | CONFIGURATION | `#94a3b8` gris | `parametres.csv` | — | 4 |
 
-Le matériel se choisit en **trois listes liées** — type, puis modèle, puis détail —
-alimentées par un catalogue éditable, stocké dans `parametres.csv`.
+**La saisie se réduit à trois listes liées** — type, puis modèle, puis détail —
+alimentées par un catalogue éditable, stocké dans `parametres.csv`. Tout le reste
+d'une ligne est produit par l'application : position, méthode de mesure, horodatage,
+référence. Sur le terrain, un relevé = un appui GPS et trois choix.
 
 ---
 
@@ -46,26 +48,23 @@ des autres. La colonne `filiere` est conservée : elle sert de garde-fou à l'im
 Format : **UTF-8 avec BOM**, séparateur `;` par défaut (configurable `;` / `,` / tabulation),
 fins de ligne CRLF, échappement RFC 4180. Ouvrable directement dans Excel français.
 
-### Colonnes communes aux trois fichiers de relevés
+### Colonnes — identiques dans les trois fichiers
 
 ```
-id;filiere;date_saisie;operateur;
+id;filiere;reference;date_saisie;operateur;
 latitude;longitude;altitude_m;
 precision_m;dispersion_m;methode_gps;nb_mesures;duree_gps_s;
 position_ajustee;ecart_ajustement_m;
 x_l93;y_l93;
-type_materiel;modele;detail;
-reference;commune;<champs métier de la filière>;observations
+type_materiel;modele;detail
 ```
 
-`type_materiel`, `modele` et `detail` sont les trois niveaux de la cascade : ils
-identifient l'ouvrage et remplacent l'ancienne colonne unique `type_ouvrage`.
+Seules les trois dernières sont saisies. `type_materiel`, `modele` et `detail` sont
+les niveaux de la cascade ; ils portent à eux seuls la description de l'ouvrage.
 
-| Fichier | Champs métier |
-|---|---|
-| `eau.csv` | `diametre_mm;materiau;annee_pose;etat;accessibilite` |
-| `assainissement.csv` | `reseau;diametre_mm;materiau;profondeur_m;etat` |
-| `spanc.csv` | `adresse;proprietaire;parcelle;nb_eh;conformite;date_controle;exutoire` |
+Les trois filières ont aujourd'hui les mêmes colonnes mais gardent chacune leur
+fichier : `filiere` sert de garde-fou à l'import, et rien n'oblige les trois à rester
+alignées si une d'elles a besoin d'un champ propre.
 
 ### `parametres.csv` — le catalogue de matériel
 
@@ -316,14 +315,14 @@ geoloc/
 └── memoire/             # suivi du projet entre sessions
 ```
 
-## Ajouter un champ
+## Ajouter du matériel
 
-Tout passe par `js/config.js` : ajouter une entrée dans `champs` de la filière
-concernée. Formulaire, colonne CSV, filtre et affichage suivent automatiquement.
-Aucun HTML à modifier.
+**Ça ne passe pas par le code.** Le catalogue s'édite depuis Configuration, ou en
+masse dans `parametres.csv` au tableur.
 
-**Ajouter du matériel ne passe pas par le code** : c'est le catalogue, éditable
-depuis Configuration ou via `parametres.csv`.
+Ajouter une *colonne* au CSV, en revanche, se fait dans `js/config.js` :
+`COLONNES_TECHNIQUES` pour une donnée produite par l'application,
+`CHAMPS_CASCADE` pour un niveau de saisie supplémentaire.
 
 ## Limites connues
 
@@ -338,6 +337,11 @@ depuis Configuration ou via `parametres.csv`.
   n'est produite. À faire dans le SIG ou le tableur si besoin.
 - Le catalogue s'édite ligne à ligne : renommer un type partout se fait dans
   `parametres.csv` au tableur, pas dans l'interface.
+- **Aucun champ libre** : ce qui ne rentre pas dans le catalogue ne se note pas.
+  C'est le prix de la saisie en trois gestes — si le besoin d'une observation
+  revient du terrain, il faudra rouvrir la question.
+- Aucune commune n'est saisie : le rattachement administratif se fait dans le SIG,
+  à partir des coordonnées.
 - Aucun fond gratuit ne descend nativement sous ~50 m de large. Pour atteindre les
   dix mètres visés, la carte agrandit la tuile la plus fine disponible : le
   géoréférencement reste juste, l'image est interpolée. Le facteur d'agrandissement

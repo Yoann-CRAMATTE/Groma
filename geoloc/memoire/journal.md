@@ -4,6 +4,46 @@ Une entrée par session de travail, la plus récente en haut.
 
 ---
 
+## 19/09/2026 — Suppression du formulaire métier (v0.7)
+
+**Demande :** capture d'écran du bloc de champs sous la cascade — « supprime cette
+partie ». Après clarification sur la portée : tout, de *Référence* à *Observations*.
+
+**Fait :** le relevé se réduit au bouton GPS et aux trois listes liées.
+
+- `config.js` vidé de `CHAMPS_COMMUNS`, `CHAMP_OBSERVATIONS`, `ETATS` et des tableaux
+  `champs` des trois filières. Une filière n'est plus qu'une identité : libellé,
+  couleur, préfixe, fichier.
+- `reference` passe dans `COLONNES_TECHNIQUES` — elle reste générée automatiquement,
+  elle n'est simplement plus saisissable.
+- Les trois CSV tombent de 27 / 27 / 29 à **20 colonnes**, désormais identiques.
+- Retiré dans la foulée, parce que plus rien ne les alimentait : le champ
+  « Communes proposées » de la configuration, la `datalist` associée,
+  `remplirCommunes()`, `toutesColonnes()` et `resumePoint()`.
+- `construireChamp()` ne traitait plus qu'un seul type : devenu
+  `construireChampCascade()`, sans les branches select / textarea / number mortes.
+
+**Effet de bord traité :** la note RGPD de l'onglet SPANC décrivait « un nom de
+propriétaire, une adresse et une parcelle » — plus rien de tout cela n'est saisi.
+Ce n'est pas pour autant sorti du RGPD : une position à quelques mètres sur une
+installation ANC désigne un foyer aussi sûrement qu'une adresse. `docs/RGPD.md` et
+l'avertissement de l'interface disent maintenant cela, et pointent le risque de
+recoupement cadastral.
+
+**Détail d'interface :** au repos, Modèle et Détail affichaient « (aucun) », ce qui
+se lit « il n'existe pas de modèle » au lieu de « choisis d'abord un type ». Uniformisé
+sur « — » : le champ désactivé et le niveau parent vide suffisent à dire l'attente.
+
+**Ce que ça coûte, écrit noir sur blanc :** plus de champ libre pour noter ce qui ne
+rentre dans aucune case, plus de commune saisie (à retrouver au SIG depuis les
+coordonnées). Décision assumée — à rouvrir si le terrain la conteste.
+
+**Vérifié :** audit d'affichage sur quinze formats, aucun défaut ; test fonctionnel
+complet — le formulaire ne contient plus que trois champs, la cascade filtre, un
+relevé s'enregistre, se retrouve par la recherche et se relit sans perte.
+
+---
+
 ## 18/09/2026 — Refonte tablette et catalogue de matériel (v0.6)
 
 **Demande :** interface pensée pour la tablette — dans chaque onglet, la relève en

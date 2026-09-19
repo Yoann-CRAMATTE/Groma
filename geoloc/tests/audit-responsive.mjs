@@ -176,8 +176,6 @@ for (const vp of TABLETTE.concat(PORTRAIT.map(w => ({ width: w, height: 760 })))
   await page.selectOption('#eau-type_materiel', 'Réducteur de pression');
   await page.selectOption('#eau-modele', 'DN 65');
   await page.selectOption('#eau-detail', 'À pilote');
-  await page.fill('#eau-commune', 'Réchésy');
-  await page.fill('#eau-observations', 'Chambre enterrée sous trottoir, accès par tampon fonte');
   await page.click('#eau-btn-valider');
   await page.waitForTimeout(400);
 

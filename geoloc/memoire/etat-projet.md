@@ -3,11 +3,12 @@
 > Mémoire de travail. À relire en début de session **avant** d'ouvrir le code,
 > à mettre à jour en fin de session. Évite de relire toute l'application à chaque fois.
 
-**Dernière mise à jour :** 18/09/2026 (v0.6)
+**Dernière mise à jour :** 19/09/2026 (v0.7)
 **Branche :** `claude/geoloc-web-app-duccxo`
-**Statut :** v0.6 fonctionnelle. Refonte tablette : recherche en haut, relevé, liste
-en dessous ; matériel en trois listes liées alimentées par `parametres.csv`. Testée en
-navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysage.
+**Statut :** v0.7 fonctionnelle. Interface tablette (recherche / relevé / liste) et
+**saisie réduite aux trois listes liées** : plus aucun champ métier, ni commune, ni
+observations. Un relevé = un appui GPS et trois choix. Testée en navigateur headless
+sur quinze formats, de 280 px à 1180 px, portrait et paysage.
 
 ---
 
@@ -17,7 +18,7 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 |---|---|---|
 | `index.html` | Coquille : en-tête, nav, conteneur, datalist, toast | oui |
 | `css/style.css` | Feuille unique, réglée pour la tablette, paliers 768 / 480 / 360 px + paysage court | oui |
-| `js/config.js` | **Source de vérité du schéma** : filières, champs, couleurs, colonnes CSV | oui |
+| `js/config.js` | **Source de vérité du schéma** : filières, cascade, couleurs, colonnes CSV | oui |
 | `js/catalogue.js` | Catalogue matériel 3 niveaux, graine livrée, lecture/écriture `parametres.csv` | oui |
 | `js/lambert93.js` | WGS84 → EPSG:2154, constantes IGN | oui, vérifié |
 | `js/csv.js` | Sérialisation / lecture RFC 4180, BOM UTF-8, détection de séparateur | oui, aller-retour testé |
@@ -31,11 +32,14 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 
 ## Invariants à ne pas casser
 
-1. **`js/config.js` pilote tout.** Ajouter un champ = une entrée dans `champs`.
-   Le formulaire, la colonne CSV, le filtre et l'affichage suivent seuls.
-2. **Un CSV par filière** (`eau.csv`, `assainissement.csv`, `spanc.csv`), chacun
-   limité à ses propres colonnes. La colonne `filiere` reste présente comme
-   garde-fou à l'import. Le stockage interne, lui, reste un stock unique.
+1. **La saisie se limite à la cascade.** Trois listes liées, rien d'autre. Toute
+   nouvelle donnée est soit produite par l'application (`COLONNES_TECHNIQUES`), soit
+   un niveau de cascade supplémentaire — jamais un champ libre rajouté au formulaire.
+   Décision explicite du 19/09, pas un oubli.
+2. **Un CSV par filière** (`eau.csv`, `assainissement.csv`, `spanc.csv`). Les trois
+   ont aujourd'hui les mêmes vingt colonnes, mais gardent chacune leur fichier : la
+   colonne `filiere` est le garde-fou à l'import, et rien n'oblige les trois à rester
+   alignées. Le stockage interne, lui, reste un stock unique.
    **`parametres.csv` est le quatrième fichier** : il porte le catalogue, pas des
    relevés, et ne se mélange jamais aux trois autres.
 3. **`localStorage` fait autorité.** Chaque fichier disque est une projection
@@ -107,6 +111,13 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
   évite une dépendance (`proj4js`) pour une seule projection.
 - **Pas de carte embarquée** : tuiles = requêtes réseau et dépendance externe, sans
   valeur ajoutée pour la saisie. Lien OpenStreetMap ouvert à la demande.
+- **Aucun champ libre, aucune commune** (19/09) : le formulaire métier — référence,
+  commune, diamètre, matériau, année, état, accessibilité, observations — a été
+  supprimé en bloc. Ce qui ne rentre pas dans le catalogue ne se note pas. Le prix
+  est réel : plus de mémo de terrain, et le rattachement communal se fait au SIG
+  depuis les coordonnées. Le gain est une saisie en trois gestes, gantée, sous la
+  pluie. Si le besoin d'observation revient du terrain, c'est un quatrième niveau de
+  cascade ou un retour du textarea — à trancher, pas à improviser.
 - **Catalogue dans son propre fichier** plutôt que dans `config.js` : la nomenclature
   du matériel change d'une campagne et d'un service à l'autre, le schéma des champs
   non. Les mélanger obligerait à modifier le code pour ajouter un diamètre.
@@ -143,10 +154,13 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
       Si la Géoplateforme a changé, corriger depuis Configuration, pas dans le code.
 - [ ] Champ photo — travail commencé puis mis de côté, à reprendre sur demande.
 - [ ] Renommage global d'un type de matériel depuis l'interface (aujourd'hui : tableur).
+- [ ] Trancher si un champ d'observation libre doit revenir, après usage terrain.
 
 ## Points de vigilance
 
-- **RGPD / SPANC** : nom, adresse, parcelle, position d'un domicile. Cf. `docs/RGPD.md`.
+- **RGPD / SPANC** : depuis la v0.7, ni nom ni adresse ne sont saisis — mais une
+  position à quelques mètres sur une installation ANC désigne un foyer. Le traitement
+  reste soumis au RGPD, seul le risque en cas de fuite baisse. Cf. `docs/RGPD.md`.
   Base légale, durée de conservation et information des personnes relèvent de la
   collectivité.
 - **Contexte sécurisé obligatoire** pour le GPS. Cause n°1 de « ça ne marche pas ».
