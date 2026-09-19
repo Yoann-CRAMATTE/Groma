@@ -26,6 +26,7 @@
     points: [],
     ongletActif: null,
     positions: {},   // filiereId -> dernière position relevée
+    favoris: {},     // filiereId -> combinaisons type/modèle/détail mises de côté
     edition: {},     // filiereId -> id du point en cours de modification
     affinage: {}     // filiereId -> série d'acquisition en cours
   };
@@ -292,12 +293,74 @@
     ]);
   }
 
+  // ------------------------------------------------------------- favoris
+
+  // Séparateur invisible : un « | » pourrait apparaître dans un libellé du
+  // catalogue, ce caractère de contrôle non.
+  var SEP_FAVORI = '\u001f';
+
+  function cleFavori(p) {
+    return [p.type_materiel || '', p.modele || '', p.detail || ''].join(SEP_FAVORI);
+  }
+
   /**
-   * Bloc « relevé » : on prend la position d'abord, on décrit le matériel ensuite.
-   * C'est l'ordre du terrain — on arrive sur l'ouvrage, on se géolocalise, puis
-   * on regarde ce qu'on a sous les yeux.
+   * L'étoile porte sur la **combinaison**, pas sur le relevé : c'est bien « ce
+   * matériel-là, je le repose souvent » qu'on met de côté. Deux relevés du même
+   * ensemble s'allument donc ensemble — c'est voulu, pas un effet de bord.
    */
-  function blocReleve(f) {
+  function estFavori(filiereId, p) {
+    return (etat.favoris[filiereId] || []).indexOf(cleFavori(p)) !== -1;
+  }
+
+  function basculerFavori(filiereId, p) {
+    if (!p.type_materiel) {
+      toast('Sans type de matériel, il n\'y a rien à mettre en favori.', 'erreur');
+      return;
+    }
+    var liste = (etat.favoris[filiereId] || []).slice();
+    var cle = cleFavori(p);
+    var i = liste.indexOf(cle);
+    if (i === -1) liste.push(cle); else liste.splice(i, 1);
+
+    etat.favoris[filiereId] = liste;
+    Store.ecrireFavoris(etat.favoris);
+    rafraichirListe(filiereId);
+    rafraichirFavoris(filiereId);
+    toast(i === -1 ? 'Ajouté aux favoris.' : 'Retiré des favoris.', 'info');
+  }
+
+  /** Raccourcis affichés en haut de la fenêtre de mesure. */
+  function rafraichirFavoris(filiereId) {
+    var hote = document.getElementById(filiereId + '-favoris');
+    if (!hote) return;
+
+    var liste = etat.favoris[filiereId] || [];
+    vider(hote);
+    hote.hidden = !liste.length;
+    if (!liste.length) return;
+
+    hote.appendChild(el('span', { classe: 'favoris-titre', texte: '★ Favoris' }));
+    liste.forEach(function (cle) {
+      var v = cle.split(SEP_FAVORI);
+      hote.appendChild(el('button', {
+        type: 'button', classe: 'favori',
+        texte: v.filter(Boolean).join(' › '),
+        title: 'Reprendre cette combinaison',
+        onclick: function () {
+          poserCascade(filiereId, { type_materiel: v[0], modele: v[1], detail: v[2] });
+        }
+      }));
+    });
+  }
+
+  // -------------------------------------------------- fenêtre de mesure
+
+  /**
+   * Toute la saisie tient dans une fenêtre : position d'abord, matériel ensuite.
+   * C'est l'ordre du terrain — on arrive sur l'ouvrage, on se géolocalise, puis
+   * on regarde ce qu'on a sous les yeux. L'écran de fond, lui, reste la liste.
+   */
+  function contenuMesure(f) {
     var lignes = [
       ['Latitude', 'lat'], ['Longitude', 'lon'], ['Altitude', 'alt'], ['Précision', 'prec'],
       ['Dispersion', 'disp'], ['Mesures', 'nb'], ['X Lambert 93', 'x93'], ['Y Lambert 93', 'y93']
@@ -326,7 +389,7 @@
         }),
         el('button', {
           classe: 'btn-carte btn-gps', type: 'button', id: f.id + '-btn-carte',
-          texte: '🗺  Ajuster sur la carte', disabled: 'disabled',
+          texte: '🗺  Centrer sur le point', disabled: 'disabled',
           onclick: function () { ouvrirCarte(f.id); }
         })
       ]),
@@ -346,12 +409,15 @@
       else notes.push(construireChampNote(f.id, c));
     });
 
-    var formulaire = el('form', { id: f.id + '-form', autocomplete: 'off' }, [cascade].concat(notes).concat([
+    var formulaire = el('form', { id: f.id + '-form', autocomplete: 'off' }, [
+      el('div', { classe: 'favoris', id: f.id + '-favoris', hidden: 'hidden' }),
+      cascade
+    ].concat(notes).concat([
       el('div', { classe: 'actions' }, [
         el('button', { classe: 'btn-primaire btn-enregistrer', type: 'submit', id: f.id + '-btn-valider', texte: 'Enregistrer le relevé' }),
         el('button', {
-          type: 'button', texte: 'Réinitialiser',
-          onclick: function () { reinitialiserFormulaire(f.id); }
+          type: 'button', texte: 'Annuler',
+          onclick: function () { fermerMesure(f.id); }
         })
       ])
     ]));
@@ -360,14 +426,72 @@
       enregistrerPoint(f.id);
     });
 
-    return el('section', { classe: 'bloc bloc-releve', id: f.id + '-bloc-releve' }, [
-      el('div', { classe: 'bloc-titre' }, [
-        el('h2', { id: f.id + '-titre-releve', texte: 'Nouveau relevé' }),
-        el('span', { classe: 'bloc-soustitre', texte: f.titre })
-      ]),
-      position,
-      formulaire
+    return [position, formulaire];
+  }
+
+  function modaleMesure(f) {
+    return el('div', { classe: 'modale modale-mesure', id: f.id + '-modale-mesure', hidden: 'hidden' }, [
+      // Pas de fermeture au clic sur le fond : un geste de trop effacerait une
+      // position qu'on vient de mettre trente secondes à affiner.
+      el('div', { classe: 'modale-fond' }),
+      el('div', {
+        classe: 'modale-fenetre modale-fenetre--mesure', role: 'dialog', 'aria-modal': 'true',
+        'aria-labelledby': f.id + '-titre-mesure', id: f.id + '-fenetre-mesure', tabindex: '-1'
+      }, [
+        el('header', { classe: 'modale-entete' }, [
+          el('h2', { id: f.id + '-titre-mesure', texte: 'Nouvelle mesure' }),
+          el('button', {
+            type: 'button', classe: 'modale-fermer', 'aria-label': 'Fermer', texte: '✕',
+            onclick: function () { fermerMesure(f.id); }
+          })
+        ])
+      ].concat(contenuMesure(f)))
     ]);
+  }
+
+  /** Une saisie est entamée dès qu'il y a une position ou un début de description. */
+  function mesureEntamee(filiereId) {
+    if (etat.positions[filiereId]) return true;
+    var valeurs = lireFormulaire(filiereId);
+    return Object.keys(valeurs).some(function (k) { return !!valeurs[k]; });
+  }
+
+  function afficherMesure(filiereId, titre) {
+    var modale = document.getElementById(filiereId + '-modale-mesure');
+    document.getElementById(filiereId + '-titre-mesure').textContent = titre;
+    rafraichirFavoris(filiereId);
+    modale.hidden = false;
+    majVerrouDefilement();
+    // Le focus va sur la fenêtre, pas sur le premier bouton : sur un écran court,
+    // amener un bouton en vue fait défiler le contenu et escamote titre et croix.
+    var fenetre = document.getElementById(filiereId + '-fenetre-mesure');
+    fenetre.scrollTop = 0;
+    fenetre.focus();
+  }
+
+  function ouvrirMesure(filiereId) {
+    reinitialiserFormulaire(filiereId);
+    afficherMesure(filiereId, 'Nouvelle mesure');
+  }
+
+  function fermerMesure(filiereId, sansConfirmation) {
+    var modale = document.getElementById(filiereId + '-modale-mesure');
+    if (modale.hidden) return;
+    if (!sansConfirmation && mesureEntamee(filiereId)
+      && !confirm('Abandonner cette mesure ? Ce qui a été saisi sera perdu.')) return;
+
+    reinitialiserFormulaire(filiereId);
+    modale.hidden = true;
+    majVerrouDefilement();
+    var bouton = document.getElementById(filiereId + '-btn-creer');
+    if (bouton) bouton.focus();
+  }
+
+  /** Une fenêtre ouverte ne doit pas laisser la page défiler derrière elle. */
+  function majVerrouDefilement() {
+    var ouvert = !!document.querySelector('.modale:not([hidden])');
+    if (ouvert) document.body.setAttribute('data-modale', 'true');
+    else document.body.removeAttribute('data-modale');
   }
 
   function construireVueFiliere(f) {
@@ -382,15 +506,20 @@
     ]);
 
     return el('section', { classe: 'vue', id: 'vue-' + f.id, role: 'tabpanel', 'aria-labelledby': 'onglet-' + f.id, hidden: 'hidden' }, [
+      el('button', {
+        classe: 'btn-primaire btn-creer', type: 'button', id: f.id + '-btn-creer',
+        texte: '+  Créer une mesure',
+        onclick: function () { ouvrirMesure(f.id); }
+      }),
       recherche,
-      blocReleve(f),
       el('section', { classe: 'bloc' }, [
         el('div', { classe: 'bloc-titre' }, [
           el('h2', { texte: 'Relevés effectués' }),
           el('span', { classe: 'bloc-soustitre', texte: 'du plus récent au plus ancien' })
         ]),
         el('ul', { classe: 'liste', id: f.id + '-liste' })
-      ])
+      ]),
+      modaleMesure(f)
     ]);
   }
 
@@ -618,7 +747,7 @@
 
     Store.ecrirePoints(etat.points);
     var reference = point.reference;
-    reinitialiserFormulaire(filiereId);
+    fermerMesure(filiereId, true);
     rafraichirListe(filiereId);
 
     synchroniserFichier(filiereId).then(function (r) {
@@ -641,10 +770,22 @@
 
   function construireLignePoint(filiereId, p) {
     var f = Cfg.filiere(filiereId);
+    var favori = estFavori(filiereId, p);
     var enfants = [
       el('div', { classe: 'point-entete' }, [
         el('span', { classe: 'point-ref', texte: p.reference || '(sans référence)' }),
-        el('span', { classe: 'point-date', texte: dateCourteFr(p.date_saisie) })
+        el('span', { classe: 'point-date', texte: dateCourteFr(p.date_saisie) }),
+        el('button', {
+          type: 'button',
+          classe: 'point-etoile' + (favori ? ' point-etoile--actif' : ''),
+          'aria-pressed': favori ? 'true' : 'false',
+          'aria-label': (favori ? 'Retirer des favoris' : 'Mettre en favori') + ' : ' + (materielDe(p) || 'ce relevé'),
+          title: favori
+            ? 'Retirer cette combinaison des favoris'
+            : 'Garder ce matériel sous la main pour les prochaines mesures',
+          texte: favori ? '★' : '☆',
+          onclick: function () { basculerFavori(filiereId, p); }
+        })
       ])
     ];
 
@@ -714,6 +855,7 @@
   function editerPoint(filiereId, id) {
     var p = etat.points.filter(function (x) { return x.id === id; })[0];
     if (!p) return;
+    reinitialiserFormulaire(filiereId);
     etat.edition[filiereId] = id;
     ecrireFormulaire(filiereId, p);
     if (p.latitude && p.longitude) {
@@ -736,7 +878,7 @@
     var info = document.getElementById(filiereId + '-etat-gps');
     info.setAttribute('data-niveau', 'info');
     info.textContent = 'Modification en cours. « Localiser » remplace la position enregistrée.';
-    document.getElementById(filiereId + '-bloc-releve').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    afficherMesure(filiereId, 'Modifier ' + (p.reference || 'ce relevé'));
   }
 
   /**
@@ -748,8 +890,9 @@
     if (!p) return;
     reinitialiserFormulaire(filiereId);
     poserCascade(filiereId, p);
-    toast('Attributs repris. Relevez la nouvelle position.', 'info');
-    document.getElementById(filiereId + '-bloc-releve').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    afficherMesure(filiereId, 'Nouvelle mesure');
+    toast('Matériel repris. Relevez la nouvelle position.', 'info');
   }
 
   function supprimerPoint(filiereId, id) {
@@ -852,6 +995,7 @@
     };
 
     modale.hidden = false;
+    majVerrouDefilement();
     message.textContent = '';
 
     var fonds = fondsUtilisables();
@@ -884,6 +1028,7 @@
     var modale = document.getElementById('modale-carte');
     if (modale.hidden) return;
     modale.hidden = true;
+    majVerrouDefilement();
     if (carte) { carte.detruire(); carte = null; }
     var declencheur = carteEtat && carteEtat.declencheur;
     carteEtat = null;
@@ -939,8 +1084,11 @@
       if (carte) { carte.zoomer(-1); rafraichirInfosCarte(); }
     });
 
+    // La carte est par-dessus la mesure : Échap referme la plus haute d'abord.
     document.addEventListener('keydown', function (ev) {
-      if (ev.key === 'Escape') fermerCarte();
+      if (ev.key !== 'Escape') return;
+      if (!document.getElementById('modale-carte').hidden) { fermerCarte(); return; }
+      Cfg.FILIERES.forEach(function (f) { fermerMesure(f.id); });
     });
   }
 
@@ -1706,6 +1854,7 @@
   function demarrer() {
     etat.config = Store.lireConfig();
     etat.points = Store.lirePoints();
+    etat.favoris = Store.lireFavoris();
     Catalogue.charger();
 
     construireOnglets();

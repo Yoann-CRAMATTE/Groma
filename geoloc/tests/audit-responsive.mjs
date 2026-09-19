@@ -98,9 +98,27 @@ async function controler(page, ou) {
 const valeurs = (page, sel) => page.$$eval(sel + ' option',
   os => os.map(o => o.value).filter(Boolean));
 
+/** La saisie vit dans une fenêtre : rien n'est atteignable sans l'ouvrir. */
+async function ouvrirMesure(page) {
+  await page.click('#eau-btn-creer');
+  await page.waitForSelector('#eau-modale-mesure:not([hidden])', { timeout: 5000 });
+  await page.waitForTimeout(160);
+}
+
+async function fermerMesure(page) {
+  await page.click('#eau-modale-mesure .modale-fermer');
+  await page.waitForTimeout(200);
+}
+
+async function releverPosition(page) {
+  await page.click('#eau-btn-gps');
+  await page.waitForFunction(() => document.querySelector('#eau-pos-lat').textContent !== '—', { timeout: 10000 });
+}
+
 /** Le niveau 2 ne doit proposer que les modèles du type choisi au niveau 1. */
 async function verifierCascade(page, etiquette) {
   await page.click('#onglet-eau');
+  await ouvrirMesure(page);
   await page.selectOption('#eau-type_materiel', 'Compteur');
   const compteurs = await valeurs(page, '#eau-modele');
   await page.selectOption('#eau-type_materiel', 'Ventouse');
@@ -121,6 +139,7 @@ async function verifierCascade(page, etiquette) {
     defauts++; console.log('  ✗ ' + etiquette + ' — cascade : niveau 3 survit à un changement de niveau 1');
   }
   await page.selectOption('#eau-type_materiel', '');
+  await fermerMesure(page);
 }
 
 async function parcourir(page, etiquette) {
@@ -136,16 +155,20 @@ async function parcourir(page, etiquette) {
     await controler(page, etiquette + ' / ' + onglet);
   }
 
-  // La modale d'ajustement est une surface d'interface à part entière.
-  // L'enregistrement précédent a réinitialisé la position : il faut la reprendre.
+  // Les deux fenêtres sont des surfaces d'interface à part entière, et la carte
+  // s'ouvre par-dessus la mesure : les deux états se contrôlent.
   await page.click('#onglet-eau');
-  await page.click('#eau-btn-gps');
-  await page.waitForFunction(() => document.querySelector('#eau-pos-lat').textContent !== '—', { timeout: 10000 });
+  await ouvrirMesure(page);
+  await releverPosition(page);
+  await controler(page, etiquette + ' / mesure');
+
   await page.click('#eau-btn-carte');
   await page.waitForTimeout(500);
   await controler(page, etiquette + ' / carte');
   await page.click('#modale-fermer');
   await page.waitForTimeout(150);
+
+  await fermerMesure(page);
 }
 
 const nav = await chromium.launch({
@@ -167,18 +190,25 @@ for (const vp of TABLETTE.concat(PORTRAIT.map(w => ({ width: w, height: 760 })))
 
   const page = await ctx.newPage();
   page.on('pageerror', e => { defauts++; console.log('  ✗ ' + etiquette + ' — erreur JS : ' + e.message); });
+  // Abandonner une mesure entamée demande confirmation : sans quoi Playwright
+  // refuse le dialogue par défaut et la fenêtre ne se ferme jamais.
+  page.on('dialog', d => d.accept());
 
   await page.goto(BASE, { waitUntil: 'networkidle' });
 
   // un point relevé : la liste et ses actions font partie de la surface à vérifier
-  await page.click('#eau-btn-gps');
-  await page.waitForFunction(() => document.querySelector('#eau-pos-lat').textContent !== '—', { timeout: 10000 });
+  await ouvrirMesure(page);
+  await releverPosition(page);
   await page.selectOption('#eau-type_materiel', 'Réducteur de pression');
   await page.selectOption('#eau-modele', 'DN 65');
   await page.selectOption('#eau-detail', 'À pilote');
   await page.fill('#eau-observations', 'Chambre enterrée sous trottoir, accès par tampon fonte');
   await page.click('#eau-btn-valider');
   await page.waitForTimeout(400);
+
+  // une combinaison en favori : les raccourcis de la fenêtre sont une surface de plus
+  await page.click('#eau-liste .point-etoile');
+  await page.waitForTimeout(200);
 
   console.log('— ' + etiquette);
   await verifierCascade(page, etiquette);

@@ -116,6 +116,38 @@ colonne `filiere` est accepté et rattaché à la filière ciblée.
 
 ---
 
+## Créer une mesure
+
+L'écran d'un onglet ne porte que trois choses : le bouton **Créer une mesure**, une
+barre de recherche, et la liste des relevés. La saisie, elle, se fait dans une
+fenêtre qui s'ouvre par-dessus — l'écran de fond reste ce qu'on consulte, pas ce
+qu'on remplit.
+
+Dans la fenêtre, dans cet ordre :
+
+1. **Relevé rapide** ou **Précision maximale** — la position ;
+2. **Centrer sur le point** — la carte, si le GPS est tombé à côté ;
+3. les **favoris**, s'il y en a — un appui repose une combinaison connue ;
+4. les **trois listes liées**, puis la **note** ;
+5. **Enregistrer le relevé**, qui referme la fenêtre.
+
+*Annuler* et la croix demandent confirmation dès qu'une position a été prise ou un
+champ rempli. Le clic sur le fond ne ferme rien : un geste de trop effacerait une
+position qu'on vient de mettre trente secondes à affiner.
+
+## Favoris
+
+L'étoile d'une ligne ne marque pas *ce relevé-là* : elle met de côté **la combinaison
+qui le compose** — type, modèle, détail. Deux relevés du même ensemble s'allument donc
+ensemble, et la combinaison apparaît en raccourci en haut de la fenêtre de mesure. Un
+appui remplit les trois listes.
+
+C'est ce qui rend tenable une tournée de vingt vannes identiques.
+
+Les favoris vivent dans le navigateur, par poste. **Ils ne partent dans aucun CSV** :
+ce sont des raccourcis de saisie, pas des données de relevé. Effacer les données ne
+les touche pas.
+
 ## Relevé de la position
 
 Trois gestes, du plus rapide au plus sûr :
@@ -243,8 +275,8 @@ seul le fond manque. Le reste de l'application n'émet aucune requête.
 
 L'outil de terrain visé est la **tablette** : la mise en page est réglée pour elle
 (768×1024, 810×1080, 834×1194, et les deux orientations jusqu'à 1180×820). Chaque
-onglet de relevé se lit de haut en bas — **recherche**, **relevé en cours**,
-**relevés déjà effectués**, du plus récent au plus ancien.
+onglet de relevé se lit de haut en bas — **Créer une mesure**, **recherche**,
+**relevés déjà effectués** du plus récent au plus ancien.
 
 L'application reste vérifiée à **280, 320, 360, 390, 412, 430, 480 et 540 px** de
 large et en **paysage court** (568×320, 653×280) : elle doit rester utilisable au

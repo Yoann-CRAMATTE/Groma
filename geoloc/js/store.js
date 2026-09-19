@@ -9,6 +9,7 @@
   var CLE_POINTS = 'geoloc.points';
   var CLE_CONFIG = 'geoloc.config';
   var CLE_COMPTEUR = 'geoloc.compteurs';
+  var CLE_FAVORIS = 'geoloc.favoris';
   var DB_NOM = 'geoloc';
   var DB_STORE = 'handles';
 
@@ -80,6 +81,21 @@
 
   function ecrirePoints(points) {
     ecrireJson(CLE_POINTS, points);
+  }
+
+  // --- Favoris ---
+  //
+  // Une combinaison type / modèle / détail mise de côté pour être reposée d'un
+  // geste. Ce sont des raccourcis de saisie propres au poste, pas des données de
+  // relevé : ils ne partent dans aucun CSV.
+
+  function lireFavoris() {
+    var f = lireJson(CLE_FAVORIS, {});
+    return f && typeof f === 'object' && !Array.isArray(f) ? f : {};
+  }
+
+  function ecrireFavoris(favoris) {
+    ecrireJson(CLE_FAVORIS, favoris);
   }
 
   // --- Configuration ---
@@ -202,6 +218,7 @@
     }).catch(function () { return null; });
   }
 
+  /** Purge les relevés. Favoris et catalogue survivent : ce sont des réglages. */
   function toutEffacer() {
     localStorage.removeItem(CLE_POINTS);
     localStorage.removeItem(CLE_COMPTEUR);
@@ -211,6 +228,8 @@
     nomFichier: nomFichier,
     lirePoints: lirePoints,
     ecrirePoints: ecrirePoints,
+    lireFavoris: lireFavoris,
+    ecrireFavoris: ecrireFavoris,
     lireConfig: lireConfig,
     ecrireConfig: ecrireConfig,
     prochaineReference: prochaineReference,

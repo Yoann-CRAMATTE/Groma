@@ -4,6 +4,56 @@ Une entrée par session de travail, la plus récente en haut.
 
 ---
 
+## 19/09/2026 — Écran allégé, saisie en fenêtre, favoris (v0.8)
+
+**Demande :** sur l'onglet EAU — un bouton « Créer une mesure », la liste en dessous,
+une barre de recherche, et une étoile sur une mesure déjà faite pour mettre **les
+éléments qui la composent** en favori. Le bouton ouvre la fenêtre où l'on prend la
+mesure, où l'on centre sur le point si besoin, et où l'on dit à quoi elle correspond.
+Consigne de travail posée avant : on parle d'un onglet, les autres suivent.
+
+**Fait :**
+- L'écran d'un onglet ne porte plus que **bouton, recherche, liste**. `blocReleve()`
+  devient `contenuMesure()` et part dans `modaleMesure()`, une fenêtre par filière.
+- `ouvrirMesure` / `afficherMesure` / `fermerMesure` ; « Modifier » et « Dupliquer »
+  ouvrent la même fenêtre au lieu de faire défiler la page.
+- Étoile par ligne, favoris dans `localStorage` (`geoloc.favoris`), raccourcis en
+  haut de la fenêtre — un appui repose les trois listes.
+- Les trois onglets suivent sans recopie : le test fonctionnel le vérifie
+  explicitement pour ASSAINISSEMENT et SPANC.
+
+**L'étoile porte sur la combinaison, pas sur le relevé.** C'est la lecture littérale
+de la demande — « les éléments qui composent cette mesure ». Conséquence visible :
+deux relevés « Compteur › DN 20 › Volumétrique » s'allument ensemble. C'est cohérent
+(l'étoile est une vue de l'ensemble des favoris) mais ça se voit, donc c'est dit.
+
+**Deux gardes posées volontairement :**
+- Le clic sur le fond de la fenêtre ne ferme rien, et la croix demande confirmation
+  dès qu'une position est prise ou un champ rempli. Perdre une position affinée
+  trente secondes par un geste de trop serait la faute la plus coûteuse de l'outil.
+- `body[data-modale] { overflow: hidden }` : sans ça, le doigt fait défiler la liste
+  derrière au lieu d'agir dans la fenêtre.
+
+**Deux défauts trouvés par les tests, pas à la lecture :**
+- *z-index inopérant.* `.modale-mesure { z-index: 50 }` était écrasé par
+  `.modale { z-index: 60 }`, écrit plus bas dans la feuille à spécificité égale. Ça
+  ne se voyait pas — l'ordre du DOM plaçait quand même la carte au-dessus. Corrigé en
+  `.modale.modale-mesure`, qui ne dépend plus de l'ordre.
+- *Titre escamoté sur téléphone.* Donner le focus au bouton GPS à l'ouverture faisait
+  défiler la fenêtre pour l'amener en vue, poussant titre et croix hors écran. Le
+  focus va maintenant sur la fenêtre elle-même (`tabindex="-1"`).
+
+Note de méthode : mon propre harnais de test avait un bug symétrique — il jugeait la
+visibilité sur `offsetParent`, qui est toujours `null` pour un `position: fixed`.
+Quatre « échecs » venaient de là, pas de l'application.
+
+**Vérifié :** audit d'affichage sur quinze formats (fenêtre de mesure et carte
+par-dessus comprises), aucun défaut ; test fonctionnel de bout en bout — ouverture,
+GPS, carte superposée, enregistrement, étoile, raccourci, abandon confirmé, modifier,
+dupliquer, et la même disposition sur les trois onglets.
+
+---
+
 ## 19/09/2026 — Retour de la note de terrain (v0.7.1)
 
 **Demande :** « remets les observations, il en faut une sur le terrain. »

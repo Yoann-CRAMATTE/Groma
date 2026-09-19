@@ -310,11 +310,11 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .point-entete {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
 }
 
-.point-ref { font-weight: 600; font-size: 0.9rem; }
+.point-ref { font-weight: 600; font-size: 0.9rem; flex: 1; }
 .point-date { font-size: 0.7rem; color: var(--texte-faible); white-space: nowrap; }
 .point-detail { font-size: 0.8rem; color: var(--texte-faible); margin-top: 4px; word-break: break-word; }
 .point-coord {
@@ -467,9 +467,81 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   text-align: right;
 }
 
-/* ---------- Bloc relevé ---------- */
+/* ---------- Créer une mesure ---------- */
 
-.bloc-releve { border-left: 3px solid var(--accent); }
+/* Première chose à l'écran, pleine largeur : c'est l'action de l'onglet. */
+.btn-creer {
+  width: 100%;
+  min-height: 56px;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  margin-top: 14px;
+}
+
+/* ---------- Fenêtre de mesure ---------- */
+
+/* Sous la carte d'ajustement, qui s'ouvre par-dessus. Sélecteur doublé à
+   dessein : `.modale` porte z-index 60 plus bas dans la feuille et gagnerait
+   à spécificité égale. */
+.modale.modale-mesure { z-index: 50; }
+
+.modale-fenetre--mesure { max-width: 680px; }
+
+/* La fenêtre reçoit le focus à l'ouverture : pas de halo pour autant, ce n'est
+   pas une cible cliquable. */
+.modale-fenetre--mesure:focus { outline: none; }
+
+/* Le fond ne se ferme pas au clic : la règle est dans app.js, le curseur le dit. */
+.modale-mesure .modale-fond { cursor: default; }
+
+/* Une fenêtre ouverte fige la page derrière : sinon le doigt fait défiler la
+   liste au lieu de la carte ou du formulaire. */
+body[data-modale] { overflow: hidden; }
+
+/* ---------- Favoris ---------- */
+
+.favoris {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.favoris[hidden] { display: none; }
+
+.favoris-titre {
+  font-size: 0.72rem;
+  color: var(--texte-faible);
+  letter-spacing: 0.04em;
+  margin-right: 2px;
+}
+
+.favori {
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 8px 12px;
+  min-height: 40px;
+  border-radius: 999px;
+  border-color: var(--accent);
+  color: var(--accent);
+  background: transparent;
+}
+
+.point-etoile {
+  padding: 0;
+  width: 40px;
+  min-height: 40px;
+  font-size: 1.1rem;
+  line-height: 1;
+  border-color: transparent;
+  background: transparent;
+  color: var(--texte-faible);
+  flex-shrink: 0;
+}
+
+.point-etoile--actif { color: var(--alerte); }
+.point-etoile:hover:not(:disabled) { border-color: var(--alerte); color: var(--alerte); }
 
 .zone-position {
   padding-bottom: 14px;
@@ -900,6 +972,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
   .carte { height: clamp(320px, 52vh, 560px); }
   .modale-fenetre { max-width: 720px; padding: 20px; }
+  .btn-creer { min-height: 60px; }
 
   .point { padding: 14px 16px; }
   .fichiers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }

@@ -3,12 +3,13 @@
 > Mémoire de travail. À relire en début de session **avant** d'ouvrir le code,
 > à mettre à jour en fin de session. Évite de relire toute l'application à chaque fois.
 
-**Dernière mise à jour :** 19/09/2026 (v0.7.1)
+**Dernière mise à jour :** 19/09/2026 (v0.8)
 **Branche :** `claude/geoloc-web-app-duccxo`
-**Statut :** v0.7.1 fonctionnelle. Interface tablette (recherche / relevé / liste),
-saisie réduite aux **trois listes liées plus une note libre** : ni champ métier, ni
-commune. Un relevé = un appui GPS, trois choix, une phrase si besoin. Testée en
-navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysage.
+**Statut :** v0.8 fonctionnelle. L'écran d'un onglet = **bouton « Créer une mesure »,
+recherche, liste**. Toute la saisie est passée dans une fenêtre par-dessus. Étoile par
+ligne : elle met en favori **la combinaison** type/modèle/détail, reposable d'un appui
+dans la fenêtre. Testée en navigateur headless sur quinze formats, de 280 px à
+1180 px, portrait et paysage.
 
 ---
 
@@ -22,7 +23,7 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 | `js/catalogue.js` | Catalogue matériel 3 niveaux, graine livrée, lecture/écriture `parametres.csv` | oui |
 | `js/lambert93.js` | WGS84 → EPSG:2154, constantes IGN | oui, vérifié |
 | `js/csv.js` | Sérialisation / lecture RFC 4180, BOM UTF-8, détection de séparateur | oui, aller-retour testé |
-| `js/store.js` | `localStorage` (points, config, compteurs) + IndexedDB (un handle par filière) | oui |
+| `js/store.js` | `localStorage` (points, config, compteurs, favoris) + IndexedDB (handles) | oui |
 | `js/geo.js` | API Geolocation, relevé ponctuel et série affinée | oui, agrégation testée |
 | `js/carte.js` | Visualiseur de tuiles WMTS/XYZ, fonds gratuits, validation | oui, projection vérifiée |
 | `js/app.js` | Construction du DOM, formulaires, liste, configuration | oui |
@@ -58,9 +59,11 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
    de recherche collante. Un `top: 53px` en dur avait déjà cassé au palier 360 px.
 8. **Cible principale : la tablette (768 → 1180 px). Plancher de support : 280 px.**
    Toute modification d'interface se vérifie aux deux bouts avant d'être poussée.
-9. **Ordre de lecture d'un onglet de relevé, non négociable** : recherche, relevé en
-   cours, relevés effectués du plus récent au plus ancien. C'est le geste de terrain :
-   on cherche, on saisit, on vérifie ce qu'on vient de faire.
+9. **Ordre de lecture d'un onglet de relevé, non négociable** : bouton « Créer une
+   mesure », recherche, relevés effectués du plus récent au plus ancien. L'écran de
+   fond est ce qu'on *consulte* ; la saisie vit dans une fenêtre par-dessus.
+   **Les trois onglets partagent ce code** (`construireVueFiliere`) : une
+   modification de mise en forme tombe sur les trois sans recopie.
 10. **La cascade descend, jamais l'inverse.** Changer le type vide le modèle et le
    détail devenus impossibles. Une valeur venue d'un relevé enregistré échappe seule
    à cette règle : elle est réaffichée marquée *(hors catalogue)* plutôt qu'effacée.
@@ -120,6 +123,19 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
   rattachement communal, lui, reste au SIG depuis les coordonnées.
 - **La note n'est pas recopiée par « Dupliquer »** : elle vaut pour un ouvrage
   précis. La reprendre en série produirait des constats faux.
+- **Saisie en fenêtre plutôt qu'en ligne** (19/09) : le formulaire occupait la moitié
+  de l'écran en permanence alors qu'il ne sert qu'au moment de la pose. En fenêtre,
+  l'écran de fond redevient ce qu'on regarde vingt fois par tournée — la liste.
+- **L'étoile porte sur la combinaison, pas sur le relevé** : c'est « ce matériel-là,
+  je le repose souvent » qu'on met de côté, pas « ce point-là est important ». Deux
+  relevés du même ensemble s'allument donc ensemble. Conséquence visible et assumée,
+  pas un effet de bord.
+- **Les favoris ne partent dans aucun CSV** : raccourcis de saisie propres au poste,
+  pas des données. Ils survivent à « Effacer toutes les données ».
+- **Le fond de la fenêtre de mesure ne ferme pas au clic** : abandonner une position
+  affinée trente secondes par un geste de trop serait la faute la plus coûteuse de
+  l'application. Croix et *Annuler* demandent confirmation dès qu'il y a de quoi
+  perdre quelque chose.
 - **Catalogue dans son propre fichier** plutôt que dans `config.js` : la nomenclature
   du matériel change d'une campagne et d'un service à l'autre, le schéma des champs
   non. Les mélanger obligerait à modifier le code pour ajouter un diamètre.
@@ -157,6 +173,7 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 - [ ] Champ photo — travail commencé puis mis de côté, à reprendre sur demande.
 - [ ] Renommage global d'un type de matériel depuis l'interface (aujourd'hui : tableur).
 - [ ] Consigne aux agents sur ce qu'on n'écrit pas dans `observations` (cf. RGPD).
+- [ ] Réordonner les favoris (aujourd'hui : ordre d'ajout).
 
 ## Points de vigilance
 
