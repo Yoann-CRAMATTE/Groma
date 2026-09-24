@@ -4,6 +4,50 @@ Une entrée par session de travail, la plus récente en haut.
 
 ---
 
+## 24/09/2026 — Le dépôt devient GéoLoc — **incrément 0**
+
+**Demande :** renommer le dépôt GitHub avec le nom de l'application, pour le dépôt
+complet. L'ancien projet qui s'y trouvait est caduc et doit être supprimé. Cette
+incrémentation devient l'incrémentation 0.
+
+**Fait :**
+- **Synapse supprimé** : `ARCHITECTURE.md`, `DECISIONS.md`, `spike.py`,
+  `synapse-desktop.html`, `requirements.txt` et les dix fichiers de `modules/`
+  (`ia_core/`, `apps/paint/`). Récupérables dans l'historique au commit `b45f653`
+  si le projet reprend un jour.
+- **GéoLoc remonté à la racine** : plus de sous-dossier `geoloc/`. Git a suivi les
+  déplacements comme des renommages, l'historique de chaque fichier est intact.
+- **`CLAUDE.md` réécrit** de bout en bout. L'ancien décrivait Synapse — Rust,
+  navigation par orbes, protocole de manifestes — et pilotait pourtant chaque
+  session sur ce dépôt. C'était la dette la plus coûteuse des trois.
+- **`README.md` remis d'aplomb** : il décrivait encore les boutons « Relevé
+  rapide », « Précision maximale » et « Centrer sur le point », supprimés à la
+  session précédente, et une fenêtre de carte séparée qui n'existe plus.
+- Chemins corrigés partout (`python3 serveur.py`, `node tests/audit-responsive.mjs`).
+
+**Pourquoi la racine et pas le sous-dossier.** Un dépôt nommé GeoLoc avec tout dans
+`geoloc/` est redondant, et surtout GitHub Pages sert depuis la racine ou depuis
+`docs/` : garder le sous-dossier aurait imposé un contorsionnement au moment du
+déploiement HTTPS, qui est justement la prochaine étape utile.
+
+**La numérotation v0.1 → v0.9 est abandonnée.** L'état d'aujourd'hui est le socle,
+l'incrément 0 ; les suivants se comptent à partir de 1. Les entrées ci-dessous sont
+conservées telles quelles : elles portent le *pourquoi* des invariants encore en
+vigueur, et une décision qu'on ne sait plus justifier est une décision qu'on
+recassera.
+
+**Le renommage GitHub lui-même reste à faire par Yoann** : le serveur GitHub
+disponible ici n'expose aucun outil de modification des réglages d'un dépôt, et la
+CLI `gh` n'est pas accessible. Settings → General → Repository name. À noter : pas
+d'accent possible, ce sera `GeoLoc` ou `geoloc`.
+
+---
+
+# Historique — avant le socle
+
+> Numérotation v0.1 → v0.9, abandonnée le 24/09/2026. Conservée parce qu'elle
+> explique les invariants.
+
 ## 19/09/2026 — Fenêtre de mesure carte-first (v0.9)
 
 **Demande :** à l'ouverture de la fenêtre de mesure, la géolocalisation se fait tout

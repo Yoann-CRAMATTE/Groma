@@ -9,8 +9,8 @@
  *
  * Playwright n'est PAS une dépendance de l'application : il ne sert qu'ici.
  *
- *   python3 geoloc/serveur.py 8123 &
- *   npm install playwright && node geoloc/tests/audit-responsive.mjs
+ *   python3 serveur.py 8123 &
+ *   npm install playwright && node tests/audit-responsive.mjs
  *
  * Sortie non nulle si un défaut est trouvé — exploitable en intégration continue.
  */

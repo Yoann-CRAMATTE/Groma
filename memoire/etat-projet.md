@@ -3,9 +3,17 @@
 > Mémoire de travail. À relire en début de session **avant** d'ouvrir le code,
 > à mettre à jour en fin de session. Évite de relire toute l'application à chaque fois.
 
-**Dernière mise à jour :** 19/09/2026 (v0.9)
+**Dernière mise à jour :** 24/09/2026 — **incrément 0 (socle)**
 **Branche :** `claude/geoloc-web-app-duccxo`
-**Statut :** v0.9 fonctionnelle. L'écran d'un onglet = **bouton « Créer une mesure »,
+
+> **Le dépôt est désormais GéoLoc seul.** Le projet Synapse qu'il portait (shell
+> desktop AI-native, resté au stade du spike) a été supprimé le 24/09/2026 : il est
+> caduc. L'application est remontée à la racine — plus de sous-dossier `geoloc/`.
+> **L'état décrit ici est le socle, l'incrément 0.** La numérotation v0.1 → v0.9 est
+> abandonnée ; les incréments se comptent à partir de 1. L'historique reste dans
+> `journal.md`, il explique les invariants ci-dessous.
+
+**Statut :** socle fonctionnel. L'écran d'un onglet = **bouton « Créer une mesure »,
 recherche, liste**. Toute la saisie est passée dans une fenêtre par-dessus, et cette
 fenêtre est **carte-first** : la carte s'ouvre en haut au zoom maximal, viseur fixe au
 centre, l'acquisition GPS part seule, puis viennent position, cascade et observation.
@@ -18,6 +26,8 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 
 | Fichier | Rôle | Stable ? |
 |---|---|---|
+| `CLAUDE.md` | Consignes de développement — à relire avant de coder | oui |
+| `README.md` | Documentation complète : CSV, GPS, carte, affichage, limites | oui |
 | `index.html` | Coquille : en-tête, nav, conteneur, datalist, toast | oui |
 | `css/style.css` | Feuille unique, réglée pour la tablette, paliers 768 / 480 / 360 px + paysage court | oui |
 | `js/config.js` | **Source de vérité du schéma** : filières, cascade, couleurs, colonnes CSV | oui |
@@ -194,7 +204,7 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 
 ## Points de vigilance
 
-- **RGPD / SPANC** : depuis la v0.7, ni nom ni adresse ne sont saisis — mais une
+- **RGPD / SPANC** : ni nom ni adresse ne sont saisis — mais une
   position à quelques mètres sur une installation ANC désigne un foyer. Le traitement
   reste soumis au RGPD, seul le risque en cas de fuite baisse. **Le champ
   `observations` rouvre la brèche** : rien n'empêche d'y écrire un nom ou une

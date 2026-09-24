@@ -1,192 +1,125 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Consignes de développement pour Claude Code sur ce dépôt.
 
-## Documents de référence
+## Avant toute session
 
-Lire ces fichiers **avant toute session de développement** — ils sont le système de contrôle du projet :
+Lire **`memoire/etat-projet.md`** — c'est le système de contrôle du projet :
+invariants à ne pas casser, décisions déjà prises et pourquoi, reste à faire.
+Il évite de relire toute l'application à chaque fois.
 
-- `ARCHITECTURE.md` — schéma du protocole manifeste, dépendances entre composants, machine à états UI, critères du spike 48h
-- `DECISIONS.md` — pourquoi Rust pour l'UI, pourquoi Ollama seul au MVP, ce qui est exclu et pourquoi
+`memoire/journal.md` porte l'historique séance par séance. À consulter quand une
+décision surprend : la raison y est presque toujours écrite.
+
+**Mettre les deux à jour en fin de session.** Une modification non consignée est une
+modification perdue à la session suivante.
+
+---
+
+## Qu'est-ce que GéoLoc ?
+
+Application web de relevé GPS d'ouvrages de terrain pour la Communauté de communes
+du Sundgau. Trois filières — **EAU**, **ASSAINISSEMENT**, **SPANC** — un fichier CSV
+par filière, plus un catalogue de matériel dans son propre fichier.
+
+L'outil visé est la **tablette**, utilisée dehors, parfois avec des gants. Le relevé
+type : on arrive sur l'ouvrage, la position se prend toute seule, on recale le viseur
+sur le tampon visible en photo aérienne, on choisit le matériel dans trois listes
+liées, on ajoute une phrase si l'ouvrage la mérite.
 
 ---
 
 ## Rôle de Claude
 
-Co-développeur rigoureux. Analyser, anticiper, alerter — pas exécuter aveuglément.
-Avant tout code : analyser les risques, proposer une architecture, valider ensemble.
-**Changements un à la fois** — jamais de bulk edit.
+Co-développeur exigeant, pas exécutant. Analyser, anticiper, alerter.
+
+- **Avant de coder** : analyser les risques, proposer, valider ensemble.
+- **Un changement à la fois.** Jamais de modification en masse.
+- **Dire quand c'est faux**, même si la demande vient de Yoann.
+- **Ne jamais inventer** un comportement, une URL de service ou une constante
+  géodésique. Si ce n'est pas vérifiable ici, le dire.
 
 ---
 
-## Qu'est-ce que Synapse ?
+## Stack — et ce qu'on ne fait pas
 
-Shell desktop AI-native qui tourne par-dessus un OS existant (Windows en priorité, puis Linux/macOS).
-L'IA n'est pas un assistant adjacent — elle est la couche de contrôle native de chaque application.
+| Couche | Techno |
+|---|---|
+| Tout | **HTML, CSS et JavaScript nus** |
+| Stockage | `localStorage` + IndexedDB (handles de fichiers) |
+| Fichiers | File System Access API, repli export manuel |
+| Cartographie | Visualiseur de tuiles maison (`js/carte.js`) |
+| Serveur de développement | `serveur.py`, bibliothèque standard Python |
+| Tests d'affichage | Playwright — **hors application**, jamais chargé par la page |
 
-**Philosophie** : interface minimaliste géométrique, navigation par orbes (ronds), zéro chrome inutile. Chaque app expose un `manifest.json` qui dit à l'IA comment la piloter (inspiré MCP, appliqué à un OS entier).
+**Aucune dépendance, aucune étape de build, aucun framework.** L'application doit
+tourner dix ans sans chaîne d'outils à maintenir. Toute proposition d'ajouter une
+bibliothèque au *runtime* se discute avant, pas pendant.
 
----
-
-## Stack technique
-
-| Couche | Techno | Raison |
-|--------|--------|--------|
-| Core UI / shell / animations | **Rust** | Performances, sécurité mémoire, 60 fps sans GIL |
-| Orchestration IA / manifestes | **Python** | Écosystème AI imbattable (Ollama, OpenAI, Anthropic) |
-| Apps tierces | Python ou tout langage | Via le protocole manifest — pas de contrainte |
-| IA locale | Ollama (Llama 3.2 ou léger) | Inférence locale sans dépendance cloud |
-| IA cloud | API configurable (OpenAI, Anthropic…) | Fallback ou modèles plus puissants |
-| IPC core ↔ IA | IPC léger (socket Unix / named pipe) | Pont Rust ↔ Python sans overhead |
-| Packaging | Cargo + PyInstaller bundlé | `.exe` Windows pour le MVP |
-| Stockage | SQLite local | Simple, embarqué, sans serveur |
-
-> **Règle d'or** : tout ce qui touche au rendu, aux animations et à la réactivité de l'UI s'écrit en Rust. Tout ce qui touche à l'IA, aux manifestes et à la logique des apps s'écrit en Python.
+ES5 dans les fichiers de `js/` : `var`, `function`, pas de fléchées ni de `class`.
+C'est la convention en place, la suivre plutôt que la panacher.
 
 ---
 
-## Architecture UI
+## Invariants
 
-### Bureau (idle)
-- Fond sombre quasi vide
-- Un seul élément : **orbe central** bas/centre, affiche `HH:MM` + `JEU 8 JUN`
-- Sous l'orbe : 3 toggles — WiFi, Bluetooth, Dark/Light mode
+Ils sont détaillés dans `memoire/etat-projet.md`. Les quatre qui coûtent le plus cher
+à casser :
 
-### Navigation (clic orbe)
-- Menu monte depuis l'orbe avec animation
-- **Niveau 1** : barre IA en haut + 5 catégories en ronds (Bureau, Jeux, IA, Store, Système)
-- **Niveau 2** : clic catégorie → ligne d'apps s'affiche au-dessus en remplacement ; 2e clic referme ; clic ailleurs ferme tout
-
-### Mode travail (app ouverte)
-- Tout disparaît (bureau, orbe, menu)
-- Visible uniquement : **bourrelet** — petit onglet arrondi collé au bord bas, affiche heure + jour abrégé
-- **Clic bourrelet** → monte et se morphe en orbe (350 ms) → menu s'ouvre automatiquement par-dessus l'app
-- 2e clic → menu ferme, bourrelet redescend et reprend sa forme
-
-La maquette HTML interactive `synapse-desktop.html` est la **référence visuelle et comportementale** pour tout développement Rust UI.
+1. **`localStorage` fait autorité.** Le fichier disque est une projection réécrite
+   intégralement. Un échec d'écriture ne doit jamais perdre une saisie terrain.
+2. **Ne jamais annoncer une précision meilleure que celle du récepteur.**
+   `precision_m` = meilleure `accuracy` observée, jamais une valeur calculée. La
+   dispersion est mesurée et stockée à part. Un recalage manuel ne touche pas
+   `precision_m` : il alimente `ecart_ajustement_m`.
+3. **La saisie se limite à la cascade et à la note.** Trois listes liées plus
+   `observations`. Toute autre donnée est produite par l'application. Le formulaire
+   ne se regarnit pas champ par champ.
+4. **Le catalogue ne vit pas dans le code.** Ajouter du matériel se fait depuis
+   Configuration ou dans `parametres.csv`, jamais dans `config.js`.
 
 ---
 
-## Protocole app ↔ IA (concept central)
+## Vérifier avant de pousser
 
-Chaque app livre un `manifest.json` décrivant ses capacités à l'IA :
+Le GPS exige un contexte sécurisé : `file://` est refusé sans message clair.
 
-```json
-{
-  "app": "paint",
-  "version": "1.0",
-  "capabilities": [
-    {
-      "action": "draw_circle",
-      "description": "Dessine un cercle sur le canvas",
-      "params": { "x": "int", "y": "int", "radius": "int", "color": "hex" },
-      "trigger": { "type": "api_call", "method": "canvas.drawCircle" }
-    },
-    {
-      "action": "set_color",
-      "description": "Change la couleur active",
-      "params": { "color": "hex" },
-      "trigger": { "type": "ui_element", "id": "color-picker", "event": "setValue" }
-    }
-  ]
-}
+```bash
+python3 serveur.py 8123 &
+node tests/audit-responsive.mjs
 ```
 
-L'IA lit le manifeste et pilote l'app sans la "voir" — en appelant les actions décrites.
+L'audit parcourt les quatre onglets sur quinze formats — de 280 px au 1180×820 —
+et signale débordement, texte tronqué, cible tactile sous 36 px et erreur
+JavaScript. **Sortie non nulle en cas de défaut.**
 
----
+Il ne contrôle que l'affichage. Une modification de comportement se vérifie en plus
+par un script Playwright dédié, écrit pour l'occasion et jeté après : ce qui compte,
+c'est d'avoir vu l'application faire réellement ce qu'on annonce.
 
-## Configuration IA (premier démarrage)
-
-1. **Mode local** : Ollama installé ? → sélection du modèle disponible
-2. **Mode cloud** : saisie clé API (OpenAI / Anthropic / autre)
-3. Modifiable dans Système > IA Config
-
----
-
-## Structure projet
-
-```
-synapse/
-├── config.json
-├── runtime.json
-├── checklist.md
-├── dev-notes.md
-├── projet.md
-├── modules/
-│   ├── desktop/
-│   ├── menu/
-│   ├── bourrelet/
-│   ├── ia-core/
-│   └── apps/
-│       └── paint/
-│           ├── paint.py
-│           └── manifest.json
-├── design/
-│   └── design-system.css
-├── lib/
-├── assets/
-├── tests/
-├── dist/
-└── docs/
-```
+Cible principale : **tablette, 768 → 1180 px.** Plancher de support : **280 px.**
+Toute modification d'interface se vérifie aux deux bouts.
 
 ---
 
 ## Conventions
 
-- Indentation : 4 espaces (Python), 2 espaces (JS/HTML/CSS), style Rust standard (`rustfmt`)
-- Nommage fichiers : `kebab-case`
-- Variables : `snake_case` (Python & Rust), `camelCase` (JS)
-- Pas de `print()` / `println!()` dans le code livré
-- Commenter le **pourquoi**, jamais le quoi
+- Indentation : 2 espaces (JS, HTML, CSS), 4 espaces (Python)
+- Fichiers : `kebab-case` — variables : `snake_case` (Python), `camelCase` (JS)
+- **Code et interface en français**, y compris les identifiants
+- Pas de `console.log` ni de `print()` dans le code livré
+- **Commenter le pourquoi, jamais le quoi.** Un commentaire qui paraphrase la ligne
+  en dessous est du bruit ; un commentaire qui explique une contrainte cachée, un
+  piège déjà rencontré ou un arbitrage, c'est ce qui rend le code relisable.
 
 ---
 
-## Ordre de développement MVP
+## Données personnelles
 
-> Décision issue du LLM Council (08/06/2026) — consensus total.
+L'onglet SPANC relève des installations chez des particuliers. Aucun nom ni adresse
+n'est saisi, mais **une position à quelques mètres désigne un foyer** : c'est une
+donnée à caractère personnel au sens du RGPD.
 
-**Ne pas commencer par les animations d'orbes.** C'est de la dette émotionnelle déguisée en avancement.
-
-### Étape 0 — Spike 48h (PREMIÈRE CHOSE)
-- [ ] `manifest.json` Paint : 3 actions (`new_canvas`, `set_color`, `draw_line`)
-- [ ] `intent_parser.py` : texte naturel → Ollama → action JSON
-- [ ] `paint.py` reçoit l'action et l'exécute
-- [ ] Fenêtre Qt basique pour visualiser — **pas d'orbe, pas d'animation**
-- **Critère de succès :** `"dessine une ligne rouge"` → Paint trace une ligne rouge
-
-### Étape 1 — UI minimale (après spike validé)
-- [ ] Orbe minimal (heure/date, clic, menu 2 niveaux plat)
-- [ ] Mode travail avec bourrelet d'état simple
-- [ ] Machine à états explicite (cf. `ARCHITECTURE.md`)
-
-### Étape 2 — Intégration
-- [ ] Manifeste Paint dans l'UI Synapse
-- [ ] Écran config IA (Ollama uniquement)
-- [ ] Protocole `manifest.json` v1 documenté
-
-### Étape 3 — Polish (en dernier)
-- [ ] Animations d'orbes et morphose bourrelet
-- [ ] PyInstaller testé et validé sur Windows
-
-### V1.1
-- [ ] Interface abstraite IA (cloud API en option)
-- [ ] App Store
-- [ ] Sandbox apps
-- [ ] Apps natives : Notes, Texte, Terminal léger
-
-### V2
-- [ ] Port multi-plateforme (Linux, macOS)
-- [ ] Modèle IA embarqué < 1B params
-- [ ] Exploration Wear OS / watchOS
-
-### V1.1
-- [ ] App Store (téléchargement apps compatibles Synapse)
-- [ ] Sandbox (isolation apps)
-- [ ] Apps natives : Notes, Texte, Terminal léger, Assistant IA
-
-### V2
-- [ ] Port multi-plateforme (Linux, macOS)
-- [ ] Modèle IA embarqué < 1B params
-- [ ] Exploration Wear OS / watchOS
+Le champ `observations` est le point sensible — rien n'empêche d'y écrire un nom ou
+une habitude de vie, et l'application ne peut pas le contrôler. Toute évolution qui
+touche à ce champ, à l'export ou au partage se pense avec `docs/RGPD.md` ouvert.
