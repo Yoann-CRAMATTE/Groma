@@ -34,8 +34,40 @@ python3 serveur.py 8123   # autre port
 > *contexte sécurisé* : en `file://`, le navigateur refuse le GPS sans message d'erreur
 > explicite. Seuls `http://localhost` et HTTPS fonctionnent.
 
-Pour un usage terrain sur téléphone, servir l'application en HTTPS (reverse proxy,
-hébergement interne, ou tunnel) — `localhost` ne vaut que sur la machine elle-même.
+---
+
+## Sur le terrain — installer l'application
+
+GéoLoc est une **PWA** : depuis l'adresse publiée en HTTPS, le navigateur propose
+de l'installer sur l'écran d'accueil. Elle s'ouvre alors en plein écran, sans barre
+d'adresse, et se comporte comme une application du téléphone.
+
+| Appareil | Geste |
+|---|---|
+| Android / Chrome | Bandeau « Installer », ou menu ⋮ → *Installer l'application* |
+| iOS / Safari | Partager → *Sur l'écran d'accueil* |
+| Bureau | Icône d'installation dans la barre d'adresse |
+
+**Une fois installée, elle fonctionne sans réseau** : interface, GPS, saisie,
+catalogue et export restent entiers — rien de tout cela ne dépend d'un serveur.
+**Seules les tuiles de carte manquent** hors couverture : elles viennent de l'IGN
+ou d'OpenStreetMap. La fenêtre de mesure le dit alors clairement, et le viseur,
+les coordonnées et l'enregistrement continuent de fonctionner.
+
+Les relevés vivent dans le navigateur du poste (`localStorage`). **Désinstaller
+l'application ou effacer les données du site les supprime** : exporter les CSV
+avant, ou lier un fichier depuis Configuration.
+
+### Déploiement
+
+Un passage sur `main` publie le dépôt tel quel sur GitHub Pages
+(`.github/workflows/pages.yml`). Il n'y a rien à construire — l'application est
+faite de fichiers statiques.
+
+Une mise à jour atteint les agents au **deuxième lancement** suivant la
+publication : le service worker sert d'abord ce qu'il a en cache, puis se met à
+jour en arrière-plan pour la fois d'après. C'est le prix du démarrage instantané
+et du hors-ligne.
 
 ---
 
@@ -326,6 +358,7 @@ la variable CSS `--h-entete`, que le mode paysage utilise pour se caler.
 python3 serveur.py 8123 &
 npm install playwright
 node tests/audit-responsive.mjs
+node tests/audit-pwa.mjs
 ```
 
 Le script parcourt les quatre onglets à chaque format — tables du catalogue dépliées
@@ -334,6 +367,12 @@ erreur JavaScript. Il contrôle aussi que la cascade filtre réellement : le niv
 doit dépendre du niveau 1, et le niveau 3 tomber quand le niveau 1 change. Sortie non
 nulle en cas de défaut. **Playwright n'est pas une dépendance de l'application** : il ne sert qu'à ce
 contrôle.
+
+`audit-pwa.mjs` contrôle l'autre promesse : manifeste valide, icônes présentes,
+service worker actif, et **application démarrable réseau coupé**. Il vérifie surtout
+que la liste `COQUILLE` du service worker couvre tout ce que charge `index.html` —
+un fichier ajouté à la page sans y être inscrit ne casse rien en ligne et casse tout
+hors ligne, chez l'agent, en tournée, sans message d'erreur.
 
 ---
 
@@ -354,9 +393,13 @@ Paris Notre-Dame `48.8566 ; 2.3522` → `X = 652 469 m ; Y = 6 862 035 m`.
 ```
 .
 ├── index.html
+├── manifest.webmanifest # PWA : nom, icônes, mode plein écran
+├── service-worker.js    # cache hors ligne de la coquille applicative
 ├── favicon.svg
+├── icons/               # icônes PWA, dérivées de favicon.svg
 ├── serveur.py           # serveur local (contexte sécurisé pour le GPS)
 ├── CLAUDE.md            # consignes de développement
+├── .github/workflows/   # publication GitHub Pages
 ├── css/style.css
 ├── js/
 │   ├── config.js        # schéma : onglets, champs, couleurs, colonnes CSV
@@ -383,11 +426,11 @@ Ajouter une *colonne* au CSV, en revanche, se fait dans `js/config.js` :
 
 ## Limites connues
 
-- La carte d'ajustement exige du réseau ; aucune tuile n'est mise en cache pour
-  l'instant (pas de mode hors-ligne cartographique).
+- **La carte exige du réseau.** L'application est installable et fonctionne hors
+  ligne, mais les tuiles ne sont pas mises en réserve : elles viennent de l'IGN et
+  d'OpenStreetMap, dont les conditions d'usage proscrivent la constitution de
+  réserves locales. Hors couverture, on relève au GPS sans recaler à l'œil.
 - Pas de photo rattachée aux points.
-- Pas de saisie hors-ligne installable (pas de service worker) — à ajouter si le
-  besoin terrain le confirme.
 - L'import fusionne sur l'identifiant `id` ; deux relevés du même ouvrage saisis sur
   deux appareils différents produisent deux lignes.
 - Les trois fichiers sont indépendants : aucune vue consolidée des trois filières

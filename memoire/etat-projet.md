@@ -3,8 +3,8 @@
 > Mémoire de travail. À relire en début de session **avant** d'ouvrir le code,
 > à mettre à jour en fin de session. Évite de relire toute l'application à chaque fois.
 
-**Dernière mise à jour :** 24/09/2026 — **incrément 0 (socle)**
-**Branche :** `claude/geoloc-web-app-duccxo`
+**Dernière mise à jour :** 27/09/2026 — **incrément 0 (socle)**
+**Branche :** `claude/geoloc-web-app-duccxo`, fusionnée dans `main`
 
 > **Le dépôt est désormais GéoLoc seul.** Le projet Synapse qu'il portait (shell
 > desktop AI-native, resté au stade du spike) a été supprimé le 24/09/2026 : il est
@@ -12,6 +12,10 @@
 > **L'état décrit ici est le socle, l'incrément 0.** La numérotation v0.1 → v0.9 est
 > abandonnée ; les incréments se comptent à partir de 1. L'historique reste dans
 > `journal.md`, il explique les invariants ci-dessous.
+>
+> **GéoLoc est une PWA publiée sur GitHub Pages** depuis le 27/09/2026 : installable
+> sur l'écran d'accueil, démarrable sans réseau, servie en HTTPS — ce qui débloque
+> enfin le GPS sur un téléphone de terrain.
 
 **Statut :** socle fonctionnel. L'écran d'un onglet = **bouton « Créer une mesure »,
 recherche, liste**. Toute la saisie est passée dans une fenêtre par-dessus, et cette
@@ -27,8 +31,12 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 | Fichier | Rôle | Stable ? |
 |---|---|---|
 | `CLAUDE.md` | Consignes de développement — à relire avant de coder | oui |
-| `README.md` | Documentation complète : CSV, GPS, carte, affichage, limites | oui |
-| `index.html` | Coquille : en-tête, nav, conteneur, datalist, toast | oui |
+| `README.md` | Documentation complète : CSV, GPS, carte, PWA, affichage, limites | oui |
+| `index.html` | Coquille : en-tête, nav, conteneur, toast, manifeste, enregistrement du SW | oui |
+| `manifest.webmanifest` | PWA : nom, icônes, plein écran. `start_url`/`scope` **relatifs** | oui |
+| `service-worker.js` | Cache hors ligne, stratégie cache-d'abord + revalidation | oui |
+| `icons/` | Icônes PWA dérivées de `favicon.svg` (192, 512, maskable, apple) | oui |
+| `.github/workflows/pages.yml` | Publication GitHub Pages à chaque passage sur `main` | oui |
 | `css/style.css` | Feuille unique, réglée pour la tablette, paliers 768 / 480 / 360 px + paysage court | oui |
 | `js/config.js` | **Source de vérité du schéma** : filières, cascade, couleurs, colonnes CSV | oui |
 | `js/catalogue.js` | Catalogue matériel 3 niveaux, graine livrée, lecture/écriture `parametres.csv` | oui |
@@ -41,6 +49,7 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 | `serveur.py` | Serveur local — indispensable, le GPS refuse `file://` | oui |
 | `docs/RGPD.md` | Point de vigilance sur les données SPANC | oui |
 | `tests/audit-responsive.mjs` | Affichage sur 15 formats (tablettes + téléphones) + contrôle de la cascade | oui |
+| `tests/audit-pwa.mjs` | Manifeste, icônes, service worker, cohérence `index.html` ↔ `COQUILLE`, démarrage hors réseau | oui |
 
 ## Invariants à ne pas casser
 
@@ -105,6 +114,15 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
    **attribution non vide** : c'est une obligation de licence.
 15. **L'attribution s'affiche en permanence sur la carte**, jamais dans un menu
    ni derrière un geste.
+16. **Tout fichier chargé par `index.html` s'inscrit dans `COQUILLE`**
+   (`service-worker.js`). L'oublier ne se voit pas en ligne et casse le
+   démarrage hors réseau. `tests/audit-pwa.mjs` le vérifie.
+17. **`start_url` et `scope` du manifeste restent relatifs (`.`).** Sur GitHub
+   Pages l'application vit sous `/<dépôt>/` : un `/` absolu la sortirait de sa
+   portée et empêcherait l'installation.
+18. **Les tuiles ne sont jamais mises en cache.** Les conditions d'usage de l'IGN
+   et d'OpenStreetMap proscrivent la constitution de réserves locales. Le service
+   worker n'intercepte que le même domaine, délibérément.
 
 ## Décisions prises
 
@@ -184,8 +202,13 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
       Les 316 lignes fournies sont plausibles et couvrent les cas courants, mais
       **elles ne sont pas validées métier** : c'est une amorce à corriger, pas une
       nomenclature de référence.
-- [ ] Déploiement HTTPS pour l'usage terrain sur téléphone (`localhost` ne suffit pas).
-- [ ] Service worker : saisie hors-ligne dans les secteurs sans réseau.
+- [x] ~~Déploiement HTTPS~~ — GitHub Pages, 27/09/2026.
+- [x] ~~Service worker~~ — coquille en cache, démarrage hors réseau, 27/09/2026.
+- [ ] **Avertir avant la perte des données.** Les relevés vivent dans
+      `localStorage` : désinstaller la PWA ou effacer les données du site les
+      supprime. Aujourd'hui rien ne le signale dans l'interface — c'est écrit dans
+      le README, ce qui ne protège personne. Piste : un rappel dès que des relevés
+      non exportés s'accumulent.
 - [ ] Export GeoJSON en plus du CSV, pour injection directe dans un SIG.
 - [ ] Dédoublonnage à l'import sur `reference` en plus de `id` (saisie multi-appareils).
 - [ ] Export consolidé des trois filières, si le besoin d'une vue unique revient.

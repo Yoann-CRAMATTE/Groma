@@ -4,6 +4,67 @@ Une entrée par session de travail, la plus récente en haut.
 
 ---
 
+## 27/09/2026 — PWA installable et dépôt unique publié
+
+**Demande :** un seul et unique dépôt, ouvert, d'où l'application s'exécute —
+accessible à tout le monde, en PWA.
+
+**Fait :**
+- `manifest.webmanifest` — plein écran, couleurs de l'application, aucune
+  orientation imposée (le paysage a été travaillé, le verrouiller le gâcherait).
+- `service-worker.js` — coquille en cache, démarrage sans réseau.
+- `icons/` — 192, 512, maskable et apple-touch, dérivées de `favicon.svg` par
+  Playwright. Pas d'outil graphique ajouté au projet, pas de binaire venu
+  d'ailleurs : l'icône reste la même source.
+- `.github/workflows/pages.yml` — publication à chaque passage sur `main`, avec
+  `enablement: true` pour activer Pages au premier tour sans passer par les
+  réglages.
+- `tests/audit-pwa.mjs` — nouveau contrôle permanent.
+- Branche fusionnée dans `main` : le dépôt n'a plus qu'une seule vérité.
+
+**Cache d'abord, revalidation en arrière-plan — et pas l'inverse.** Un
+« cache d'abord » pur oblige à incrémenter `VERSION` à chaque livraison. L'oublier
+une seule fois fige l'application sur le téléphone de l'agent, définitivement, sans
+que rien ne le signale depuis le bureau. Avec la revalidation, une version oubliée
+coûte un chargement de retard au lieu d'un blocage. Le prix assumé : une mise à
+jour atteint le terrain au **deuxième lancement** après publication.
+
+**`skipWaiting` + `clients.claim`.** Sans eux, une nouvelle version attend la
+fermeture de tous les onglets — en PWA installée, l'application peut rester ouverte
+des jours et un correctif n'arriverait jamais. Le risque de décalage en cours de
+session est nul ici : tout le JavaScript est chargé au démarrage, rien n'est
+récupéré à la demande.
+
+**Les tuiles ne sont pas mises en cache, et c'est délibéré.** Le service worker
+n'intercepte que le même domaine. Les conditions d'usage de l'IGN et d'OSM
+proscrivent la constitution de réserves locales. Conséquence à assumer : hors
+couverture, on relève au GPS sans recaler à l'œil sur la photo aérienne. La fenêtre
+le dit, elle ne le subit pas.
+
+**`start_url` et `scope` relatifs.** Sur Pages l'application vit sous `/<dépôt>/`.
+Un `/` absolu l'aurait sortie de sa portée et aurait fait échouer l'installation
+sans message clair. Le test le vérifie, parce que c'est le genre d'erreur qu'on ne
+voit pas en développement à la racine.
+
+**Le garde-fou a été mis à l'épreuve.** Un `js/oublie.js` ajouté à `index.html`
+sans être inscrit dans `COQUILLE` fait bien tomber `audit-pwa.mjs`. Un test qu'on
+n'a jamais vu échouer ne prouve rien.
+
+**Vérifié :** les trois suites passent — audit responsive quinze formats, test
+fonctionnel de la fenêtre de mesure, audit PWA dont le démarrage réseau coupé.
+
+**Reste à la main de Yoann :** renommer le dépôt en `GeoLoc` et le rendre public.
+Aucun des deux n'est accessible depuis ici — le serveur GitHub disponible n'expose
+pas les réglages de dépôt. **Pages exige un dépôt public** sur un compte gratuit :
+tant que le dépôt est privé, le workflow échouera.
+
+**Point laissé ouvert :** les relevés vivent dans `localStorage`. Désinstaller la
+PWA ou effacer les données du site les supprime, et **rien ne l'annonce dans
+l'interface** — c'est écrit dans le README, ce qui ne protège personne. Inscrit au
+reste à faire.
+
+---
+
 ## 24/09/2026 — Le dépôt devient GéoLoc — **incrément 0**
 
 **Demande :** renommer le dépôt GitHub avec le nom de l'application, pour le dépôt

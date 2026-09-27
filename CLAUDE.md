@@ -49,8 +49,9 @@ Co-développeur exigeant, pas exécutant. Analyser, anticiper, alerter.
 | Stockage | `localStorage` + IndexedDB (handles de fichiers) |
 | Fichiers | File System Access API, repli export manuel |
 | Cartographie | Visualiseur de tuiles maison (`js/carte.js`) |
+| Distribution | **PWA** — `manifest.webmanifest` + `service-worker.js`, publiée sur GitHub Pages |
 | Serveur de développement | `serveur.py`, bibliothèque standard Python |
-| Tests d'affichage | Playwright — **hors application**, jamais chargé par la page |
+| Tests | Playwright — **hors application**, jamais chargé par la page |
 
 **Aucune dépendance, aucune étape de build, aucun framework.** L'application doit
 tourner dix ans sans chaîne d'outils à maintenir. Toute proposition d'ajouter une
@@ -77,6 +78,10 @@ Ils sont détaillés dans `memoire/etat-projet.md`. Les quatre qui coûtent le p
    ne se regarnit pas champ par champ.
 4. **Le catalogue ne vit pas dans le code.** Ajouter du matériel se fait depuis
    Configuration ou dans `parametres.csv`, jamais dans `config.js`.
+5. **Tout fichier ajouté à `index.html` s'inscrit dans `COQUILLE`**
+   (`service-worker.js`). L'oublier ne casse rien en ligne et casse tout hors
+   ligne — chez l'agent, en tournée, sans message d'erreur. `tests/audit-pwa.mjs`
+   monte la garde, encore faut-il le lancer.
 
 ---
 
@@ -87,11 +92,17 @@ Le GPS exige un contexte sécurisé : `file://` est refusé sans message clair.
 ```bash
 python3 serveur.py 8123 &
 node tests/audit-responsive.mjs
+node tests/audit-pwa.mjs
 ```
 
-L'audit parcourt les quatre onglets sur quinze formats — de 280 px au 1180×820 —
-et signale débordement, texte tronqué, cible tactile sous 36 px et erreur
-JavaScript. **Sortie non nulle en cas de défaut.**
+`audit-responsive` parcourt les quatre onglets sur quinze formats — de 280 px au
+1180×820 — et signale débordement, texte tronqué, cible tactile sous 36 px et
+erreur JavaScript.
+
+`audit-pwa` contrôle le manifeste, les icônes, le service worker, la cohérence
+entre `index.html` et `COQUILLE`, et **démarre l'application réseau coupé**.
+
+**Sortie non nulle en cas de défaut** pour les deux.
 
 Il ne contrôle que l'affichage. Une modification de comportement se vérifie en plus
 par un script Playwright dédié, écrit pour l'occasion et jeté après : ce qui compte,
