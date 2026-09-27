@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Relevé GPS d'ouvrages Eau, Assainissement et SPANC vers un fichier CSV unique.">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0b0f14">
+  <title>GéoLoc</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <!-- iOS ignore le manifeste : nom, icône et mode plein écran passent par ces
+       balises, sans quoi « Sur l'écran d'accueil » produit un simple marque-page. -->
+  <link rel="apple-touch-icon" href="icons/icone-apple-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="GéoLoc">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- En-tête et onglets collent ensemble : évite d'aligner la nav sur une hauteur codée en dur. -->
+  <div class="barre-haute">
+    <header class="entete">
+      <h1>GÉO<span>LOC</span></h1>
+      <span class="badge-fichier" id="badge-fichier" data-etat="neutre">…</span>
+    </header>
+
+    <nav class="onglets" id="onglets" role="tablist" aria-label="Filières"></nav>
+  </div>
+
+  <main id="vues"></main>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/lambert93.js"></script>
+  <script src="js/carte.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/catalogue.js"></script>
+  <script src="js/csv.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/geo.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+    // Après le chargement : l'installation du cache ne doit pas disputer la
+    // bande passante au démarrage de l'application. Un échec est sans
+    // conséquence — GéoLoc fonctionne à l'identique sans service worker, il
+    // n'apporte que l'installation et le hors-ligne.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('service-worker.js').catch(function () {});
+      });
+    }
+  </script>
+</body>
+</html>
