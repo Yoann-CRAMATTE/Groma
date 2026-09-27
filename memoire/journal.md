@@ -53,10 +53,20 @@ n'a jamais vu échouer ne prouve rien.
 **Vérifié :** les trois suites passent — audit responsive quinze formats, test
 fonctionnel de la fenêtre de mesure, audit PWA dont le démarrage réseau coupé.
 
-**Reste à la main de Yoann :** renommer le dépôt en `GeoLoc` et le rendre public.
-Aucun des deux n'est accessible depuis ici — le serveur GitHub disponible n'expose
-pas les réglages de dépôt. **Pages exige un dépôt public** sur un compte gratuit :
-tant que le dépôt est privé, le workflow échouera.
+**`enablement: true` ne marche pas, essayé et retiré.** L'idée était d'activer Pages
+depuis le workflow pour éviter un aller-retour dans les réglages. Le premier
+déploiement a échoué sur `Create Pages site failed — Resource not accessible by
+integration` : le jeton du workflow n'a pas le droit de créer le site. L'option a
+été retirée plutôt que laissée en fausse promesse.
+
+**Reste à la main de Yoann**, rien de tout cela n'étant accessible depuis Claude
+Code (le serveur GitHub disponible n'expose pas les réglages de dépôt) :
+1. Renommer le dépôt en `GeoLoc` — pas d'accent possible.
+2. **Le rendre public.** Il est privé, et Pages n'existe pas pour un dépôt privé
+   sur un compte gratuit : c'est le vrai blocage du déploiement.
+3. Settings → Pages → Source : **GitHub Actions**.
+4. La description du dépôt est encore celle de Synapse (« Nouveau système
+   d'exploitation où l'AI est le système d'exploitation »).
 
 **Point laissé ouvert :** les relevés vivent dans `localStorage`. Désinstaller la
 PWA ou effacer les données du site les supprime, et **rien ne l'annonce dans
