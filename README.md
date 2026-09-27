@@ -64,6 +64,13 @@ Un passage sur `main` publie le dépôt tel quel sur GitHub Pages
 (`.github/workflows/pages.yml`). Il n'y a rien à construire — l'application est
 faite de fichiers statiques.
 
+**Deux réglages, une seule fois**, avant la première publication :
+
+1. **Dépôt public** — Settings → General → *Change repository visibility*.
+   Sur un compte gratuit, Pages n'est pas disponible pour un dépôt privé.
+2. **Pages activé** — Settings → Pages → *Source* : **GitHub Actions**.
+   Le jeton du workflow n'a pas le droit de créer le site lui-même.
+
 Une mise à jour atteint les agents au **deuxième lancement** suivant la
 publication : le service worker sert d'abord ce qu'il a en cache, puis se met à
 jour en arrière-plan pour la fois d'après. C'est le prix du démarrage instantané
