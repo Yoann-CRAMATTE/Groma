@@ -469,6 +469,40 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   margin-top: 14px;
 }
 
+/* ---------- Relevés encore dans le seul navigateur ---------- */
+
+/* En haut de l'onglet, avant le bouton de création : ce qui menace le travail
+   déjà fait passe avant l'invitation à en faire davantage. Ton d'alerte, pas de
+   danger — rien n'est perdu, il y a seulement quelque chose à mettre à l'abri. */
+.alerte-sauvegarde {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--alerte);
+  border-left-width: 3px;
+  border-radius: 0 8px 8px 0;
+  background: rgba(245, 158, 11, 0.07);
+}
+
+.alerte-sauvegarde[hidden] { display: none; }
+
+.alerte-texte {
+  flex: 1 1 200px;
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: var(--texte);
+}
+
+.alerte-texte strong { color: var(--alerte); }
+
+/* Le bouton ne se comprime jamais sous la cible tactile : en dessous de
+   200 px de texte disponible, il prend sa propre ligne. */
+.alerte-sauvegarde button { flex: 0 0 auto; }
+
 /* ---------- Fenêtre de mesure ---------- */
 
 /* Sous la carte d'ajustement, qui s'ouvre par-dessus. Sélecteur doublé à

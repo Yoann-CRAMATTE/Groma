@@ -4,6 +4,52 @@ Une entrée par session de travail, la plus récente en haut.
 
 ---
 
+## 27/09/2026 — Les relevés ne se perdent plus en silence
+
+**Demande :** corriger le point laissé ouvert à la session précédente — les relevés
+vivent dans `localStorage`, désinstaller la PWA ou effacer les données du site les
+supprime, et rien ne le signalait dans l'interface.
+
+**Fait :**
+- Bandeau en haut de l'onglet dès qu'une filière contient des relevés sortis nulle
+  part : le compte, ce qu'on risque, et un bouton d'export sur place.
+- `Store.lireSauvegardes` / `ecrireSauvegardes` — nouvelle clé `geoloc.sauvegardes`.
+- `marquerModifie` / `marquerSauvegarde` branchés sur enregistrement, suppression,
+  import, purge, écriture d'un fichier lié et export manuel.
+- `Store.demanderPersistance()` — demande au navigateur de ne pas évincer le
+  stockage sous la pression du disque.
+
+**Deux états par filière, pas un compteur.** Un modèle « N relevés en attente »
+paraît plus informatif et se trompe dès qu'on modifie ou supprime un relevé déjà
+exporté : le CSV sur le disque devient périmé alors que le compteur n'a pas bougé.
+Un horodatage présent ou absent — tout est sorti, ou il reste quelque chose — est
+toujours juste. Le compte affiché est celui de la filière entière, pas d'un delta.
+
+**La persistance est demandée après le premier enregistrement, pas au démarrage.**
+Chrome l'accorde en silence à une application installée, Firefox pose la question.
+Poser cette question sur une page encore vide n'a aucun sens ; une fois qu'il y a
+un relevé à protéger, elle se comprend.
+
+**L'export manuel est marqué optimiste, et c'est assumé.** Rien ne permet de savoir
+si un téléchargement a abouti ou si l'agent l'a annulé. L'alternative — ne lever
+l'alerte que sur un fichier lié — laisserait un bandeau permanent sous Firefox et
+Safari, où l'export manuel est la seule voie. Un avertissement permanent n'avertit
+plus : il devient décor. Écrit en commentaire à l'endroit du choix.
+
+**Un vrai bug trouvé par le test.** `marquerModifie` sortait avant de rafraîchir le
+bandeau quand la filière n'avait jamais été sauvegardée — c'est-à-dire exactement
+au premier relevé, le cas qui compte le plus. Le garde-fou ne se serait allumé
+qu'au deuxième export. Corrigé : l'écriture reste conditionnelle, le rafraîchissement
+ne l'est plus.
+
+**Vérifié :** script dédié en neuf temps — onglet vierge, accord singulier/pluriel,
+compte juste, disparition à l'export, survie au rechargement, retour après ajout
+*et* après suppression, indépendance des trois filières, silence après purge. Plus
+les trois suites permanentes, dont l'audit responsive qui inspecte le bandeau aux
+quinze formats puisqu'un relevé y est enregistré avant le parcours.
+
+---
+
 ## 27/09/2026 — PWA installable et dépôt unique publié
 
 **Demande :** un seul et unique dépôt, ouvert, d'où l'application s'exécute —

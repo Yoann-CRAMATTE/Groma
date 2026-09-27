@@ -10,6 +10,7 @@
   var CLE_CONFIG = 'geoloc.config';
   var CLE_COMPTEUR = 'geoloc.compteurs';
   var CLE_FAVORIS = 'geoloc.favoris';
+  var CLE_SAUVEGARDES = 'geoloc.sauvegardes';
   var DB_NOM = 'geoloc';
   var DB_STORE = 'handles';
 
@@ -96,6 +97,35 @@
 
   function ecrireFavoris(favoris) {
     ecrireJson(CLE_FAVORIS, favoris);
+  }
+
+  // --- Mise à l'abri des relevés ---
+
+  // Deux états par filière, et pas un de plus : soit tout ce qu'elle contient est
+  // sorti du navigateur (horodatage présent), soit il reste des modifications qui
+  // n'existent que là (absent). Un modèle plus fin — compter les points en
+  // attente — se trompe dès qu'on modifie ou supprime un relevé déjà exporté.
+
+  function lireSauvegardes() {
+    var s = lireJson(CLE_SAUVEGARDES, {});
+    return s && typeof s === 'object' && !Array.isArray(s) ? s : {};
+  }
+
+  function ecrireSauvegardes(sauvegardes) {
+    ecrireJson(CLE_SAUVEGARDES, sauvegardes);
+  }
+
+  /**
+   * Demande au navigateur de ne pas évincer le stockage sous la pression du
+   * disque. Chrome l'accorde en silence à une application installée ; Firefox
+   * pose la question. Appelé après un premier enregistrement, jamais au
+   * démarrage : une demande d'autorisation sur une page vide n'a aucun sens.
+   */
+  function demanderPersistance() {
+    if (!navigator.storage || !navigator.storage.persist) return Promise.resolve(false);
+    return navigator.storage.persisted()
+      .then(function (deja) { return deja || navigator.storage.persist(); })
+      .catch(function () { return false; });
   }
 
   // --- Configuration ---
@@ -222,6 +252,7 @@
   function toutEffacer() {
     localStorage.removeItem(CLE_POINTS);
     localStorage.removeItem(CLE_COMPTEUR);
+    localStorage.removeItem(CLE_SAUVEGARDES);
   }
 
   global.GeoLocStore = {
@@ -230,6 +261,9 @@
     ecrirePoints: ecrirePoints,
     lireFavoris: lireFavoris,
     ecrireFavoris: ecrireFavoris,
+    lireSauvegardes: lireSauvegardes,
+    ecrireSauvegardes: ecrireSauvegardes,
+    demanderPersistance: demanderPersistance,
     lireConfig: lireConfig,
     ecrireConfig: ecrireConfig,
     prochaineReference: prochaineReference,
