@@ -123,6 +123,13 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 18. **Les tuiles ne sont jamais mises en cache.** Les conditions d'usage de l'IGN
    et d'OpenStreetMap proscrivent la constitution de réserves locales. Le service
    worker n'intercepte que le même domaine, délibérément.
+19. **Toute mutation de relevés appelle `marquerModifie`**, toute sortie réussie
+   `marquerSauvegarde`. C'est ce qui pilote le bandeau « relevés encore dans ce
+   seul navigateur ». Une mutation qui l'oublie rend le bandeau menteur, ce qui
+   est pire que pas de bandeau. Modèle à deux états par filière : horodatage
+   présent = tout est sorti, absent = il reste des modifications. Compter les
+   points en attente se tromperait dès qu'on modifie ou supprime un relevé déjà
+   exporté.
 
 ## Décisions prises
 
@@ -204,11 +211,8 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
       nomenclature de référence.
 - [x] ~~Déploiement HTTPS~~ — GitHub Pages, 27/09/2026.
 - [x] ~~Service worker~~ — coquille en cache, démarrage hors réseau, 27/09/2026.
-- [ ] **Avertir avant la perte des données.** Les relevés vivent dans
-      `localStorage` : désinstaller la PWA ou effacer les données du site les
-      supprime. Aujourd'hui rien ne le signale dans l'interface — c'est écrit dans
-      le README, ce qui ne protège personne. Piste : un rappel dès que des relevés
-      non exportés s'accumulent.
+- [x] ~~Avertir avant la perte des données~~ — bandeau par filière + stockage
+      persistant, 27/09/2026.
 - [ ] Export GeoJSON en plus du CSV, pour injection directe dans un SIG.
 - [ ] Dédoublonnage à l'import sur `reference` en plus de `id` (saisie multi-appareils).
 - [ ] Export consolidé des trois filières, si le besoin d'une vue unique revient.

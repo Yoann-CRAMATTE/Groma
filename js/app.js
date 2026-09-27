@@ -31,7 +31,8 @@
     positions: {},   // filiereId -> dernière position relevée
     favoris: {},     // filiereId -> combinaisons type/modèle/détail mises de côté
     edition: {},     // filiereId -> id du point en cours de modification
-    affinage: {}     // filiereId -> série d'acquisition en cours
+    affinage: {},    // filiereId -> série d'acquisition en cours
+    sauvegardes: {}  // filiereId -> horodatage de la dernière sortie du navigateur
   };
 
   // ---------------------------------------------------------------- utilitaires
@@ -82,6 +83,56 @@
     return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
   }
 
+  // ------------------------------------------------- mise à l'abri des relevés
+
+  /**
+   * Les relevés vivent dans `localStorage`. Désinstaller l'application ou
+   * effacer les données du site les supprime, sans confirmation et sans retour
+   * possible. L'application ne peut pas l'empêcher — elle peut seulement ne pas
+   * laisser l'agent l'ignorer.
+   *
+   * Une filière est à l'abri quand tout ce qu'elle contient est sorti du
+   * navigateur : fichier lié réécrit, ou CSV exporté. Toute modification depuis
+   * la remet en risque.
+   */
+  function marquerModifie(filiereId) {
+    // L'écriture n'a lieu que s'il y avait quelque chose à retirer, mais le
+    // bandeau se rafraîchit toujours : au tout premier relevé, la filière n'a
+    // jamais été sauvegardée — c'est précisément le cas où il doit s'afficher.
+    if (etat.sauvegardes[filiereId]) {
+      delete etat.sauvegardes[filiereId];
+      Store.ecrireSauvegardes(etat.sauvegardes);
+    }
+    rafraichirAlerte(filiereId);
+  }
+
+  function marquerSauvegarde(filiereId) {
+    etat.sauvegardes[filiereId] = new Date().toISOString();
+    Store.ecrireSauvegardes(etat.sauvegardes);
+    rafraichirAlerte(filiereId);
+  }
+
+  function rafraichirAlerte(filiereId) {
+    var hote = document.getElementById(filiereId + '-alerte');
+    if (!hote) return;
+
+    var combien = pointsDe(filiereId).length;
+    var enRisque = combien > 0 && !etat.sauvegardes[filiereId];
+    hote.hidden = !enRisque;
+    if (!enRisque) return;
+
+    vider(hote);
+    hote.appendChild(el('p', { classe: 'alerte-texte' }, [
+      el('strong', { texte: combien + (combien > 1 ? ' relevés ne sont ' : ' relevé n\'est ') + 'que dans ce navigateur.' }),
+      ' Désinstaller l\'application ou effacer les données du site les perdrait.'
+    ]));
+    hote.appendChild(el('button', {
+      type: 'button', classe: 'btn-primaire btn-compact',
+      texte: 'Exporter le CSV',
+      onclick: function () { telechargerCsv(filiereId); }
+    }));
+  }
+
   // ---------------------------------------------------------------- fichier CSV
 
   function contenuCsv(filiereId) {
@@ -95,6 +146,7 @@
       var f = Cfg.filiere(filiereId);
       if (r === 'permission') toast('Accès au CSV ' + f.label + ' refusé : reliez le fichier dans Configuration.', 'erreur');
       else if (r === 'erreur') toast('Écriture du CSV ' + f.label + ' impossible. Les données restent enregistrées dans le navigateur.', 'erreur');
+      else if (r === 'ok') marquerSauvegarde(filiereId);
       rafraichirBadgeFichier();
       return r;
     });
@@ -149,6 +201,11 @@
 
   function telechargerCsv(filiereId) {
     telechargerTexte(Cfg.filiere(filiereId).fichier, contenuCsv(filiereId));
+    // Optimiste : rien ne permet de savoir si le téléchargement a abouti ni si
+    // l'agent l'a annulé. L'alternative — ne lever l'alerte que sur un fichier
+    // lié — laisserait un bandeau permanent sous Firefox et Safari, où l'export
+    // manuel est la seule voie. Un avertissement permanent n'avertit plus.
+    marquerSauvegarde(filiereId);
   }
 
   /** Téléchargements échelonnés : Chrome bloque les déclenchements simultanés. */
@@ -208,7 +265,7 @@
       rafraichirFonds();
       Cfg.FILIERES.forEach(function (f) { rafraichirCatalogue(f.id); });
     }
-    else rafraichirListe(id);
+    else { rafraichirListe(id); rafraichirAlerte(id); }
     try { localStorage.setItem('geoloc.onglet', id); } catch (e) { /* mode privé */ }
   }
 
@@ -566,6 +623,9 @@
     ]);
 
     return el('section', { classe: 'vue', id: 'vue-' + f.id, role: 'tabpanel', 'aria-labelledby': 'onglet-' + f.id, hidden: 'hidden' }, [
+      // Au-dessus du bouton : ce qui menace le travail déjà fait passe avant
+      // l'invitation à en faire davantage.
+      el('div', { classe: 'alerte-sauvegarde', id: f.id + '-alerte', role: 'status', hidden: 'hidden' }),
       el('button', {
         classe: 'btn-primaire btn-creer', type: 'button', id: f.id + '-btn-creer',
         texte: '+  Créer une mesure',
@@ -813,6 +873,12 @@
     }
 
     Store.ecrirePoints(etat.points);
+    marquerModifie(filiereId);
+    // Il y a maintenant quelque chose à protéger : c'est le moment de demander
+    // au navigateur de ne pas évincer le stockage. Le faire au démarrage aurait
+    // posé la question sur une page encore vide.
+    Store.demanderPersistance();
+
     var reference = point.reference;
     fermerMesure(filiereId, true);
     rafraichirListe(filiereId);
@@ -966,6 +1032,7 @@
     if (!confirm('Supprimer définitivement ' + (p.reference || 'ce point') + ' ?')) return;
     etat.points = etat.points.filter(function (x) { return x.id !== id; });
     Store.ecrirePoints(etat.points);
+    marquerModifie(filiereId);
     if (etat.edition[filiereId] === id) reinitialiserFormulaire(filiereId);
     rafraichirListe(filiereId);
     synchroniserFichier(filiereId);
@@ -1851,6 +1918,7 @@
 
     Store.ecrirePoints(etat.points);
     Store.resynchroniserCompteurs(etat.points);
+    if (ajoutes) marquerModifie(filiereId);
 
     if (horsFiliere && !ajoutes) {
       toast('Fichier refusé : ' + horsFiliere + " ligne(s) d'une autre filière.", 'erreur');
@@ -1886,7 +1954,12 @@
     if (!confirm('Confirmation définitive : tout effacer ?')) return;
     etat.points = [];
     Store.toutEffacer();
-    Cfg.FILIERES.forEach(function (f) { reinitialiserFormulaire(f.id); rafraichirListe(f.id); });
+    etat.sauvegardes = {}; // `toutEffacer` a retiré la clé : l'état suit.
+    Cfg.FILIERES.forEach(function (f) {
+      reinitialiserFormulaire(f.id);
+      rafraichirListe(f.id);
+      rafraichirAlerte(f.id);
+    });
     rafraichirStats();
     synchroniserTout();
     toast('Données effacées.', 'info');
@@ -1933,6 +2006,7 @@
     etat.config = Store.lireConfig();
     etat.points = Store.lirePoints();
     etat.favoris = Store.lireFavoris();
+    etat.sauvegardes = Store.lireSauvegardes();
     Catalogue.charger();
 
     construireOnglets();

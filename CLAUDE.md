@@ -69,6 +69,10 @@ Ils sont détaillés dans `memoire/etat-projet.md`. Les quatre qui coûtent le p
 
 1. **`localStorage` fait autorité.** Le fichier disque est une projection réécrite
    intégralement. Un échec d'écriture ne doit jamais perdre une saisie terrain.
+   Corollaire : **toute mutation de relevés appelle `marquerModifie(filiereId)`**,
+   toute sortie réussie `marquerSauvegarde(filiereId)`. C'est ce qui allume le
+   bandeau d'alerte. Un ajout de mutation qui l'oublie rend le bandeau menteur —
+   pire que pas de bandeau du tout.
 2. **Ne jamais annoncer une précision meilleure que celle du récepteur.**
    `precision_m` = meilleure `accuracy` observée, jamais une valeur calculée. La
    dispersion est mesurée et stockée à part. Un recalage manuel ne touche pas

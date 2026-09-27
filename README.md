@@ -54,9 +54,25 @@ catalogue et export restent entiers — rien de tout cela ne dépend d'un serveu
 ou d'OpenStreetMap. La fenêtre de mesure le dit alors clairement, et le viseur,
 les coordonnées et l'enregistrement continuent de fonctionner.
 
+### Les relevés ne sont pas à l'abri tant qu'ils ne sont pas sortis
+
 Les relevés vivent dans le navigateur du poste (`localStorage`). **Désinstaller
-l'application ou effacer les données du site les supprime** : exporter les CSV
-avant, ou lier un fichier depuis Configuration.
+l'application ou effacer les données du site les supprime**, sans confirmation et
+sans retour possible. L'application ne peut pas l'empêcher — elle fait deux choses
+pour que personne ne l'apprenne trop tard :
+
+- **Un bandeau en haut de l'onglet** dès qu'une filière contient des relevés qui
+  ne sont sortis nulle part, avec le compte et un bouton d'export. Il disparaît
+  quand le CSV est exporté ou quand le fichier lié a été réécrit, et revient à la
+  première modification suivante — y compris une suppression, qui rend périmé le
+  CSV déjà exporté.
+- **Une demande de stockage persistant** au premier enregistrement, pour que le
+  navigateur n'évince pas les données sous la pression du disque. Chrome l'accorde
+  en silence à une application installée.
+
+Le bandeau est optimiste sur l'export manuel : rien ne permet de savoir si un
+téléchargement a abouti ou si l'agent l'a annulé. Le seul moyen d'être certain
+reste le **fichier lié** (Chrome et Edge), réécrit à chaque enregistrement.
 
 ### Déploiement
 
