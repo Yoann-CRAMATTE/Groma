@@ -108,7 +108,7 @@
     separateur: ';'
   };
 
-  global.GeoLocConfig = {
+  global.GromaConfig = {
     FILIERES: FILIERES,
     COLONNES_TECHNIQUES: COLONNES_TECHNIQUES,
     CONFIG_DEFAUT: CONFIG_DEFAUT,

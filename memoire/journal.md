@@ -2,6 +2,52 @@
 
 Une entrée par session de travail, la plus récente en haut.
 
+> **L'application s'appelait GéoLoc jusqu'au 28/09/2026.** Les entrées antérieures
+> à cette date gardent l'ancien nom : les réécrire ferait mentir l'historique.
+
+---
+
+## 28/09/2026 — GéoLoc devient Groma, et change de dépôt
+
+**Demande :** un nom qui corresponde à ce que fait l'application, puis un dépôt neuf
+plutôt qu'un renommage de `Synapse`.
+
+**Pourquoi Groma.** La *groma* est l'instrument des arpenteurs romains : une croix de
+visée montée sur un pied, plantée au sol pour aligner et marquer un point précis.
+C'est exactement l'interaction centrale — un viseur fixe, une carte qui glisse
+dessous. Le nom décrit le geste, pas la technologie.
+
+**Les deux écartés.** *Terminus*, dieu romain des bornes plantées dans les champs :
+le plus juste sur le fond, écarté parce qu'en français courant un agent entend
+« arrêt de bus ». *Gaia* : immédiatement compréhensible, écarté pour la collision
+avec Gaia GPS, application de randonnée connue.
+
+**Pourquoi pas GéoLoc.** Deux raisons. Le nom sortait de la famille des autres
+projets — Oralia, Clio, Morphée, Calliope, Poséidon, tous en registre classique. Et
+l'accent est interdit dans un nom de dépôt GitHub : il aurait fallu vivre avec
+`GeoLoc` d'un côté et `GéoLoc` de l'autre.
+
+**Fait :**
+- Renommage dans le code, les manifestes, la documentation et `etat-projet.md`.
+- Identifiants globaux `GeoLoc*` → `Groma*` dans les huit fichiers de `js/`.
+- Clés `localStorage` `geoloc.*` → `groma.*`, base IndexedDB `geoloc` → `groma`,
+  cache du service worker `geoloc-1` → `groma-1`.
+- En-tête de l'application : `GÉO`+`LOC` → `GRO`+`MA`.
+
+**`Geolocation` n'est pas touché.** C'est le nom de l'API du navigateur, pas celui
+de l'application. Le `sed` de renommage l'aurait avalé sans la casse : `GeoLoc`
+porte un L majuscule, `Geolocation` non. Vérifié après coup plutôt que supposé.
+
+**Les données de test ne survivent pas au renommage des clés.** `localStorage` est
+adressé par nom : changer `geoloc.points` en `groma.points` rend l'ancien contenu
+inatteignable. Assumé — on est à l'incrément 0, personne n'a de relevé réel, et une
+couche de compatibilité pour trois points de test serait de la dette pure.
+
+**Le dépôt n'a pas pu être créé depuis ici.** `POST /user/repos` répond
+`403 Resource not accessible by integration` : l'App GitHub installée n'a pas la
+permission de créer des dépôts, comme elle n'avait pas celle d'activer Pages.
+Création manuelle, puis `git push` vers le nouveau dépôt.
+
 ---
 
 ## 27/09/2026 — Les relevés ne se perdent plus en silence

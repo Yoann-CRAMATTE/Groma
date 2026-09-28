@@ -7,7 +7,7 @@
 (function (global) {
   'use strict';
 
-  var CLE = 'geoloc.catalogue';
+  var CLE = 'groma.catalogue';
   var FICHIER = 'parametres.csv';
   var COLONNES = ['filiere', 'type_materiel', 'modele', 'detail'];
 
@@ -179,23 +179,23 @@
   // --- Fichier parametres.csv ----------------------------------------------
 
   function versCsv(separateur) {
-    return global.GeoLocCsv.serialiser(COLONNES, tout(), separateur);
+    return global.GromaCsv.serialiser(COLONNES, tout(), separateur);
   }
 
   /** @returns {number} lignes retenues, ou -1 si le fichier n'a pas la bonne forme */
   function depuisCsv(texte, separateur) {
-    var brut = global.GeoLocCsv.parser(texte, separateur || global.GeoLocCsv.detecterSeparateur(texte));
+    var brut = global.GromaCsv.parser(texte, separateur || global.GromaCsv.detecterSeparateur(texte));
     if (!brut.length) return -1;
     var manquantes = COLONNES.filter(function (c) { return !(c in brut[0]); });
     if (manquantes.length) return -1;
     var retenues = normaliser(brut).filter(function (l) {
-      return !!global.GeoLocConfig.filiere(l.filiere);
+      return !!global.GromaConfig.filiere(l.filiere);
     });
     definir(retenues);
     return retenues.length;
   }
 
-  global.GeoLocCatalogue = {
+  global.GromaCatalogue = {
     COLONNES: COLONNES,
     FICHIER: FICHIER,
     defaut: defaut,

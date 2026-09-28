@@ -6,12 +6,12 @@
 (function (global) {
   'use strict';
 
-  var Cfg = global.GeoLocConfig;
-  var Store = global.GeoLocStore;
-  var Csv = global.GeoLocCsv;
-  var Geo = global.GeoLocGeo;
-  var Carte = global.GeoLocCarte;
-  var Catalogue = global.GeoLocCatalogue;
+  var Cfg = global.GromaConfig;
+  var Store = global.GromaStore;
+  var Csv = global.GromaCsv;
+  var Geo = global.GromaGeo;
+  var Carte = global.GromaCarte;
+  var Catalogue = global.GromaCatalogue;
 
   // Étendue la plus serrée autorisée sur la carte de recalage : en deçà, on ne
   // gagne plus en justesse, on grossit seulement l'interpolation de l'image.
@@ -266,7 +266,7 @@
       Cfg.FILIERES.forEach(function (f) { rafraichirCatalogue(f.id); });
     }
     else { rafraichirListe(id); rafraichirAlerte(id); }
-    try { localStorage.setItem('geoloc.onglet', id); } catch (e) { /* mode privé */ }
+    try { localStorage.setItem('groma.onglet', id); } catch (e) { /* mode privé */ }
   }
 
   // ---------------------------------------------------------------- cascade matériel
@@ -2019,7 +2019,7 @@
     Store.migrerAncienHandle();
 
     var dernier = null;
-    try { dernier = localStorage.getItem('geoloc.onglet'); } catch (e) { /* mode privé */ }
+    try { dernier = localStorage.getItem('groma.onglet'); } catch (e) { /* mode privé */ }
     var valide = dernier === 'configuration' || Cfg.filiere(dernier);
     activerOnglet(valide ? dernier : Cfg.FILIERES[0].id);
 

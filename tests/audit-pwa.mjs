@@ -1,5 +1,5 @@
 /**
- * Audit PWA. Vérifie que GéoLoc est réellement installable et réellement
+ * Audit PWA. Vérifie que Groma est réellement installable et réellement
  * utilisable sans réseau — les deux promesses que fait une PWA.
  *
  * Le contrôle qui compte le plus est le dernier : la **cohérence entre
@@ -19,7 +19,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
-const BASE = process.env.GEOLOC_URL || 'http://localhost:8123/';
+const BASE = process.env.GROMA_URL || 'http://localhost:8123/';
 const POSITION = { latitude: 47.5175, longitude: 7.0803, accuracy: 6 };
 
 let defauts = 0;

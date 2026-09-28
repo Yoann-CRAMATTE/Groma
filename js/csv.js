@@ -86,7 +86,7 @@
       });
   }
 
-  global.GeoLocCsv = {
+  global.GromaCsv = {
     serialiser: serialiser,
     parser: parser,
     detecterSeparateur: detecterSeparateur

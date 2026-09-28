@@ -1,5 +1,5 @@
 /**
- * Service worker de GéoLoc — rend l'application installable et utilisable sans
+ * Service worker de Groma — rend l'application installable et utilisable sans
  * réseau. Seules les tuiles de carte manquent hors ligne : elles sont servies
  * par des domaines tiers, volontairement pas interceptées ici (voir plus bas).
  *
@@ -17,7 +17,7 @@
  */
 'use strict';
 
-var VERSION = 'geoloc-1';
+var VERSION = 'groma-1';
 
 // Tout ce qu'il faut pour démarrer hors réseau. `addAll` est atomique : si un
 // seul fichier manque, l'installation échoue et l'ancien cache reste en place —

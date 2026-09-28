@@ -6,7 +6,7 @@
   <meta name="description" content="Relevé GPS d'ouvrages Eau, Assainissement et SPANC vers un fichier CSV unique.">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#0b0f14">
-  <title>GéoLoc</title>
+  <title>Groma</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="manifest" href="manifest.webmanifest">
 
@@ -16,7 +16,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="GéoLoc">
+  <meta name="apple-mobile-web-app-title" content="Groma">
 
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -24,7 +24,7 @@
   <!-- En-tête et onglets collent ensemble : évite d'aligner la nav sur une hauteur codée en dur. -->
   <div class="barre-haute">
     <header class="entete">
-      <h1>GÉO<span>LOC</span></h1>
+      <h1>GRO<span>MA</span></h1>
       <span class="badge-fichier" id="badge-fichier" data-etat="neutre">…</span>
     </header>
 
@@ -47,7 +47,7 @@
   <script>
     // Après le chargement : l'installation du cache ne doit pas disputer la
     // bande passante au démarrage de l'application. Un échec est sans
-    // conséquence — GéoLoc fonctionne à l'identique sans service worker, il
+    // conséquence — Groma fonctionne à l'identique sans service worker, il
     // n'apporte que l'installation et le hors-ligne.
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {

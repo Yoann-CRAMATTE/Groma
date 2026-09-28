@@ -16,7 +16,7 @@
  */
 import { chromium } from 'playwright';
 
-const BASE = process.env.GEOLOC_URL || 'http://localhost:8123/index.html';
+const BASE = process.env.GROMA_URL || 'http://localhost:8123/index.html';
 // Cible principale : tablettes courantes, dans les deux orientations.
 const TABLETTE = [
   { width: 768, height: 1024 }, { width: 810, height: 1080 }, { width: 834, height: 1194 },

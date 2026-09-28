@@ -2,7 +2,7 @@ name: Déploiement GitHub Pages
 
 # L'application est faite de fichiers statiques : rien à construire, on publie
 # le dépôt tel quel. Le GPS exige un contexte sécurisé, et Pages sert en HTTPS —
-# c'est ce qui rend GéoLoc utilisable sur un téléphone de terrain.
+# c'est ce qui rend Groma utilisable sur un téléphone de terrain.
 on:
   push:
     branches: [main]

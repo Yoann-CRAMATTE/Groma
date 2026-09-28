@@ -1,4 +1,4 @@
-# GéoLoc — état du projet
+# Groma — état du projet
 
 > Mémoire de travail. À relire en début de session **avant** d'ouvrir le code,
 > à mettre à jour en fin de session. Évite de relire toute l'application à chaque fois.
@@ -6,14 +6,14 @@
 **Dernière mise à jour :** 27/09/2026 — **incrément 0 (socle)**
 **Branche :** `claude/geoloc-web-app-duccxo`, fusionnée dans `main`
 
-> **Le dépôt est désormais GéoLoc seul.** Le projet Synapse qu'il portait (shell
+> **Le dépôt est désormais Groma seul.** Le projet Synapse qu'il portait (shell
 > desktop AI-native, resté au stade du spike) a été supprimé le 24/09/2026 : il est
 > caduc. L'application est remontée à la racine — plus de sous-dossier `geoloc/`.
 > **L'état décrit ici est le socle, l'incrément 0.** La numérotation v0.1 → v0.9 est
 > abandonnée ; les incréments se comptent à partir de 1. L'historique reste dans
 > `journal.md`, il explique les invariants ci-dessous.
 >
-> **GéoLoc est une PWA publiée sur GitHub Pages** depuis le 27/09/2026 : installable
+> **Groma est une PWA publiée sur GitHub Pages** depuis le 27/09/2026 : installable
 > sur l'écran d'accueil, démarrable sans réseau, servie en HTTPS — ce qui débloque
 > enfin le GPS sur un téléphone de terrain.
 
