@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serveur local pour GéoLoc.
+"""Serveur local pour Groma.
 
 L'API Geolocation exige un contexte sécurisé : un index.html ouvert en file://
 est refusé par Chrome. http://localhost est considéré comme sécurisé, d'où ce
@@ -27,7 +27,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 if __name__ == "__main__":
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("", PORT), Handler) as httpd:
-        sys.stdout.write(f"GéoLoc sur http://localhost:{PORT}\n")
+        sys.stdout.write(f"Groma sur http://localhost:{PORT}\n")
         sys.stdout.flush()
         try:
             httpd.serve_forever()

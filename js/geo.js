@@ -205,7 +205,7 @@
     return 'https://www.openstreetmap.org/?mlat=' + lat + '&mlon=' + lon + '#map=19/' + lat + '/' + lon;
   }
 
-  global.GeoLocGeo = {
+  global.GromaGeo = {
     localiser: localiser,
     localiserPrecis: localiserPrecis,
     distanceM: distanceM,

@@ -16,7 +16,11 @@ modification perdue à la session suivante.
 
 ---
 
-## Qu'est-ce que GéoLoc ?
+## Qu'est-ce que Groma ?
+
+La *groma* est l'instrument des arpenteurs romains : une croix de visée plantée au
+sol pour marquer un point précis. Le nom décrit l'interaction centrale de
+l'application — un viseur fixe, une carte qui glisse dessous.
 
 Application web de relevé GPS d'ouvrages de terrain pour la Communauté de communes
 du Sundgau. Trois filières — **EAU**, **ASSAINISSEMENT**, **SPANC** — un fichier CSV

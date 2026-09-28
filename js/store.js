@@ -6,12 +6,12 @@
 (function (global) {
   'use strict';
 
-  var CLE_POINTS = 'geoloc.points';
-  var CLE_CONFIG = 'geoloc.config';
-  var CLE_COMPTEUR = 'geoloc.compteurs';
-  var CLE_FAVORIS = 'geoloc.favoris';
-  var CLE_SAUVEGARDES = 'geoloc.sauvegardes';
-  var DB_NOM = 'geoloc';
+  var CLE_POINTS = 'groma.points';
+  var CLE_CONFIG = 'groma.config';
+  var CLE_COMPTEUR = 'groma.compteurs';
+  var CLE_FAVORIS = 'groma.favoris';
+  var CLE_SAUVEGARDES = 'groma.sauvegardes';
+  var DB_NOM = 'groma';
   var DB_STORE = 'handles';
 
   function lireJson(cle, defaut) {
@@ -131,7 +131,7 @@
   // --- Configuration ---
 
   function lireConfig() {
-    var defaut = global.GeoLocConfig.CONFIG_DEFAUT;
+    var defaut = global.GromaConfig.CONFIG_DEFAUT;
     var c = lireJson(CLE_CONFIG, {});
     var out = {};
     Object.keys(defaut).forEach(function (k) {
@@ -147,7 +147,7 @@
   // --- Références automatiques, un compteur par filière ---
 
   function prochaineReference(filiereId) {
-    var f = global.GeoLocConfig.filiere(filiereId);
+    var f = global.GromaConfig.filiere(filiereId);
     var prefixe = f ? f.prefixe : 'PT';
     var compteurs = lireJson(CLE_COMPTEUR, {});
     var n = (compteurs[filiereId] || 0) + 1;
@@ -160,7 +160,7 @@
   function resynchroniserCompteurs(points) {
     var compteurs = {};
     points.forEach(function (p) {
-      var f = global.GeoLocConfig.filiere(p.filiere);
+      var f = global.GromaConfig.filiere(p.filiere);
       if (!f || !p.reference) return;
       var m = new RegExp('^' + f.prefixe + '-(\\d+)$').exec(p.reference);
       if (!m) return;
@@ -187,9 +187,9 @@
    * `parametres` : même mécanique de handle, même écriture intégrale.
    */
   function nomFichier(cle) {
-    if (cle === 'parametres') return global.GeoLocCatalogue.FICHIER;
-    var f = global.GeoLocConfig.filiere(cle);
-    return f ? f.fichier : 'geoloc.csv';
+    if (cle === 'parametres') return global.GromaCatalogue.FICHIER;
+    var f = global.GromaConfig.filiere(cle);
+    return f ? f.fichier : 'groma.csv';
   }
 
   function choisirFichier(filiereId) {
@@ -255,7 +255,7 @@
     localStorage.removeItem(CLE_SAUVEGARDES);
   }
 
-  global.GeoLocStore = {
+  global.GromaStore = {
     nomFichier: nomFichier,
     lirePoints: lirePoints,
     ecrirePoints: ecrirePoints,

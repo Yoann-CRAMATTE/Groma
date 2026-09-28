@@ -1,6 +1,6 @@
 {
-  "name": "GéoLoc — relevé GPS d'ouvrages",
-  "short_name": "GéoLoc",
+  "name": "Groma — relevé GPS d'ouvrages",
+  "short_name": "Groma",
   "description": "Relevé GPS d'ouvrages Eau, Assainissement et SPANC vers un fichier CSV par filière.",
   "lang": "fr",
   "dir": "ltr",

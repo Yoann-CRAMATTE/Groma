@@ -1,8 +1,12 @@
-# GéoLoc
+# Groma
 
 Application web **vanilla** (aucune dépendance, aucun build) pour relever la position GPS
 d'ouvrages de terrain et les consigner dans **un fichier CSV par filière**.
 Pensée pour la **tablette**, utilisable jusqu'au petit smartphone.
+
+> La *groma* était l'instrument des arpenteurs romains : une croix de visée montée
+> sur un pied, qu'on plantait au sol pour aligner et marquer un point précis. C'est
+> ce que fait cette application — un viseur fixe qu'on pose sur l'ouvrage.
 
 Trois filières de relevé — **EAU**, **ASSAINISSEMENT**, **SPANC** — plus un onglet
 **CONFIGURATION**. Les trois filières partagent exactement le même écran ; seuls leur
@@ -38,7 +42,7 @@ python3 serveur.py 8123   # autre port
 
 ## Sur le terrain — installer l'application
 
-GéoLoc est une **PWA** : depuis l'adresse publiée en HTTPS, le navigateur propose
+Groma est une **PWA** : depuis l'adresse publiée en HTTPS, le navigateur propose
 de l'installer sur l'écran d'accueil. Elle s'ouvre alors en plein écran, sans barre
 d'adresse, et se comporte comme une application du téléphone.
 

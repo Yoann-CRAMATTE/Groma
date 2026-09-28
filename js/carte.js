@@ -341,7 +341,7 @@
     return Math.sqrt(dx * dx + dy * dy);
   }
 
-  global.GeoLocCarte = {
+  global.GromaCarte = {
     creerCarte: creerCarte,
     validerFond: validerFond,
     distance: distance,
