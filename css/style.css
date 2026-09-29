@@ -272,6 +272,34 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .position .vide { color: var(--texte-faible); }
 
+/* Le message d'acquisition et le bouton de détail partagent une ligne : le
+   message est ce qu'on lit, le bouton ce qu'on ouvre rarement. */
+.ligne-etat {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.ligne-etat .etat-gps { flex: 1 1 auto; }
+
+.btn-details {
+  flex: 0 0 auto;
+  width: 38px;
+  min-height: 38px;
+  padding: 0;
+  margin-top: 10px;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.etat-gps:empty + .btn-details { margin-top: 0; }
+
+/* Consultation seule, par-dessus la fenêtre de mesure : elle tient à son contenu
+   au lieu d'occuper toute la hauteur. */
+.modale-fenetre--details { max-width: 460px; }
+.modale-fenetre--details:focus { outline: none; }
+.modale-fenetre--details .position { margin-bottom: 0; }
+
 .etat-gps { font-size: 0.82rem; margin: 10px 0 0; min-height: 1.2em; }
 
 /* Sans message, la réserve de place laisse un trou dans le bloc. */
