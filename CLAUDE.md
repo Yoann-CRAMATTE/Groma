@@ -22,9 +22,14 @@ La *groma* est l'instrument des arpenteurs romains : une croix de visée planté
 sol pour marquer un point précis. Le nom décrit l'interaction centrale de
 l'application — un viseur fixe, une carte qui glisse dessous.
 
-Application web de relevé GPS d'ouvrages de terrain pour la Communauté de communes
-du Sundgau. Trois filières — **EAU**, **ASSAINISSEMENT**, **SPANC** — un fichier CSV
-par filière, plus un catalogue de matériel dans son propre fichier.
+Application web de relevé GPS d'ouvrages de terrain, pour quiconque doit noter *où
+se trouve quoi* et en ressortir des données propres. Trois filières livrées —
+**EAU**, **ASSAINISSEMENT**, **SPANC** — un fichier CSV par filière, plus un
+catalogue de matériel dans son propre fichier.
+
+Ces trois filières sont la configuration d'origine, pas une limite : le catalogue
+s'édite depuis l'application. Ne jamais coder en dur une hypothèse qui vaudrait
+seulement pour un réseau d'eau.
 
 L'outil visé est la **tablette**, utilisée dehors, parfois avec des gants. Le relevé
 type : on arrive sur l'ouvrage, la position se prend toute seule, on recale le viseur
