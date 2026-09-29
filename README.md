@@ -177,6 +177,41 @@ et du hors-ligne.
 
 ---
 
+## Sortir les données vers un SIG
+
+**GeoJSON** est le format à utiliser pour QGIS, ArcGIS ou tout outil cartographique.
+Configuration → carte de la filière → *Exporter GeoJSON*.
+
+Un seul fichier, qu'on glisse dans QGIS : il s'ouvre directement. La géométrie, le
+système de coordonnées et **le type de chaque attribut** voyagent dedans. Pas de
+dialogue d'import, pas de colonnes X/Y à désigner, pas de SCR à choisir.
+
+| | GeoJSON | CSV |
+|---|---|---|
+| Ouverture dans un SIG | glisser-déposer | dialogue d'import à chaque fois |
+| Géométrie | dans le fichier | à reconstruire depuis deux colonnes |
+| `precision_m`, `x_l93`… | nombres | texte, à convertir |
+| Accents | UTF-8 imposé par la norme | dépend du logiciel qui ouvre |
+| Ouvrable au tableur | non | oui |
+
+Le CSV reste la voie du tableur et du fichier lié. Les deux décrivent le même stock.
+
+### Ce que contient le GeoJSON
+
+Conforme à la **RFC 7946**. Coordonnées en WGS84, **longitude en premier** comme
+l'exige la norme — l'inversion est l'erreur classique, elle place les points à
+l'autre bout du monde sans qu'aucun outil ne proteste. L'altitude est portée comme
+troisième coordonnée, le Lambert 93 reste en attributs pour ceux qui en ont besoin.
+
+Un relevé sans position sort avec une géométrie nulle plutôt que d'être écarté : la
+norme l'autorise, et une ligne perdue en silence à l'export serait pire.
+
+> **Piège du CSV, que le GeoJSON évite.** Si quelqu'un ouvre `eau.csv` dans Excel
+> français et le réenregistre, les décimales deviennent des virgules et le SIG ne lit
+> plus les coordonnées. Personne n'ouvre un GeoJSON dans Excel.
+
+---
+
 ## Fichiers CSV
 
 **Quatre fichiers** : un par onglet de relevé, plus `parametres.csv` qui porte le

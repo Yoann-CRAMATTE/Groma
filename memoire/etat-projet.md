@@ -51,6 +51,7 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 | `js/catalogue.js` | Catalogue matériel 3 niveaux, graine livrée, lecture/écriture `parametres.csv` | oui |
 | `js/lambert93.js` | WGS84 → EPSG:2154, constantes IGN | oui, vérifié |
 | `js/csv.js` | Sérialisation / lecture RFC 4180, BOM UTF-8, détection de séparateur | oui, aller-retour testé |
+| `js/geojson.js` | Sérialisation RFC 7946 pour les SIG — géométrie, types, pas de BOM | oui, sortie vérifiée |
 | `js/store.js` | `localStorage` (points, config, compteurs, favoris) + IndexedDB (handles) | oui |
 | `js/geo.js` | API Geolocation, relevé ponctuel et série affinée | oui, agrégation testée |
 | `js/carte.js` | Visualiseur de tuiles WMTS/XYZ, fonds gratuits, validation | oui, projection vérifiée |
@@ -241,7 +242,9 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 - [x] ~~Service worker~~ — coquille en cache, démarrage hors réseau, 27/09/2026.
 - [x] ~~Avertir avant la perte des données~~ — bandeau par filière + stockage
       persistant, 27/09/2026.
-- [ ] Export GeoJSON en plus du CSV, pour injection directe dans un SIG.
+- [x] ~~Export GeoJSON~~ — RFC 7946, un bouton par filière, 29/09/2026. Les données
+      partent dans QGIS : c'est désormais le format recommandé, le CSV reste pour
+      le tableur et le fichier lié.
 - [ ] Dédoublonnage à l'import sur `reference` en plus de `id` (saisie multi-appareils).
 - [ ] Export consolidé des trois filières, si le besoin d'une vue unique revient.
 - [ ] Mise en cache des tuiles pour l'ajustement hors réseau.

@@ -9,6 +9,7 @@
   var Cfg = global.GromaConfig;
   var Store = global.GromaStore;
   var Csv = global.GromaCsv;
+  var Geojson = global.GromaGeojson;
   var Geo = global.GromaGeo;
   var Carte = global.GromaCarte;
   var Catalogue = global.GromaCatalogue;
@@ -299,15 +300,34 @@
     });
   }
 
-  function telechargerTexte(nomBase, contenu) {
-    var blob = new Blob([contenu], { type: 'text/csv;charset=utf-8' });
+  /** La date s'insère avant l'extension, quelle qu'elle soit : un `.geojson`
+   *  renommé en `.csv` ne s'ouvrirait nulle part. */
+  function telechargerTexte(nomBase, contenu, type) {
+    var blob = new Blob([contenu], { type: (type || 'text/csv') + ';charset=utf-8' });
     var url = URL.createObjectURL(blob);
-    var nom = nomBase.replace(/\.csv$/, '') + '-' + new Date().toISOString().slice(0, 10) + '.csv';
+    var coupe = nomBase.lastIndexOf('.');
+    var base = coupe === -1 ? nomBase : nomBase.slice(0, coupe);
+    var extension = coupe === -1 ? '' : nomBase.slice(coupe);
+    var nom = base + '-' + new Date().toISOString().slice(0, 10) + extension;
     var a = el('a', { href: url, download: nom });
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  /**
+   * Le SIG reçoit le GeoJSON, le tableur reçoit le CSV. Le premier porte la
+   * géométrie, le système de coordonnées et les types ; il s'ouvre d'un
+   * glisser-déposer, sans dialogue d'import.
+   */
+  function telechargerGeojson(filiereId) {
+    var nom = Cfg.filiere(filiereId).fichier.replace(/\.csv$/, '') + '.geojson';
+    var contenu = Geojson.serialiser(Cfg.colonnesCsv(filiereId), pointsDe(filiereId));
+    telechargerTexte(nom, contenu, 'application/geo+json');
+    // Pas de `marquerSauvegarde` : le bandeau suit le CSV, qui est le format
+    // réécrit dans le fichier lié. Deux compteurs pour un même stock se
+    // contrediraient.
   }
 
   function telechargerCsv(filiereId) {
@@ -1579,8 +1599,13 @@
           texte: 'Délier', onclick: function () { actionDelierFichier(f.id); }
         }),
         el('button', {
-          type: 'button', classe: 'btn-compact', texte: 'Exporter',
+          type: 'button', classe: 'btn-compact', texte: 'Exporter CSV',
           onclick: function () { telechargerCsv(f.id); }
+        }),
+        el('button', {
+          type: 'button', classe: 'btn-compact', texte: 'Exporter GeoJSON',
+          title: 'Format des SIG — QGIS, ArcGIS : s\'ouvre sans réglage',
+          onclick: function () { telechargerGeojson(f.id); }
         }),
         el('button', {
           type: 'button', classe: 'btn-compact', texte: 'Importer',
