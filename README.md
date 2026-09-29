@@ -1,5 +1,7 @@
 # Groma
 
+[![Licence : AGPL v3](https://img.shields.io/badge/licence-AGPL--3.0-0ea5e9)](LICENSE)
+
 **Relever la position GPS d'un équipement sur le terrain, l'identifier, et repartir
 avec un fichier CSV exploitable dans un SIG ou un tableur.**
 
@@ -550,3 +552,21 @@ Ajouter une *colonne* au CSV, en revanche, se fait dans `js/config.js` :
   géoréférencement reste juste, l'image est interpolée. Le facteur d'agrandissement
   est affiché pour que personne ne prenne cette netteté apparente pour de la
   précision.
+
+---
+
+## Licence
+
+**GNU Affero General Public License v3.0** — texte intégral dans [`LICENSE`](LICENSE).
+
+Copyright © 2026 Yoann Cramatte
+
+Vous pouvez utiliser, modifier et redistribuer Groma librement. En contrepartie,
+**toute version modifiée que vous diffusez doit être publiée sous la même licence**,
+y compris si vous vous contentez de la mettre en ligne pour d'autres sans en
+distribuer les fichiers.
+
+Ce choix est délibéré : cet outil est né d'un besoin de service public, les
+améliorations qu'on lui apporte doivent rester accessibles à ceux qui ont le même
+besoin. Utiliser Groma tel quel, dans n'importe quel cadre y compris commercial,
+n'impose rien.
