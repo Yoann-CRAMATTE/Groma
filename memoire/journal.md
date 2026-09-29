@@ -7,6 +7,78 @@ Une entrée par session de travail, la plus récente en haut.
 
 ---
 
+## 29/09/2026 — Mise en ligne, licence, et trois corrections nées de l'usage réel
+
+**Groma est en ligne** : https://yoann-cramatte.github.io/Groma/ — dépôt public,
+Pages activé, PWA installée sur iPhone. Première mesure réelle vérifiée par Yoann :
+33 mesures, précision 2 m, dispersion 1.7 m, sur fond Plan IGN. Les flux IGN sont
+donc confirmés — c'était noté « à vérifier sur le terrain » depuis le début.
+
+**Le tableau de position passe derrière un bouton.** Yoann a demandé s'il méritait
+sa place. Vérification faite, **cinq de ses huit lignes étaient déjà affichées
+quelques pixels plus haut** : latitude et longitude dans la ligne de coordonnées,
+précision, dispersion et nombre de mesures dans le message d'acquisition. Restaient
+l'altitude et le Lambert 93, qui ne servent pas au geste. Le bloc repoussait la
+cascade hors écran, c'est-à-dire l'action principale. Petite fenêtre au bouton ⓘ ;
+le clic sur le fond la referme, contrairement à la fenêtre de mesure — c'est une
+consultation, il n'y a rien à perdre.
+
+**La liaison au fichier CSV se propose, se répare, et détecte sa disparition.** Le
+mécanisme existait mais était enterré dans Configuration. Deux bandeaux en haut de
+l'onglet, plus une distinction qui structure le reste : *une proposition se refuse
+une fois pour toutes, une panne non*. `absent` est une offre ; `a-autoriser` et
+`introuvable` sont des défauts, ils restent affichés même après un « plus tard ».
+
+**Deux défauts trouvés en construisant ça, aucun des deux visible à l'usage :**
+
+1. `ecrireFichier` réclamait la permission depuis une chaîne de promesses qui avait
+   déjà consommé le geste de l'utilisateur. Le navigateur refusait **en silence** :
+   l'agent voyait un échec d'écriture sans pouvoir comprendre ni réparer. La
+   demande part désormais d'un bouton.
+2. Une poignée de fichier survit à la suppression de sa cible, et `queryPermission`
+   répond `granted` sur un fichier qui n'existe plus. L'application se croyait
+   reliée et chaque écriture échouait sans rien dire. `etatLiaison` appelle
+   maintenant `getFile()` et distingue quatre états au lieu de trois.
+
+**Licence AGPL-3.0.** Sans fichier de licence, le droit d'auteur s'appliquait :
+tous droits réservés, personne n'avait le droit d'utiliser le code. AGPL plutôt que
+MIT parce que les améliorations d'un outil né d'un besoin de service public doivent
+rester accessibles. Nuance relevée en comparant : la clause réseau de l'AGPL, son
+argument le plus fort, **n'apporte presque rien ici** — Groma n'a pas de serveur,
+son JavaScript part en clair dans le navigateur, quiconque l'utilise a déjà la
+source. Ce qui reste utile, c'est l'obligation de publier les versions modifiées.
+Le texte n'a pas été recopié de mémoire : aucune copie n'existait sur la machine
+(seulement la GPL-3, qui est autre chose), il vient de deux dépôts publics dont les
+copies se sont révélées identiques à l'octet près.
+
+**Les encoches, sur une capture de Yoann.** L'en-tête passait sous l'heure et la
+batterie sur iPhone. Cause : `black-translucent`, posé deux jours plus tôt en
+ajoutant la PWA, étend la page sous les barres système — et rien ne compensait.
+Corrigé par `env(safe-area-inset-*)` sur l'en-tête, le bas de page et les quatre
+côtés des fenêtres, dont le titre et la croix tombaient aussi dessous. Le
+`max-height` des fenêtres passe de `94vh` à `100%` : une hauteur en `vh` ignore ces
+marges.
+
+**Chromium n'a pas d'encoche**, les audits ne pouvaient rien prouver. Un contrôle
+dédié rejoue les règles avec les valeurs d'un iPhone 14 — 47 px en haut, 34 px en
+bas — et vérifie que rien ne passe dessous. Le principe vaut au-delà de ce cas :
+quand l'environnement de test ne reproduit pas la condition, simuler la condition
+plutôt que de déclarer le test impossible.
+
+**Tout ce qui touche aux réglages GitHub est hors de portée.** Création de dépôt,
+renommage, description, visibilité, activation de Pages, déclenchement de workflow :
+tous répondent `403 Resource not accessible by integration`. L'App GitHub installée
+n'a de droits que sur le contenu, les issues et les pull requests. Yoann a fait ces
+gestes lui-même. **Il a renommé `Synapse` plutôt que d'en créer un neuf** — meilleur
+que ce qui était proposé, l'historique et les pull requests sont conservés.
+
+**Reste ouvert :** la description du dépôt affiche encore celle de Synapse. Et il
+n'est toujours pas établi que Chrome Android expose `showSaveFilePicker` — les
+bandeaux de liaison sont conditionnés à sa présence, leur absence sur la tablette
+serait la réponse.
+
+---
+
 ## 28/09/2026 — GéoLoc devient Groma, et change de dépôt
 
 **Demande :** un nom qui corresponde à ce que fait l'application, puis un dépôt neuf
