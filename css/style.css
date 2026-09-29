@@ -517,6 +517,16 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .alerte-sauvegarde[hidden] { display: none; }
 
+/* Proposition, pas avertissement : rien n'est en danger, on offre un réglage.
+   Le ton d'alerte est réservé aux relevés qui risquent d'être perdus. */
+.alerte-liaison {
+  border-color: var(--bord);
+  border-left-color: var(--accent);
+  background: var(--fond-2);
+}
+
+.alerte-liaison .alerte-texte strong { color: var(--accent); }
+
 .alerte-texte {
   flex: 1 1 200px;
   margin: 0;
