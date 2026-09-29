@@ -7,6 +7,57 @@ Une entrée par session de travail, la plus récente en haut.
 
 ---
 
+## 29/09/2026 — Export GeoJSON, parce que les données vont dans QGIS
+
+**Demande :** les relevés seront traités dans QGIS. Choisir le format le plus adapté
+aux SIG — le choix m'était laissé.
+
+**GeoJSON (RFC 7946).** Standard ouvert, lu nativement par QGIS, ArcGIS, GDAL et
+PostGIS. Géométrie, système de coordonnées et types d'attributs dans un seul
+fichier : glisser-déposer, aucun dialogue d'import.
+
+**Les deux autres candidats, et pourquoi non.** Le *Shapefile* reste le format que
+tout accepte, mais trois fichiers minimum, noms de colonnes à dix caractères,
+encodage non garanti — ESRI elle-même en déconseille l'usage. Le *GeoPackage* serait
+techniquement le meilleur : c'est une base SQLite, impossible à écrire sans
+dépendance, et le projet n'en a aucune.
+
+**Ce que le GeoJSON règle, au-delà du confort.** Le CSV livrait tout en texte :
+`precision_m` et `x_l93` arrivaient en chaînes, inutilisables en filtre ou en calcul
+sans conversion manuelle. Et il portait un piège : un `eau.csv` ouvert puis
+réenregistré par un tableur français transforme `47.5` en `47,5` et rend les
+coordonnées illisibles. Le JSON écrit toujours au point décimal.
+
+**Deux détails qui font échouer un export GeoJSON, traités explicitement :**
+
+1. **Longitude en premier.** La norme l'impose, contre l'usage courant qui dit
+   « latitude, longitude ». L'inversion place les points à l'autre bout du monde
+   sans qu'aucun outil ne proteste. Vérifié par test.
+2. **Pas de BOM.** Le CSV en porte un — sans lui Excel FR casse les accents — mais
+   un BOM en tête de JSON casse les parseurs stricts. Il est ajouté dans `csv.js`,
+   pas au téléchargement : le GeoJSON y échappe par construction, et le test le
+   contrôle.
+
+Le membre `crs` est omis : la RFC 7946 l'a supprimé, WGS84 est implicite. L'en
+ajouter ferait échouer les validateurs stricts.
+
+`telechargerTexte` forçait l'extension `.csv`. Généralisée : la date s'insère avant
+l'extension, quelle qu'elle soit.
+
+**Un relevé sans position sort avec une géométrie nulle** au lieu d'être écarté. La
+norme l'autorise, les SIG l'acceptent, et une ligne perdue en silence à l'export
+serait pire qu'une ligne sans position.
+
+**Le garde-fou de la coquille a fait son travail :** `audit-pwa` a réclamé
+`js/geojson.js` dans `COQUILLE` dès son ajout à `index.html`. C'est exactement le
+piège qu'il a été écrit pour attraper.
+
+**Vérifié :** script dédié, du clic sur le bouton jusqu'à l'analyse du fichier
+téléchargé — validité JSON, absence de BOM, ordre des coordonnées, altitude en Z,
+types numériques, accents, et coordonnées au point décimal.
+
+---
+
 ## 29/09/2026 — Mise en ligne, licence, et trois corrections nées de l'usage réel
 
 **Groma est en ligne** : https://yoann-cramatte.github.io/Groma/ — dépôt public,

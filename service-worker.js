@@ -33,6 +33,7 @@ var COQUILLE = [
   './js/config.js',
   './js/catalogue.js',
   './js/csv.js',
+  './js/geojson.js',
   './js/store.js',
   './js/geo.js',
   './js/app.js',
