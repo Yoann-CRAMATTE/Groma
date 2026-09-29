@@ -95,6 +95,11 @@ Ils sont détaillés dans `memoire/etat-projet.md`. Les quatre qui coûtent le p
    (`service-worker.js`). L'oublier ne casse rien en ligne et casse tout hors
    ligne — chez l'agent, en tournée, sans message d'erreur. `tests/audit-pwa.mjs`
    monte la garde, encore faut-il le lancer.
+6. **Le dépôt est public : aucun workflow ne se déclenche sur `pull_request`.**
+   `pages.yml` ne tourne que sur un `push` vers `main` ou un déclenchement
+   manuel. Ajouter un déclencheur `pull_request`, et pire `pull_request_target`,
+   ferait exécuter du code venu de n'importe quel inconnu avec les droits du
+   dépôt. C'est la seule façon dont un tiers pourrait écrire ici.
 
 ---
 
