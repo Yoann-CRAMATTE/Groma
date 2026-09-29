@@ -3,8 +3,9 @@
 > Mémoire de travail. À relire en début de session **avant** d'ouvrir le code,
 > à mettre à jour en fin de session. Évite de relire toute l'application à chaque fois.
 
-**Dernière mise à jour :** 27/09/2026 — **incrément 0 (socle)**
+**Dernière mise à jour :** 29/09/2026 — **incrément 0 (socle)**
 **Branche :** `claude/geoloc-web-app-duccxo`, fusionnée dans `main`
+**En ligne :** https://yoann-cramatte.github.io/Groma/ — dépôt public, licence AGPL-3.0
 
 > **Le dépôt est désormais Groma seul.** Le projet Synapse qu'il portait (shell
 > desktop AI-native, resté au stade du spike) a été supprimé le 24/09/2026 : il est
@@ -13,9 +14,16 @@
 > abandonnée ; les incréments se comptent à partir de 1. L'historique reste dans
 > `journal.md`, il explique les invariants ci-dessous.
 >
-> **Groma est une PWA publiée sur GitHub Pages** depuis le 27/09/2026 : installable
-> sur l'écran d'accueil, démarrable sans réseau, servie en HTTPS — ce qui débloque
-> enfin le GPS sur un téléphone de terrain.
+> **Groma est une PWA publiée sur GitHub Pages**, en ligne depuis le 29/09/2026 :
+> installable sur l'écran d'accueil, démarrable sans réseau, servie en HTTPS — ce
+> qui débloque le GPS sur un téléphone de terrain. Vérifiée en conditions réelles
+> par Yoann : 33 mesures, précision 2 m, dispersion 1.7 m, fond IGN.
+>
+> **Rien de ce qui touche aux réglages GitHub n'est faisable depuis Claude Code.**
+> Création de dépôt, renommage, description, visibilité, activation de Pages,
+> déclenchement d'un workflow : tous répondent `403 Resource not accessible by
+> integration`. L'App GitHub installée n'a que les droits sur le contenu, les
+> issues et les pull requests. Ne pas perdre de temps à réessayer — passer la main.
 
 **Statut :** socle fonctionnel. L'écran d'un onglet = **bouton « Créer une mesure »,
 recherche, liste**. Toute la saisie est passée dans une fenêtre par-dessus, et cette
@@ -31,6 +39,7 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 | Fichier | Rôle | Stable ? |
 |---|---|---|
 | `CLAUDE.md` | Consignes de développement — à relire avant de coder | oui |
+| `LICENSE` | AGPL-3.0, texte canonique (661 lignes) vérifié sur deux sources | oui |
 | `README.md` | Documentation complète : CSV, GPS, carte, PWA, affichage, limites | oui |
 | `index.html` | Coquille : en-tête, nav, conteneur, toast, manifeste, enregistrement du SW | oui |
 | `manifest.webmanifest` | PWA : nom, icônes, plein écran. `start_url`/`scope` **relatifs** | oui |
@@ -130,6 +139,25 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
    présent = tout est sorti, absent = il reste des modifications. Compter les
    points en attente se tromperait dès qu'on modifie ou supprime un relevé déjà
    exporté.
+20. **Une proposition se refuse, une panne non.** Le bandeau de liaison au CSV
+   distingue les deux : `absent` est une offre, refusable une fois pour toutes ;
+   `a-autoriser` et `introuvable` sont des défauts, ils restent affichés même
+   après un refus antérieur. Un défaut qui se cache est pire que pas
+   d'avertissement.
+21. **Une permission ou un sélecteur de fichier se réclame depuis un clic.** Le
+   navigateur exige un geste de l'utilisateur et refuse **en silence** sinon —
+   une chaîne de promesses partie d'un clic l'a déjà consommé. `ecrireFichier`
+   ne fait que constater et renvoie `'permission'` ; c'est le bouton du bandeau
+   qui demande.
+22. **`etatLiaison` touche réellement le fichier.** Une poignée survit à la
+   suppression de sa cible et `queryPermission` répond `granted` sur un fichier
+   disparu : sans `getFile()`, l'application se croit reliée et chaque écriture
+   échoue sans rien dire.
+23. **Marges d'encoche partout où quelque chose colle au bord.** En-tête, bas de
+   page, quatre côtés des fenêtres. `viewport-fit=cover` plus
+   `black-translucent` étendent la page sous les barres système d'iOS : sans
+   `env(safe-area-inset-*)`, le titre passe sous l'heure. Une hauteur en `vh`
+   ignore ces marges — utiliser `100%` du conteneur déjà décalé.
 
 ## Décisions prises
 
@@ -217,9 +245,14 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 - [ ] Dédoublonnage à l'import sur `reference` en plus de `id` (saisie multi-appareils).
 - [ ] Export consolidé des trois filières, si le besoin d'une vue unique revient.
 - [ ] Mise en cache des tuiles pour l'ajustement hors réseau.
-- [ ] **Vérifier sur le terrain les URL des flux IGN et OSM** : non testables
-      depuis l'environnement de développement, dont la sortie réseau est fermée.
-      Si la Géoplateforme a changé, corriger depuis Configuration, pas dans le code.
+- [x] ~~Vérifier les flux IGN sur le terrain~~ — Plan IGN et photo aérienne
+      confirmés en usage réel le 29/09/2026.
+- [ ] **Vérifier si Chrome Android expose `showSaveFilePicker`.** L'API n'a
+      longtemps existé que sur le bureau, et le README affirme « bureau et
+      Android » sans que ce soit établi. Les bandeaux de liaison sont
+      conditionnés à sa présence : s'ils n'apparaissent jamais sur la tablette,
+      c'est la réponse, et il faut corriger le README. Non vérifiable ici, la
+      sortie réseau générale est fermée.
 - [ ] Champ photo — travail commencé puis mis de côté, à reprendre sur demande.
 - [ ] Renommage global d'un type de matériel depuis l'interface (aujourd'hui : tableur).
 - [ ] Consigne aux agents sur ce qu'on n'écrit pas dans `observations` (cf. RGPD).
