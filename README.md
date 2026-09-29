@@ -1,12 +1,94 @@
 # Groma
 
-Application web **vanilla** (aucune dépendance, aucun build) pour relever la position GPS
-d'ouvrages de terrain et les consigner dans **un fichier CSV par filière**.
-Pensée pour la **tablette**, utilisable jusqu'au petit smartphone.
+**Relever la position GPS d'un équipement sur le terrain, l'identifier, et repartir
+avec un fichier CSV exploitable dans un SIG ou un tableur.**
+
+### ▶ [Ouvrir Groma](https://yoann-cramatte.github.io/Groma/)
+
+Rien à installer pour essayer : le lien ouvre l'application. Pour l'avoir sur l'écran
+d'accueil du téléphone, voir [Installer sur le téléphone](#installer-sur-le-téléphone).
 
 > La *groma* était l'instrument des arpenteurs romains : une croix de visée montée
 > sur un pied, qu'on plantait au sol pour aligner et marquer un point précis. C'est
 > ce que fait cette application — un viseur fixe qu'on pose sur l'ouvrage.
+
+---
+
+## À qui ça s'adresse
+
+À quiconque doit noter *où se trouve quoi* sur le terrain, et veut en ressortir des
+données propres plutôt que des photos et des notes éparses.
+
+Un réseau d'eau, des bornes, des poteaux, des arbres remarquables, des capteurs, des
+points de prélèvement : la nature de l'objet n'est pas figée. Ce qui est figé, c'est
+la méthode — une position mesurée et honnête, une identification choisie dans une
+liste, une ligne de CSV.
+
+L'outil visé est la **tablette**, utilisée dehors, parfois avec des gants. Il reste
+utilisable jusqu'au petit smartphone de 280 px de large.
+
+**Aucun compte, aucun serveur, aucune donnée envoyée nulle part.** Tout vit dans le
+navigateur de l'appareil, et sort par un fichier CSV que vous contrôlez.
+
+---
+
+## Un relevé, de bout en bout
+
+Vous arrivez devant un regard de comptage. Vous ouvrez Groma, onglet **EAU**, bouton
+**Créer une mesure**.
+
+1. **La carte s'affiche**, au zoom maximal, et le GPS démarre tout seul. Un viseur
+   reste fixe au centre. Il n'y a aucun bouton « localiser » à chercher.
+2. **Le viseur se pose** dès le premier point GPS, puis se resserre pendant que la
+   mesure s'affine — précision et dispersion s'affichent en direct.
+3. **Le GPS est tombé à trois mètres du tampon ?** Vous faites glisser la carte sous
+   le viseur jusqu'à le poser sur le tampon visible en photo aérienne. L'écart est
+   mesuré, affiché, et enregistré à part — la précision annoncée par le récepteur
+   n'est jamais maquillée.
+4. **Vous identifiez l'ouvrage** dans trois listes liées : `Compteur` → `DN 20` →
+   `Volumétrique`. Choisir un type restreint les modèles, choisir un modèle restreint
+   les détails.
+5. **Vous ajoutez une phrase** si l'ouvrage la mérite : *« accès par la cour du 12,
+   tampon scellé »*. C'est ce qu'aucune nomenclature ne peut prévoir.
+6. **Enregistrer.** La ligne part dans `eau.csv`.
+
+Ce que ça produit :
+
+```
+reference;date_saisie;latitude;longitude;precision_m;dispersion_m;methode_gps;
+position_ajustee;ecart_ajustement_m;x_l93;y_l93;type_materiel;modele;detail;observations
+AEP-0001;2026-09-28T09:22:14Z;47.5175003;7.0803536;4.0;0.8;affinee;
+oui;3.21;1006940.64;6720946.95;Compteur;DN 20;Volumétrique;accès par la cour du 12
+```
+
+Vingt et une colonnes, dont quatre seulement sont saisies. Tout le reste — position,
+qualité de la mesure, conversion en Lambert 93, horodatage, référence — est produit
+par l'application.
+
+**Le tour suivant est plus rapide** : une étoile sur un relevé met sa combinaison
+matériel en favori, et un appui la repose. C'est ce qui rend tenable une tournée de
+vingt vannes identiques.
+
+---
+
+## Installer sur le téléphone
+
+Groma est une **PWA**. Ouvrez [l'application](https://yoann-cramatte.github.io/Groma/)
+dans le navigateur, puis :
+
+| Appareil | Geste |
+|---|---|
+| Android / Chrome | Bandeau « Installer », ou menu ⋮ → *Installer l'application* |
+| iOS / Safari | Partager → *Sur l'écran d'accueil* |
+| Bureau | Icône d'installation dans la barre d'adresse |
+
+Elle s'ouvre alors en plein écran, sans barre d'adresse, et se comporte comme une
+application du téléphone. **Une fois installée, elle fonctionne sans réseau** —
+c'est le point qui compte en tournée, hors couverture.
+
+---
+
+## Ce qu'on relève, et comment c'est rangé
 
 Trois filières de relevé — **EAU**, **ASSAINISSEMENT**, **SPANC** — plus un onglet
 **CONFIGURATION**. Les trois filières partagent exactement le même écran ; seuls leur
@@ -19,15 +101,18 @@ catalogue de matériel, leur couleur et leur fichier diffèrent.
 | SPANC | `#a855f7` violet | `spanc.csv` | `ANC-0001` | 21 |
 | CONFIGURATION | `#94a3b8` gris | `parametres.csv` | — | 4 |
 
-**La saisie tient en trois listes liées** — type, puis modèle, puis détail —
-alimentées par un catalogue éditable stocké dans `parametres.csv`, **plus une note
-libre**. Tout le reste d'une ligne est produit par l'application : position, méthode
-de mesure, horodatage, référence. Sur le terrain, un relevé = un appui GPS, trois
-choix, et une phrase si l'ouvrage la mérite.
+Ces trois filières sont la configuration livrée, pas une limite du logiciel :
+**le catalogue de matériel s'édite depuis l'application**, sans toucher au code. Si
+vous relevez des bornes incendie ou des stations de mesure, vous remplacez le
+catalogue et les listes suivent.
+
+**La saisie tient en trois listes liées** — type, puis modèle, puis détail — plus une
+note libre. Sur le terrain, un relevé = zéro appui GPS, trois choix, et une phrase si
+l'ouvrage la mérite.
 
 ---
 
-## Démarrer
+## Faire tourner le code localement
 
 ```bash
 python3 serveur.py        # http://localhost:8000
@@ -38,21 +123,13 @@ python3 serveur.py 8123   # autre port
 > *contexte sécurisé* : en `file://`, le navigateur refuse le GPS sans message d'erreur
 > explicite. Seuls `http://localhost` et HTTPS fonctionnent.
 
+Aucune dépendance, aucune étape de build : HTML, CSS et JavaScript nus.
+
 ---
 
-## Sur le terrain — installer l'application
+## Hors réseau, et sécurité des relevés
 
-Groma est une **PWA** : depuis l'adresse publiée en HTTPS, le navigateur propose
-de l'installer sur l'écran d'accueil. Elle s'ouvre alors en plein écran, sans barre
-d'adresse, et se comporte comme une application du téléphone.
-
-| Appareil | Geste |
-|---|---|
-| Android / Chrome | Bandeau « Installer », ou menu ⋮ → *Installer l'application* |
-| iOS / Safari | Partager → *Sur l'écran d'accueil* |
-| Bureau | Icône d'installation dans la barre d'adresse |
-
-**Une fois installée, elle fonctionne sans réseau** : interface, GPS, saisie,
+**Une fois installée, l'application fonctionne sans réseau** : interface, GPS, saisie,
 catalogue et export restent entiers — rien de tout cela ne dépend d'un serveur.
 **Seules les tuiles de carte manquent** hors couverture : elles viennent de l'IGN
 ou d'OpenStreetMap. La fenêtre de mesure le dit alors clairement, et le viseur,
@@ -335,8 +412,8 @@ Quatre contrôles avant enregistrement : HTTPS obligatoire, repères présents, 
 entre 1 et 22, **attribution non vide**. Un fond sans attribution est refusé — la
 licence l'exige, l'application ne laisse pas l'oublier.
 
-Cela permet notamment de basculer sur un serveur de tuiles interne à la collectivité,
-ou sur un autre flux public, si la Géoplateforme change de conditions.
+Cela permet notamment de basculer sur un serveur de tuiles interne à votre
+organisation, ou sur un autre flux public, si la Géoplateforme change de conditions.
 
 ### Dépendance réseau
 
