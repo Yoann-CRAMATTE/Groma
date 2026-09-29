@@ -216,12 +216,27 @@
     return idbDel(cleHandle(filiereId));
   }
 
-  /** État de la liaison, sans jamais ouvrir de fenêtre : 'absent', 'a-autoriser', 'lie'. */
+  /**
+   * État de la liaison, sans jamais ouvrir de fenêtre :
+   *   'absent'       aucune poignée — le fichier n'a jamais été relié
+   *   'a-autoriser'  poignée valide, accès expiré
+   *   'introuvable'  poignée et accès valides, mais le fichier a disparu du disque
+   *   'lie'          tout va bien
+   *
+   * Le troisième état oblige à toucher réellement le fichier : une poignée
+   * survit à la suppression de sa cible, et `queryPermission` répond `granted`
+   * sur un fichier qui n'existe plus. Sans ce contrôle, l'application se croit
+   * reliée et chaque écriture échoue sans rien dire.
+   */
   function etatLiaison(filiereId) {
     return handleCourant(filiereId).then(function (handle) {
       if (!handle) return 'absent';
       return handle.queryPermission({ mode: 'readwrite' }).then(function (etat) {
-        return etat === 'granted' ? 'lie' : 'a-autoriser';
+        if (etat !== 'granted') return 'a-autoriser';
+        return handle.getFile().then(
+          function () { return 'lie'; },
+          function () { return 'introuvable'; }
+        );
       });
     }).catch(function () { return 'absent'; });
   }

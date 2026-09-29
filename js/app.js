@@ -150,13 +150,19 @@
   }
 
   /**
-   * Proposé une fois, puis plus jamais. Deux états seulement appellent un geste :
-   * aucun fichier lié — et l'agent n'a pas déjà dit non — ou un fichier lié dont
-   * l'accès a expiré. Une fois relié, ce bandeau ne revient pas.
+   * Trois états appellent un geste, et ils ne se valent pas.
    *
-   * Le bouton est indispensable : ouvrir le sélecteur de fichier ou réclamer la
-   * permission exige un geste de l'utilisateur, le navigateur refuse les deux
-   * en silence s'ils partent d'un chargement de page.
+   * `absent` est une **proposition** : on offre un réglage, rien n'est cassé.
+   * Elle se refuse une fois pour toutes.
+   *
+   * `a-autoriser` et `introuvable` sont des **pannes** : l'application se croit
+   * reliée et les écritures échouent. Elles ne se taisent pas — un défaut qui
+   * se cache est pire que pas d'avertissement. « Délier » est la sortie du
+   * second : elle avoue que le fichier n'existe plus, au lieu de le prétendre.
+   *
+   * Le bouton est indispensable partout : ouvrir un sélecteur de fichier ou
+   * réclamer une permission exige un geste de l'utilisateur, le navigateur
+   * refuse les deux en silence s'ils partent d'un chargement de page.
    */
   function rafraichirLiaison(filiereId) {
     var hote = document.getElementById(filiereId + '-liaison');
@@ -172,11 +178,12 @@
       var f = Cfg.filiere(filiereId);
       vider(hote);
       hote.hidden = false;
+      hote.setAttribute('data-etat', etat);
 
       if (etat === 'a-autoriser') {
         hote.appendChild(el('p', { classe: 'alerte-texte' }, [
           el('strong', { texte: 'L\'accès à ' + f.fichier + ' doit être réautorisé.' }),
-          ' Le navigateur redemande la permission à chaque session, sauf si vous choisissez « autoriser à chaque visite ».'
+          ' Choisissez « autoriser à chaque visite » pour ne plus avoir à le refaire.'
         ]));
         hote.appendChild(el('button', {
           type: 'button', classe: 'btn-primaire btn-compact', texte: 'Autoriser',
@@ -185,17 +192,35 @@
         return;
       }
 
-      hote.appendChild(el('p', { classe: 'alerte-texte' }, [
-        el('strong', { texte: 'Écrire directement dans ' + f.fichier + ' ?' }),
-        ' Chaque relevé y sera inscrit aussitôt, sans export à penser.'
-      ]));
+      if (etat === 'introuvable') {
+        hote.appendChild(el('p', { classe: 'alerte-texte' }, [
+          el('strong', { texte: f.fichier + ' est introuvable.' }),
+          ' Il a été déplacé ou supprimé. Les relevés restent dans le navigateur, mais plus rien ne s\'écrit sur le disque.'
+        ]));
+      } else {
+        hote.appendChild(el('p', { classe: 'alerte-texte' }, [
+          el('strong', { texte: 'Écrire directement dans ' + f.fichier + ' ?' }),
+          ' Chaque relevé y sera inscrit aussitôt, sans export à penser.'
+        ]));
+      }
+
+      // Chercher avant créer : reprendre un fichier existant récupère les
+      // relevés déjà dedans, créer repart de zéro. L'ordre évite l'écrasement.
       hote.appendChild(el('button', {
-        type: 'button', classe: 'btn-primaire btn-compact', texte: 'Choisir le fichier',
+        type: 'button', classe: 'btn-primaire btn-compact', texte: 'Chercher le fichier',
+        onclick: function () { actionOuvrirFichier(filiereId); }
+      }));
+      hote.appendChild(el('button', {
+        type: 'button', classe: 'btn-compact', texte: 'Créer le fichier',
         onclick: function () { actionCreerFichier(filiereId); }
       }));
       hote.appendChild(el('button', {
-        type: 'button', classe: 'btn-compact', texte: 'Plus tard',
-        onclick: function () { refuserLiaison(filiereId); }
+        type: 'button', classe: 'btn-compact',
+        texte: etat === 'introuvable' ? 'Délier' : 'Plus tard',
+        onclick: function () {
+          if (etat === 'introuvable') { actionDelierFichier(filiereId); return; }
+          refuserLiaison(filiereId);
+        }
       }));
     });
   }
