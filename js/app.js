@@ -133,6 +133,87 @@
     }));
   }
 
+  // ------------------------------------------------- liaison au fichier CSV
+
+  var CLE_LIAISON_REFUSEE = 'groma.liaison-refusee';
+
+  function liaisonsRefusees() {
+    try { return JSON.parse(localStorage.getItem(CLE_LIAISON_REFUSEE) || '{}'); }
+    catch (e) { return {}; } // mode privé
+  }
+
+  function refuserLiaison(filiereId) {
+    var r = liaisonsRefusees();
+    r[filiereId] = true;
+    try { localStorage.setItem(CLE_LIAISON_REFUSEE, JSON.stringify(r)); } catch (e) { /* mode privé */ }
+    rafraichirLiaison(filiereId);
+  }
+
+  /**
+   * Proposé une fois, puis plus jamais. Deux états seulement appellent un geste :
+   * aucun fichier lié — et l'agent n'a pas déjà dit non — ou un fichier lié dont
+   * l'accès a expiré. Une fois relié, ce bandeau ne revient pas.
+   *
+   * Le bouton est indispensable : ouvrir le sélecteur de fichier ou réclamer la
+   * permission exige un geste de l'utilisateur, le navigateur refuse les deux
+   * en silence s'ils partent d'un chargement de page.
+   */
+  function rafraichirLiaison(filiereId) {
+    var hote = document.getElementById(filiereId + '-liaison');
+    if (!hote) return;
+
+    if (!Store.fsaDisponible()) { hote.hidden = true; return; }
+
+    Store.etatLiaison(filiereId).then(function (etat) {
+      if (etat === 'lie' || (etat === 'absent' && liaisonsRefusees()[filiereId])) {
+        hote.hidden = true;
+        return;
+      }
+      var f = Cfg.filiere(filiereId);
+      vider(hote);
+      hote.hidden = false;
+
+      if (etat === 'a-autoriser') {
+        hote.appendChild(el('p', { classe: 'alerte-texte' }, [
+          el('strong', { texte: 'L\'accès à ' + f.fichier + ' doit être réautorisé.' }),
+          ' Le navigateur redemande la permission à chaque session, sauf si vous choisissez « autoriser à chaque visite ».'
+        ]));
+        hote.appendChild(el('button', {
+          type: 'button', classe: 'btn-primaire btn-compact', texte: 'Autoriser',
+          onclick: function () { autoriserLiaison(filiereId); }
+        }));
+        return;
+      }
+
+      hote.appendChild(el('p', { classe: 'alerte-texte' }, [
+        el('strong', { texte: 'Écrire directement dans ' + f.fichier + ' ?' }),
+        ' Chaque relevé y sera inscrit aussitôt, sans export à penser.'
+      ]));
+      hote.appendChild(el('button', {
+        type: 'button', classe: 'btn-primaire btn-compact', texte: 'Choisir le fichier',
+        onclick: function () { actionCreerFichier(filiereId); }
+      }));
+      hote.appendChild(el('button', {
+        type: 'button', classe: 'btn-compact', texte: 'Plus tard',
+        onclick: function () { refuserLiaison(filiereId); }
+      }));
+    });
+  }
+
+  function autoriserLiaison(filiereId) {
+    Store.demanderPermission(filiereId).then(function (accorde) {
+      rafraichirLiaison(filiereId);
+      rafraichirBadgeFichier();
+      if (!accorde) {
+        toast('Accès refusé. Le relevé reste enregistré dans le navigateur.', 'erreur');
+        return;
+      }
+      return synchroniserFichier(filiereId).then(function () {
+        toast(Cfg.filiere(filiereId).fichier + ' relié et mis à jour.', 'succes');
+      });
+    });
+  }
+
   // ---------------------------------------------------------------- fichier CSV
 
   function contenuCsv(filiereId) {
@@ -144,7 +225,12 @@
     if (!Store.fsaDisponible()) return Promise.resolve('absent');
     return Store.ecrireFichier(filiereId, contenuCsv(filiereId)).then(function (r) {
       var f = Cfg.filiere(filiereId);
-      if (r === 'permission') toast('Accès au CSV ' + f.label + ' refusé : reliez le fichier dans Configuration.', 'erreur');
+      if (r === 'permission') {
+        // Le bandeau porte le bouton qui réclame la permission : lui seul part
+        // d'un geste, seule façon pour le navigateur de l'accepter.
+        rafraichirLiaison(filiereId);
+        toast('Accès à ' + f.fichier + ' expiré. Le bandeau en haut de l\'onglet le rétablit.', 'erreur');
+      }
       else if (r === 'erreur') toast('Écriture du CSV ' + f.label + ' impossible. Les données restent enregistrées dans le navigateur.', 'erreur');
       else if (r === 'ok') marquerSauvegarde(filiereId);
       rafraichirBadgeFichier();
@@ -265,7 +351,7 @@
       rafraichirFonds();
       Cfg.FILIERES.forEach(function (f) { rafraichirCatalogue(f.id); });
     }
-    else { rafraichirListe(id); rafraichirAlerte(id); }
+    else { rafraichirListe(id); rafraichirAlerte(id); rafraichirLiaison(id); }
     try { localStorage.setItem('groma.onglet', id); } catch (e) { /* mode privé */ }
   }
 
@@ -676,6 +762,7 @@
     return el('section', { classe: 'vue', id: 'vue-' + f.id, role: 'tabpanel', 'aria-labelledby': 'onglet-' + f.id, hidden: 'hidden' }, [
       // Au-dessus du bouton : ce qui menace le travail déjà fait passe avant
       // l'invitation à en faire davantage.
+      el('div', { classe: 'alerte-sauvegarde alerte-liaison', id: f.id + '-liaison', role: 'status', hidden: 'hidden' }),
       el('div', { classe: 'alerte-sauvegarde', id: f.id + '-alerte', role: 'status', hidden: 'hidden' }),
       el('button', {
         classe: 'btn-primaire btn-creer', type: 'button', id: f.id + '-btn-creer',
@@ -1924,6 +2011,7 @@
     }).then(function () {
       rafraichirBadgeFichier();
       rafraichirEtatFichier();
+      rafraichirLiaison(filiereId);
       toast('CSV ' + Cfg.filiere(filiereId).label + ' lié et initialisé.', 'succes');
     }).catch(function () { /* l'utilisateur a annulé le sélecteur */ });
   }
@@ -1937,6 +2025,7 @@
     }).then(function () {
       rafraichirBadgeFichier();
       rafraichirEtatFichier();
+      rafraichirLiaison(filiereId);
       rafraichirStats();
       rafraichirListe(filiereId);
     }).catch(function () { /* annulé */ });
@@ -1946,6 +2035,7 @@
     Store.oublierFichier(filiereId).then(function () {
       rafraichirBadgeFichier();
       rafraichirEtatFichier();
+      rafraichirLiaison(filiereId);
       toast('CSV ' + Cfg.filiere(filiereId).label + ' délié. Les données restent dans le navigateur.', 'info');
     });
   }

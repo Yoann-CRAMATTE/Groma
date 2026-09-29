@@ -216,16 +216,40 @@
     return idbDel(cleHandle(filiereId));
   }
 
+  /** État de la liaison, sans jamais ouvrir de fenêtre : 'absent', 'a-autoriser', 'lie'. */
+  function etatLiaison(filiereId) {
+    return handleCourant(filiereId).then(function (handle) {
+      if (!handle) return 'absent';
+      return handle.queryPermission({ mode: 'readwrite' }).then(function (etat) {
+        return etat === 'granted' ? 'lie' : 'a-autoriser';
+      });
+    }).catch(function () { return 'absent'; });
+  }
+
+  /**
+   * Redemande l'accès au fichier déjà lié. **À n'appeler que depuis un clic** :
+   * le navigateur exige un geste de l'utilisateur et refuse en silence sinon.
+   */
+  function demanderPermission(filiereId) {
+    return handleCourant(filiereId).then(function (handle) {
+      if (!handle) return false;
+      return handle.requestPermission({ mode: 'readwrite' })
+        .then(function (etat) { return etat === 'granted'; });
+    }).catch(function () { return false; });
+  }
+
   /**
    * @returns {Promise<'ok'|'permission'|'absent'|'erreur'>} état de l'écriture
+   *
+   * Ne demande jamais la permission : un enregistrement part d'un clic, mais la
+   * chaîne de promesses qui y mène a déjà consommé le geste, et le navigateur
+   * rejette alors la demande sans rien afficher. C'est à l'interface de la
+   * réclamer, depuis un bouton dédié.
    */
   function ecrireFichier(filiereId, contenu) {
     return handleCourant(filiereId).then(function (handle) {
       if (!handle) return 'absent';
       return handle.queryPermission({ mode: 'readwrite' }).then(function (etat) {
-        if (etat === 'granted') return 'granted';
-        return handle.requestPermission({ mode: 'readwrite' });
-      }).then(function (etat) {
         if (etat !== 'granted') return 'permission';
         return handle.createWritable().then(function (flux) {
           return flux.write(contenu).then(function () { return flux.close(); });
@@ -272,6 +296,8 @@
     choisirFichier: choisirFichier,
     ouvrirFichierExistant: ouvrirFichierExistant,
     handleCourant: handleCourant,
+    etatLiaison: etatLiaison,
+    demanderPermission: demanderPermission,
     oublierFichier: oublierFichier,
     ecrireFichier: ecrireFichier,
     lireFichier: lireFichier,
