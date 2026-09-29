@@ -474,8 +474,38 @@
         el('span', { classe: 'carte-ecart', id: f.id + '-carte-ecart', texte: '—' }),
         el('span', { classe: 'carte-echelle', id: f.id + '-carte-echelle', texte: '—' })
       ]),
-      el('p', { classe: 'etat-gps', id: f.id + '-etat-gps' }),
-      dl
+      el('div', { classe: 'ligne-etat' }, [
+        el('p', { classe: 'etat-gps', id: f.id + '-etat-gps' }),
+        // Le tableau complet répétait cinq valeurs déjà lisibles juste au-dessus
+        // et repoussait la cascade hors écran. Il passe derrière un bouton :
+        // l'altitude et le Lambert 93 ne servent pas au geste, seulement au
+        // contrôle.
+        el('button', {
+          type: 'button', classe: 'btn-details', id: f.id + '-btn-details',
+          'aria-label': 'Voir le détail de la position', title: 'Détail de la position',
+          texte: 'ⓘ',
+          onclick: function () { ouvrirDetails(f.id); }
+        })
+      ]),
+      el('div', { classe: 'modale modale-details', id: f.id + '-modale-details', hidden: 'hidden' }, [
+        el('div', {
+          classe: 'modale-fond',
+          onclick: function () { fermerDetails(f.id); }
+        }),
+        el('div', {
+          classe: 'modale-fenetre modale-fenetre--details', role: 'dialog', 'aria-modal': 'true',
+          'aria-labelledby': f.id + '-titre-details', id: f.id + '-fenetre-details', tabindex: '-1'
+        }, [
+          el('header', { classe: 'modale-entete' }, [
+            el('h2', { id: f.id + '-titre-details', texte: 'Détail de la position' }),
+            el('button', {
+              type: 'button', classe: 'modale-fermer', 'aria-label': 'Fermer', texte: '✕',
+              onclick: function () { fermerDetails(f.id); }
+            })
+          ]),
+          dl
+        ])
+      ])
     ]);
 
     // Les listes liées décrivent l'ouvrage, la note dit ce qui cloche. Le reste
@@ -596,11 +626,32 @@
     if (!sansConfirmation && mesureEntamee(filiereId)
       && !confirm('Abandonner cette mesure ? Ce qui a été saisi sera perdu.')) return;
 
+    fermerDetails(filiereId); // sinon il resterait seul au-dessus d'une fenêtre fermée
     detruireCarteMesure();
     reinitialiserFormulaire(filiereId);
     modale.hidden = true;
     majVerrouDefilement();
     var bouton = document.getElementById(filiereId + '-btn-creer');
+    if (bouton) bouton.focus();
+  }
+
+  /**
+   * Le détail de position s'ouvre par-dessus la fenêtre de mesure. Contrairement
+   * à elle, le clic sur le fond referme : on ne perd rien, c'est une consultation.
+   */
+  function ouvrirDetails(filiereId) {
+    var modale = document.getElementById(filiereId + '-modale-details');
+    modale.hidden = false;
+    majVerrouDefilement();
+    document.getElementById(filiereId + '-fenetre-details').focus();
+  }
+
+  function fermerDetails(filiereId) {
+    var modale = document.getElementById(filiereId + '-modale-details');
+    if (modale.hidden) return;
+    modale.hidden = true;
+    majVerrouDefilement();
+    var bouton = document.getElementById(filiereId + '-btn-details');
     if (bouton) bouton.focus();
   }
 
@@ -1233,6 +1284,12 @@
   function brancherClavier() {
     document.addEventListener('keydown', function (ev) {
       if (ev.key !== 'Escape') return;
+      // Le détail s'ouvre par-dessus la mesure : Échap referme la plus haute
+      // d'abord, sinon on perdrait la saisie en voulant fermer une consultation.
+      var detail = Cfg.FILIERES.filter(function (f) {
+        return !document.getElementById(f.id + '-modale-details').hidden;
+      })[0];
+      if (detail) { fermerDetails(detail.id); return; }
       Cfg.FILIERES.forEach(function (f) { fermerMesure(f.id); });
     });
   }
