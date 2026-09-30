@@ -1,6 +1,6 @@
 /**
  * Persistance. localStorage fait autorité (jamais de perte de saisie terrain),
- * le fichier CSV est une projection réécrite intégralement à chaque modification.
+ * le fichier sur disque est une projection réécrite intégralement à chaque modification.
  * Le handle de fichier est gardé en IndexedDB : localStorage ne sait stocker que du texte.
  */
 (function (global) {
@@ -88,7 +88,7 @@
   //
   // Une combinaison type / modèle / détail mise de côté pour être reposée d'un
   // geste. Ce sont des raccourcis de saisie propres au poste, pas des données de
-  // relevé : ils ne partent dans aucun CSV.
+  // relevé : ils ne partent dans aucun fichier exporté.
 
   function lireFavoris() {
     var f = lireJson(CLE_FAVORIS, {});
@@ -170,8 +170,11 @@
     ecrireJson(CLE_COMPTEUR, compteurs);
   }
 
-  // --- Fichiers CSV liés, un par filière (File System Access API, Chrome / Edge / Android) ---
+  // --- Fichiers liés, un par filière (File System Access API, Chrome / Edge / Android) ---
 
+  // Le préfixe reste `csv-` bien que les relevés soient passés au GeoJSON : le
+  // renommer perdrait les liaisons déjà enregistrées sur les tablettes, sans
+  // aucun message, et il faudrait relier chaque fichier à la main.
   function cleHandle(filiereId) {
     return 'csv-' + filiereId;
   }
@@ -180,7 +183,17 @@
     return typeof global.showSaveFilePicker === 'function';
   }
 
-  var TYPES_CSV = [{ description: 'Fichier CSV', accept: { 'text/csv': ['.csv'] } }];
+  // Les relevés voyagent en GeoJSON — géométrie et types portés par le fichier.
+  // Le catalogue reste tabulaire et n'a aucune géométrie : le JSON simple lui
+  // suffit, et son import accepte encore le CSV d'un tableur.
+  var TYPES = {
+    releves: [{ description: 'GeoJSON', accept: { 'application/geo+json': ['.geojson', '.json'] } }],
+    parametres: [{ description: 'Catalogue', accept: { 'application/json': ['.json'], 'text/csv': ['.csv'] } }]
+  };
+
+  function typesDe(cle) {
+    return cle === 'parametres' ? TYPES.parametres : TYPES.releves;
+  }
 
   /**
    * Le catalogue de matériel est un fichier lié comme les autres, sous la clé
@@ -189,20 +202,20 @@
   function nomFichier(cle) {
     if (cle === 'parametres') return global.GromaCatalogue.FICHIER;
     var f = global.GromaConfig.filiere(cle);
-    return f ? f.fichier : 'groma.csv';
+    return f ? f.fichier : 'groma.geojson';
   }
 
   function choisirFichier(filiereId) {
     return global.showSaveFilePicker({
       suggestedName: nomFichier(filiereId),
-      types: TYPES_CSV
+      types: typesDe(filiereId)
     }).then(function (handle) {
       return idbSet(cleHandle(filiereId), handle).then(function () { return handle; });
     });
   }
 
   function ouvrirFichierExistant(filiereId) {
-    return global.showOpenFilePicker({ multiple: false, types: TYPES_CSV }).then(function (handles) {
+    return global.showOpenFilePicker({ multiple: false, types: typesDe(filiereId) }).then(function (handles) {
       var handle = handles[0];
       return idbSet(cleHandle(filiereId), handle).then(function () { return handle; });
     });

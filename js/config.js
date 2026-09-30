@@ -1,5 +1,5 @@
 /**
- * Schéma du projet : il pilote les formulaires, les colonnes CSV et le filtre.
+ * Schéma du projet : il pilote les formulaires, les colonnes des fichiers et le filtre.
  * La saisie se réduit à l'identification du matériel et à une note libre — tout
  * le reste d'une ligne est produit par l'application : position, méthode de
  * mesure, horodatage, référence.
@@ -38,7 +38,7 @@
       titre: 'Eau potable (AEP)',
       couleur: '#0ea5e9',
       prefixe: 'AEP',
-      fichier: 'eau.csv'
+      fichier: 'eau.geojson'
     },
     {
       id: 'assainissement',
@@ -47,7 +47,7 @@
       titre: 'Assainissement collectif',
       couleur: '#22c55e',
       prefixe: 'AC',
-      fichier: 'assainissement.csv'
+      fichier: 'assainissement.geojson'
     },
     {
       id: 'spanc',
@@ -58,7 +58,7 @@
       prefixe: 'ANC',
       // Une installation ANC se trouve chez un particulier : la position seule
       // désigne un foyer, même sans nom ni adresse. Cf. docs/RGPD.md.
-      fichier: 'spanc.csv'
+      fichier: 'spanc.geojson'
     }
   ];
 
@@ -74,11 +74,28 @@
   ];
 
   /**
-   * Colonnes du CSV d'une filière. Les trois filières ont aujourd'hui les mêmes,
+   * Décimales de chaque colonne numérique. La table est ici, et pas dans le code
+   * qui enregistre, parce que deux chemins produisent des relevés — la saisie et
+   * l'import d'un fichier. Deux écritures d'une même valeur (`47.5175` d'un côté,
+   * `47.5175000` de l'autre) rendraient deux exports incomparables à mesure
+   * identique.
+   *
+   * Sept décimales de latitude valent le centimètre : en deçà on tronquerait la
+   * mesure du récepteur, au-delà on afficherait du bruit de calcul.
+   */
+  var DECIMALES = {
+    latitude: 7, longitude: 7, altitude_m: 2,
+    precision_m: 1, dispersion_m: 2, duree_gps_s: 1, ecart_ajustement_m: 2,
+    x_l93: 2, y_l93: 2
+  };
+
+  /**
+   * Colonnes d'une filière, dans l'ordre du fichier. Les trois filières ont
+   * aujourd'hui les mêmes,
    * mais gardent chacune leur fichier : la colonne « filiere » sert de garde-fou
    * à l'import, et rien n'oblige les trois à rester alignées.
    */
-  function colonnesCsv(filiereId) {
+  function colonnesFiliere(filiereId) {
     if (!filiere(filiereId)) return [];
     return COLONNES_TECHNIQUES
       .concat(CHAMPS_CASCADE.map(function (c) { return c.cle; }))
@@ -111,8 +128,9 @@
   global.GromaConfig = {
     FILIERES: FILIERES,
     COLONNES_TECHNIQUES: COLONNES_TECHNIQUES,
+    DECIMALES: DECIMALES,
     CONFIG_DEFAUT: CONFIG_DEFAUT,
-    colonnesCsv: colonnesCsv,
+    colonnesFiliere: colonnesFiliere,
     filiere: filiere,
     champsDe: champsDe
   };

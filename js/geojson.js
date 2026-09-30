@@ -79,8 +79,45 @@
     }, null, 2);
   }
 
+  /**
+   * Relit un document produit par `serialiser`. C'est la moitié qui rend le
+   * format utilisable comme **stockage** et pas seulement comme sortie : sans
+   * elle, impossible de relier un fichier existant ni de reprendre une tournée
+   * commencée sur un autre appareil.
+   *
+   * Les valeurs reviennent en chaînes, comme celles qu'écrit l'application :
+   * une seule représentation interne, sinon deux relevés identiques cesseraient
+   * de se comparer selon leur provenance.
+   *
+   * @returns {Object[]|null} relevés, ou `null` si le document n'est pas une
+   *          FeatureCollection — un fichier étranger doit être refusé, pas
+   *          absorbé à moitié.
+   */
+  function analyser(texte) {
+    var doc;
+    try { doc = JSON.parse(texte); } catch (e) { return null; }
+    if (!doc || doc.type !== 'FeatureCollection' || !Array.isArray(doc.features)) return null;
+
+    return doc.features.map(function (f) {
+      var p = {};
+      var props = (f && f.properties) || {};
+      Object.keys(props).forEach(function (c) {
+        p[c] = props[c] === null || props[c] === undefined ? '' : String(props[c]);
+      });
+
+      var g = f && f.geometry;
+      if (g && g.type === 'Point' && Array.isArray(g.coordinates)) {
+        p.longitude = String(g.coordinates[0]);
+        p.latitude = String(g.coordinates[1]);
+        if (g.coordinates.length > 2) p.altitude_m = String(g.coordinates[2]);
+      }
+      return p;
+    });
+  }
+
   global.GromaGeojson = {
     serialiser: serialiser,
+    analyser: analyser,
     NOMBRES: NOMBRES
   };
 })(window);

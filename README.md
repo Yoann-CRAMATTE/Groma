@@ -3,7 +3,7 @@
 [![Licence : AGPL v3](https://img.shields.io/badge/licence-AGPL--3.0-0ea5e9)](LICENSE)
 
 **Relever la position GPS d'un équipement sur le terrain, l'identifier, et repartir
-avec un fichier CSV exploitable dans un SIG ou un tableur.**
+avec un fichier GeoJSON qui s'ouvre directement dans QGIS.**
 
 ### ▶ [Ouvrir Groma](https://yoann-cramatte.github.io/Groma/)
 
@@ -24,13 +24,13 @@ données propres plutôt que des photos et des notes éparses.
 Un réseau d'eau, des bornes, des poteaux, des arbres remarquables, des capteurs, des
 points de prélèvement : la nature de l'objet n'est pas figée. Ce qui est figé, c'est
 la méthode — une position mesurée et honnête, une identification choisie dans une
-liste, une ligne de CSV.
+liste, une entité dans un fichier que n'importe quel SIG sait ouvrir.
 
 L'outil visé est la **tablette**, utilisée dehors, parfois avec des gants. Il reste
 utilisable jusqu'au petit smartphone de 280 px de large.
 
 **Aucun compte, aucun serveur, aucune donnée envoyée nulle part.** Tout vit dans le
-navigateur de l'appareil, et sort par un fichier CSV que vous contrôlez.
+navigateur de l'appareil, et sort par un fichier que vous contrôlez.
 
 ---
 
@@ -52,20 +52,52 @@ Vous arrivez devant un regard de comptage. Vous ouvrez Groma, onglet **EAU**, bo
    les détails.
 5. **Vous ajoutez une phrase** si l'ouvrage la mérite : *« accès par la cour du 12,
    tampon scellé »*. C'est ce qu'aucune nomenclature ne peut prévoir.
-6. **Enregistrer.** La ligne part dans `eau.csv`.
+6. **Enregistrer.** Le relevé part dans `eau.geojson`.
 
 Ce que ça produit :
 
-```
-reference;date_saisie;latitude;longitude;precision_m;dispersion_m;methode_gps;
-position_ajustee;ecart_ajustement_m;x_l93;y_l93;type_materiel;modele;detail;observations
-AEP-0001;2026-09-28T09:22:14Z;47.5175003;7.0803536;4.0;0.8;affinee;
-oui;3.21;1006940.64;6720946.95;Compteur;DN 20;Volumétrique;accès par la cour du 12
+```json
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [7.0803536, 47.5175003, 341.2]
+      },
+      "properties": {
+        "id": "m1r4k8zq-a7f2c1",
+        "filiere": "eau",
+        "reference": "AEP-0001",
+        "date_saisie": "2026-09-28T09:22:14.318Z",
+        "operateur": "Y. Cramatte",
+        "precision_m": 4,
+        "dispersion_m": 0.8,
+        "methode_gps": "affinee",
+        "nb_mesures": 42,
+        "duree_gps_s": 30,
+        "position_ajustee": "oui",
+        "ecart_ajustement_m": 3.21,
+        "x_l93": 1006940.64,
+        "y_l93": 6720946.95,
+        "type_materiel": "Compteur",
+        "modele": "DN 20",
+        "detail": "Volumétrique",
+        "observations": "accès par la cour du 12, tampon scellé"
+      }
+    }
+  ]
+}
 ```
 
-Vingt et une colonnes, dont quatre seulement sont saisies. Tout le reste — position,
-qualité de la mesure, conversion en Lambert 93, horodatage, référence — est produit
-par l'application.
+Vingt et un champs, dont quatre seulement sont saisis — les trois niveaux de la
+cascade et l'observation. Tout le reste est produit par l'application : position,
+qualité de la mesure, conversion en Lambert 93, horodatage, référence.
+
+Ce fichier se glisse dans QGIS et s'ouvre tel quel. La géométrie est dans le
+document, les nombres sont des nombres, et aucun dialogue d'import ne demande quelle
+colonne porte le X.
 
 **Le tour suivant est plus rapide** : une étoile sur un relevé met sa combinaison
 matériel en favori, et un appui la repose. C'est ce qui rend tenable une tournée de
@@ -98,9 +130,9 @@ catalogue de matériel, leur couleur et leur fichier diffèrent.
 
 | Onglet | Couleur | Fichier | Références | Colonnes |
 |---|---|---|---|---|
-| EAU | `#0ea5e9` bleu | `eau.csv` | `AEP-0001` | 21 |
-| ASSAINISSEMENT | `#22c55e` vert | `assainissement.csv` | `AC-0001` | 21 |
-| SPANC | `#a855f7` violet | `spanc.csv` | `ANC-0001` | 21 |
+| EAU | `#0ea5e9` bleu | `eau.geojson` | `AEP-0001` | 21 |
+| ASSAINISSEMENT | `#22c55e` vert | `assainissement.geojson` | `AC-0001` | 21 |
+| SPANC | `#a855f7` violet | `spanc.geojson` | `ANC-0001` | 21 |
 | CONFIGURATION | `#94a3b8` gris | `parametres.csv` | — | 4 |
 
 Ces trois filières sont la configuration livrée, pas une limite du logiciel :
@@ -146,9 +178,9 @@ pour que personne ne l'apprenne trop tard :
 
 - **Un bandeau en haut de l'onglet** dès qu'une filière contient des relevés qui
   ne sont sortis nulle part, avec le compte et un bouton d'export. Il disparaît
-  quand le CSV est exporté ou quand le fichier lié a été réécrit, et revient à la
-  première modification suivante — y compris une suppression, qui rend périmé le
-  CSV déjà exporté.
+  quand le fichier est exporté ou quand le fichier lié a été réécrit, et revient à
+  la première modification suivante — y compris une suppression, qui rend périmé le
+  fichier déjà exporté.
 - **Une demande de stockage persistant** au premier enregistrement, pour que le
   navigateur n'évince pas les données sous la pression du disque. Chrome l'accorde
   en silence à une application installée.
@@ -179,24 +211,9 @@ et du hors-ligne.
 
 ## Sortir les données vers un SIG
 
-**GeoJSON** est le format à utiliser pour QGIS, ArcGIS ou tout outil cartographique.
-Configuration → carte de la filière → *Exporter GeoJSON*.
-
-Un seul fichier, qu'on glisse dans QGIS : il s'ouvre directement. La géométrie, le
-système de coordonnées et **le type de chaque attribut** voyagent dedans. Pas de
-dialogue d'import, pas de colonnes X/Y à désigner, pas de SCR à choisir.
-
-| | GeoJSON | CSV |
-|---|---|---|
-| Ouverture dans un SIG | glisser-déposer | dialogue d'import à chaque fois |
-| Géométrie | dans le fichier | à reconstruire depuis deux colonnes |
-| `precision_m`, `x_l93`… | nombres | texte, à convertir |
-| Accents | UTF-8 imposé par la norme | dépend du logiciel qui ouvre |
-| Ouvrable au tableur | non | oui |
-
-Le CSV reste la voie du tableur et du fichier lié. Les deux décrivent le même stock.
-
-### Ce que contient le GeoJSON
+**Le GeoJSON est le seul format de sortie des relevés.** Configuration → carte de la
+filière → *Exporter*. Il n'y a pas de choix à faire : le fichier exporté, le fichier
+lié et le fichier réimporté sont le même format.
 
 Conforme à la **RFC 7946**. Coordonnées en WGS84, **longitude en premier** comme
 l'exige la norme — l'inversion est l'erreur classique, elle place les points à
@@ -206,39 +223,69 @@ troisième coordonnée, le Lambert 93 reste en attributs pour ceux qui en ont be
 Un relevé sans position sort avec une géométrie nulle plutôt que d'être écarté : la
 norme l'autorise, et une ligne perdue en silence à l'export serait pire.
 
-> **Piège du CSV, que le GeoJSON évite.** Si quelqu'un ouvre `eau.csv` dans Excel
-> français et le réenregistre, les décimales deviennent des virgules et le SIG ne lit
-> plus les coordonnées. Personne n'ouvre un GeoJSON dans Excel.
+### Pourquoi pas de CSV pour les relevés
+
+Le CSV a été le format d'origine ; il a été retiré. Ce qu'il coûtait :
+
+| | GeoJSON | CSV |
+|---|---|---|
+| Ouverture dans un SIG | glisser-déposer | dialogue d'import à chaque fois |
+| Géométrie | dans le fichier | à reconstruire depuis deux colonnes |
+| `precision_m`, `x_l93`… | nombres | texte, à convertir |
+| Accents | UTF-8 imposé par la norme | dépend du logiciel qui ouvre |
+
+> **Le piège qui a tranché.** Si quelqu'un ouvre `eau.csv` dans Excel français et le
+> réenregistre, les décimales deviennent des virgules et le SIG ne lit plus les
+> coordonnées. Le relevé est perdu sans qu'aucun message ne le dise. Personne n'ouvre
+> un GeoJSON dans Excel.
+
+Le catalogue de matériel, lui, n'a aucune géométrie et se modifie volontiers au
+tableur : il garde son `parametres.csv`.
 
 ---
 
-## Fichiers CSV
+## Fichiers de sortie
 
 **Quatre fichiers** : un par onglet de relevé, plus `parametres.csv` qui porte le
 catalogue de matériel. Chacun est lié et exporté indépendamment depuis Configuration.
-Chaque CSV ne porte que les colonnes de sa filière — aucune colonne vide héritée
-des autres. La colonne `filiere` est conservée : elle sert de garde-fou à l'import.
+Chaque fichier ne porte que les champs de sa filière — aucun champ vide hérité
+des autres. Le champ `filiere` est conservé : il sert de garde-fou à l'import.
 
-Format : **UTF-8 avec BOM**, séparateur `;` par défaut (configurable `;` / `,` / tabulation),
-fins de ligne CRLF, échappement RFC 4180. Ouvrable directement dans Excel français.
+Format des relevés : **GeoJSON, UTF-8 sans BOM** (un BOM casserait les analyseurs
+JSON stricts), indenté pour rester lisible à l'œil, point décimal imposé par la
+norme JSON.
 
-### Colonnes — identiques dans les trois fichiers
+### Champs — identiques dans les trois fichiers
+
+**Dans la géométrie** — c'est là qu'un SIG les cherche :
 
 ```
-id;filiere;reference;date_saisie;operateur;
-latitude;longitude;altitude_m;
-precision_m;dispersion_m;methode_gps;nb_mesures;duree_gps_s;
-position_ajustee;ecart_ajustement_m;
-x_l93;y_l93;
-type_materiel;modele;detail;observations
+longitude, latitude, altitude_m
 ```
 
-Seules les quatre dernières sont saisies. `type_materiel`, `modele` et `detail` sont
+**Dans les attributs** — dix-huit champs :
+
+```
+id, filiere, reference, date_saisie, operateur,
+precision_m, dispersion_m, methode_gps, nb_mesures, duree_gps_s,
+position_ajustee, ecart_ajustement_m,
+x_l93, y_l93,
+type_materiel, modele, detail, observations
+```
+
+Sont typés en nombres, et donc filtrables et calculables sans conversion :
+`precision_m`, `dispersion_m`, `nb_mesures`, `duree_gps_s`, `ecart_ajustement_m`,
+`x_l93`, `y_l93`.
+
+`latitude`, `longitude` et `altitude_m` ne sont pas répétés en attributs : les
+dupliquer inviterait à les modifier d'un côté sans l'autre.
+
+Seuls les quatre derniers sont saisis. `type_materiel`, `modele` et `detail` sont
 les niveaux de la cascade : ils décrivent **ce qu'est** l'ouvrage. `observations` dit
 **ce qui cloche** — tampon scellé, accès par la cour du 12, vanne bloquée. Le
 catalogue ne peut pas prévoir ça.
 
-Les trois filières ont aujourd'hui les mêmes colonnes mais gardent chacune leur
+Les trois filières ont aujourd'hui les mêmes champs mais gardent chacune leur
 fichier : `filiere` sert de garde-fou à l'import, et rien n'oblige les trois à rester
 alignées si une d'elles a besoin d'un champ propre.
 
@@ -269,7 +316,7 @@ effacée en silence : à la relecture du point, elle réapparaît marquée
 
 | Mode | Navigateurs | Comportement |
 |---|---|---|
-| **Fichier lié** (File System Access API) | Chrome, Edge (bureau et Android) | Configuration → carte de la filière → *Créer / remplacer* ou *Lier un existant*. Le CSV de cette filière est réécrit intégralement à chaque enregistrement, suppression ou import. Les trois liaisons sont indépendantes. |
+| **Fichier lié** (File System Access API) | Chrome, Edge (bureau et Android) | Configuration → carte de la filière → *Créer / remplacer* ou *Lier un existant*. Le fichier de cette filière est réécrit intégralement à chaque enregistrement, suppression ou import. Les trois liaisons sont indépendantes. |
 | **Export manuel** | Firefox, Safari, iOS | *Exporter* par filière, ou *Exporter les 3*. Le catalogue a son propre *Exporter*. |
 
 Dans les deux cas, `localStorage` fait autorité : aucune saisie n'est perdue si
@@ -278,10 +325,16 @@ conservés en IndexedDB) ; le navigateur peut redemander l'autorisation d'écrit
 
 ### Import
 
-Chaque carte de filière a son bouton *Importer*. Les lignes sont ajoutées au stock
-existant ; un identifiant `id` déjà présent est ignoré. **Un CSV portant une autre
-filière est refusé** : un `eau.csv` ne peut pas être injecté dans SPANC. Un CSV sans
-colonne `filiere` est accepté et rattaché à la filière ciblée.
+Chaque carte de filière a son bouton *Importer*, et n'accepte qu'un GeoJSON. Les
+relevés sont ajoutés au stock existant ; un identifiant `id` déjà présent est ignoré.
+**Un fichier portant une autre filière est refusé** : un `eau.geojson` ne peut pas
+être injecté dans SPANC. Un fichier sans champ `filiere` est accepté et rattaché à la
+filière ciblée. Un document qui n'est pas une `FeatureCollection` est refusé en bloc,
+jamais absorbé à moitié.
+
+L'aller-retour ne perd rien : un fichier exporté puis réimporté redonne exactement les
+relevés d'origine, au même nombre de décimales. C'est ce qui permet de reprendre une
+tournée commencée sur une autre tablette.
 
 > Le stockage interne (`localStorage`) reste un stock unique, discriminé par la
 > colonne `filiere`. C'est le format d'export qui est éclaté en trois fichiers.
@@ -309,7 +362,7 @@ aucun bouton à trouver pour se localiser. Dans cet ordre :
 6. les **trois listes liées**, puis la **note** ;
 7. **Enregistrer le relevé**, qui referme la fenêtre.
 
-**Le viseur fait foi.** Ce qui est écrit dans le CSV, c'est le centre de la carte —
+**Le viseur fait foi.** Ce qui est écrit dans le fichier, c'est le centre de la carte —
 pas le fixe GPS. Si le récepteur tombe à trois mètres du regard, on déplace le fond
 sous le viseur et c'est réglé, sans quitter la fenêtre ni valider d'étape
 intermédiaire.
@@ -327,7 +380,7 @@ appui remplit les trois listes.
 
 C'est ce qui rend tenable une tournée de vingt vannes identiques.
 
-Les favoris vivent dans le navigateur, par poste. **Ils ne partent dans aucun CSV** :
+Les favoris vivent dans le navigateur, par poste. **Ils ne partent dans aucun fichier** :
 ce sont des raccourcis de saisie, pas des données de relevé. Effacer les données ne
 les touche pas.
 
@@ -543,7 +596,7 @@ Paris Notre-Dame `48.8566 ; 2.3522` → `X = 652 469 m ; Y = 6 862 035 m`.
 ├── .github/workflows/   # publication GitHub Pages
 ├── css/style.css
 ├── js/
-│   ├── config.js        # schéma : onglets, champs, couleurs, colonnes CSV
+│   ├── config.js        # schéma : onglets, champs, couleurs, décimales
 │   ├── catalogue.js     # catalogue matériel 3 niveaux + parametres.csv
 │   ├── lambert93.js     # WGS84 → Lambert 93
 │   ├── carte.js         # visualiseur de tuiles WMTS/XYZ, sans dépendance
@@ -561,7 +614,7 @@ Paris Notre-Dame `48.8566 ; 2.3522` → `X = 652 469 m ; Y = 6 862 035 m`.
 **Ça ne passe pas par le code.** Le catalogue s'édite depuis Configuration, ou en
 masse dans `parametres.csv` au tableur.
 
-Ajouter une *colonne* au CSV, en revanche, se fait dans `js/config.js` :
+Ajouter un *champ* aux relevés, en revanche, se fait dans `js/config.js` :
 `COLONNES_TECHNIQUES` pour une donnée produite par l'application,
 `CHAMPS_CASCADE` pour un niveau de saisie supplémentaire.
 
