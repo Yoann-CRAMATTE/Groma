@@ -13,6 +13,7 @@
   var Geo = global.GromaGeo;
   var Carte = global.GromaCarte;
   var Catalogue = global.GromaCatalogue;
+  var D = Cfg.DECIMALES;
 
   // Étendue la plus serrée autorisée sur la carte de recalage : en deçà, on ne
   // gagne plus en justesse, on grossit seulement l'interpolation de l'image.
@@ -93,7 +94,7 @@
    * laisser l'agent l'ignorer.
    *
    * Une filière est à l'abri quand tout ce qu'elle contient est sorti du
-   * navigateur : fichier lié réécrit, ou CSV exporté. Toute modification depuis
+   * navigateur : fichier lié réécrit, ou GeoJSON exporté. Toute modification depuis
    * la remet en risque.
    */
   function marquerModifie(filiereId) {
@@ -129,12 +130,12 @@
     ]));
     hote.appendChild(el('button', {
       type: 'button', classe: 'btn-primaire btn-compact',
-      texte: 'Exporter le CSV',
-      onclick: function () { telechargerCsv(filiereId); }
+      texte: 'Exporter les relevés',
+      onclick: function () { telechargerReleves(filiereId); }
     }));
   }
 
-  // ------------------------------------------------- liaison au fichier CSV
+  // --------------------------------------------- liaison au fichier de relevés
 
   var CLE_LIAISON_REFUSEE = 'groma.liaison-refusee';
 
@@ -240,16 +241,23 @@
     });
   }
 
-  // ---------------------------------------------------------------- fichier CSV
+  // ------------------------------------------------- fichier de relevés
 
-  function contenuCsv(filiereId) {
-    return Csv.serialiser(Cfg.colonnesCsv(filiereId), pointsDe(filiereId), etat.config.separateur);
+  /**
+   * Un seul format pour les relevés : le GeoJSON. Il est à la fois la sortie
+   * vers le SIG et le fichier de travail — géométrie, système de coordonnées et
+   * types voyagent dedans, et l'aller-retour ne perd rien. Le CSV imposait de
+   * reconstruire la géométrie à chaque import et rendait tout en texte ; il ne
+   * sert plus qu'au catalogue, qui n'a pas de géométrie.
+   */
+  function contenuFichier(filiereId) {
+    return Geojson.serialiser(Cfg.colonnesFiliere(filiereId), pointsDe(filiereId));
   }
 
-  /** Réécrit intégralement le CSV d'une filière ; silencieux si aucun fichier n'est lié. */
+  /** Réécrit intégralement le fichier d'une filière ; silencieux si aucun n'est lié. */
   function synchroniserFichier(filiereId) {
     if (!Store.fsaDisponible()) return Promise.resolve('absent');
-    return Store.ecrireFichier(filiereId, contenuCsv(filiereId)).then(function (r) {
+    return Store.ecrireFichier(filiereId, contenuFichier(filiereId)).then(function (r) {
       var f = Cfg.filiere(filiereId);
       if (r === 'permission') {
         // Le bandeau porte le bouton qui réclame la permission : lui seul part
@@ -257,7 +265,7 @@
         rafraichirLiaison(filiereId);
         toast('Accès à ' + f.fichier + ' expiré. Le bandeau en haut de l\'onglet le rétablit.', 'erreur');
       }
-      else if (r === 'erreur') toast('Écriture du CSV ' + f.label + ' impossible. Les données restent enregistrées dans le navigateur.', 'erreur');
+      else if (r === 'erreur') toast('Écriture de ' + f.fichier + ' impossible. Les données restent enregistrées dans le navigateur.', 'erreur');
       else if (r === 'ok') marquerSauvegarde(filiereId);
       rafraichirBadgeFichier();
       return r;
@@ -276,14 +284,14 @@
 
     if (!filiereId || filiereId === 'configuration') {
       badge.setAttribute('data-etat', 'neutre');
-      badge.textContent = '4 fichiers CSV';
+      badge.textContent = '4 fichiers';
       badge.title = 'Un fichier par filière, plus le catalogue de matériel.';
       return;
     }
     if (!Store.fsaDisponible()) {
       badge.setAttribute('data-etat', 'absent');
       badge.textContent = 'Export manuel';
-      badge.title = "Ce navigateur n'écrit pas directement sur le disque : utilisez Exporter le CSV.";
+      badge.title = "Ce navigateur n'écrit pas directement sur le disque : utilisez Exporter les relevés.";
       return;
     }
     Store.handleCourant(filiereId).then(function (h) {
@@ -294,8 +302,8 @@
         badge.title = 'Fichier lié pour cette filière — mis à jour à chaque enregistrement.';
       } else {
         badge.setAttribute('data-etat', 'absent');
-        badge.textContent = 'CSV non lié';
-        badge.title = 'Liez un fichier CSV pour cette filière dans Configuration.';
+        badge.textContent = 'Fichier non lié';
+        badge.title = 'Liez un fichier GeoJSON pour cette filière dans Configuration.';
       }
     });
   }
@@ -316,22 +324,9 @@
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
 
-  /**
-   * Le SIG reçoit le GeoJSON, le tableur reçoit le CSV. Le premier porte la
-   * géométrie, le système de coordonnées et les types ; il s'ouvre d'un
-   * glisser-déposer, sans dialogue d'import.
-   */
-  function telechargerGeojson(filiereId) {
-    var nom = Cfg.filiere(filiereId).fichier.replace(/\.csv$/, '') + '.geojson';
-    var contenu = Geojson.serialiser(Cfg.colonnesCsv(filiereId), pointsDe(filiereId));
-    telechargerTexte(nom, contenu, 'application/geo+json');
-    // Pas de `marquerSauvegarde` : le bandeau suit le CSV, qui est le format
-    // réécrit dans le fichier lié. Deux compteurs pour un même stock se
-    // contrediraient.
-  }
-
-  function telechargerCsv(filiereId) {
-    telechargerTexte(Cfg.filiere(filiereId).fichier, contenuCsv(filiereId));
+  function telechargerReleves(filiereId) {
+    telechargerTexte(Cfg.filiere(filiereId).fichier, contenuFichier(filiereId),
+      'application/geo+json');
     // Optimiste : rien ne permet de savoir si le téléchargement a abouti ni si
     // l'agent l'a annulé. L'alternative — ne lever l'alerte que sur un fichier
     // lié — laisserait un bandeau permanent sous Firefox et Safari, où l'export
@@ -340,9 +335,9 @@
   }
 
   /** Téléchargements échelonnés : Chrome bloque les déclenchements simultanés. */
-  function telechargerTousCsv() {
+  function telechargerTous() {
     Cfg.FILIERES.forEach(function (f, i) {
-      setTimeout(function () { telechargerCsv(f.id); }, i * 350);
+      setTimeout(function () { telechargerReleves(f.id); }, i * 350);
     });
   }
 
@@ -1040,19 +1035,19 @@
     if (!point.reference) point.reference = Store.prochaineReference(filiereId);
 
     if (pos) {
-      point.latitude = nombre(pos.latitude, 7);
-      point.longitude = nombre(pos.longitude, 7);
-      point.altitude_m = pos.altitude === null ? '' : nombre(pos.altitude, 2);
-      point.precision_m = nombre(pos.precision, 1);
-      point.dispersion_m = pos.dispersion === null || pos.dispersion === undefined ? '' : nombre(pos.dispersion, 2);
+      point.latitude = nombre(pos.latitude, D.latitude);
+      point.longitude = nombre(pos.longitude, D.longitude);
+      point.altitude_m = pos.altitude === null ? '' : nombre(pos.altitude, D.altitude_m);
+      point.precision_m = nombre(pos.precision, D.precision_m);
+      point.dispersion_m = pos.dispersion === null || pos.dispersion === undefined ? '' : nombre(pos.dispersion, D.dispersion_m);
       point.methode_gps = pos.methode || 'ponctuelle';
       point.nb_mesures = pos.mesures ? String(pos.mesures) : '';
-      point.duree_gps_s = pos.duree === null || pos.duree === undefined ? '' : nombre(pos.duree, 1);
+      point.duree_gps_s = pos.duree === null || pos.duree === undefined ? '' : nombre(pos.duree, D.duree_gps_s);
       point.position_ajustee = pos.ajustee ? 'oui' : 'non';
-      point.ecart_ajustement_m = pos.ajustee ? nombre(pos.ecartAjustement, 2) : '';
+      point.ecart_ajustement_m = pos.ajustee ? nombre(pos.ecartAjustement, D.ecart_ajustement_m) : '';
       var l = L93.wgs84ToLambert93(pos.latitude, pos.longitude);
-      point.x_l93 = nombre(l.x, 2);
-      point.y_l93 = nombre(l.y, 2);
+      point.x_l93 = nombre(l.x, D.x_l93);
+      point.y_l93 = nombre(l.y, D.y_l93);
     }
 
     Store.ecrirePoints(etat.points);
@@ -1068,7 +1063,7 @@
 
     synchroniserFichier(filiereId).then(function (r) {
       if (r === 'ok') toast(reference + ' enregistré et écrit dans ' + Cfg.filiere(filiereId).fichier + '.', 'succes');
-      else if (r === 'absent') toast(reference + ' enregistré. Aucun CSV lié pour cette filière : pensez à exporter.', 'info');
+      else if (r === 'absent') toast(reference + ' enregistré. Aucun fichier lié pour cette filière : pensez à exporter.', 'info');
       else toast(reference + ' enregistré localement.', 'info');
     });
   }
@@ -1148,7 +1143,7 @@
     var tous = pointsDe(filiereId);
     var visibles = tous.filter(function (p) {
       if (!q) return true;
-      return Cfg.colonnesCsv(filiereId).some(function (c) {
+      return Cfg.colonnesFiliere(filiereId).some(function (c) {
         return p[c] && String(p[c]).toLowerCase().indexOf(q) !== -1;
       });
     }).sort(function (a, b) { return (b.date_saisie || '').localeCompare(a.date_saisie || ''); });
@@ -1458,7 +1453,7 @@
         ])
       ]),
       el('div', { classe: 'champ' }, [
-        el('label', { for: 'cfg-separateur', texte: 'Séparateur CSV' }),
+        el('label', { for: 'cfg-separateur', texte: 'Séparateur du catalogue CSV' }),
         el('select', { id: 'cfg-separateur' }, [
           el('option', { value: ';', texte: '; (Excel français)' }),
           el('option', { value: ',', texte: ', (standard international)' }),
@@ -1469,14 +1464,14 @@
 
     var blocFichier = el('section', { classe: 'bloc' }, [
       el('div', { classe: 'bloc-titre' }, [
-        el('h2', { texte: 'Fichiers CSV' }),
-        el('button', { type: 'button', classe: 'btn-compact', texte: 'Exporter les 3', onclick: telechargerTousCsv })
+        el('h2', { texte: 'Fichiers de relevés' }),
+        el('button', { type: 'button', classe: 'btn-compact', texte: 'Exporter les 3', onclick: telechargerTous })
       ]),
-      el('p', { classe: 'note', texte: 'Un fichier par filière. Chaque CSV ne contient que les colonnes de sa filière. Le catalogue a le sien, plus bas.' }),
+      el('p', { classe: 'note', texte: 'Un GeoJSON par filière, prêt à ouvrir dans QGIS. Chaque fichier ne contient que les colonnes de sa filière. Le catalogue a le sien, plus bas.' }),
       el('div', { classe: 'fichiers' }, Cfg.FILIERES.map(construireCarteFichier)),
       el('p', { classe: 'note', id: 'cfg-note-fsa' }),
       el('input', {
-        type: 'file', id: 'cfg-import', accept: '.csv,text/csv',
+        type: 'file', id: 'cfg-import', accept: '.geojson,.json,application/geo+json',
         style: 'display:none', onchange: actionImporter
       })
     ]);
@@ -1487,7 +1482,7 @@
       el('div', { classe: 'actions' }, [
         el('button', { type: 'button', classe: 'btn-danger', texte: 'Effacer toutes les données', onclick: actionPurger })
       ]),
-      el('p', { classe: 'note', texte: "L'import ajoute les lignes au stock existant ; les identifiants déjà présents sont ignorés, et un CSV d'une autre filière est refusé." })
+      el('p', { classe: 'note', texte: "L'import ajoute les relevés au stock existant ; les identifiants déjà présents sont ignorés, et un fichier d'une autre filière est refusé." })
     ]);
 
     var blocFonds = el('section', { classe: 'bloc' }, [
@@ -1599,13 +1594,9 @@
           texte: 'Délier', onclick: function () { actionDelierFichier(f.id); }
         }),
         el('button', {
-          type: 'button', classe: 'btn-compact', texte: 'Exporter CSV',
-          onclick: function () { telechargerCsv(f.id); }
-        }),
-        el('button', {
-          type: 'button', classe: 'btn-compact', texte: 'Exporter GeoJSON',
-          title: 'Format des SIG — QGIS, ArcGIS : s\'ouvre sans réglage',
-          onclick: function () { telechargerGeojson(f.id); }
+          type: 'button', classe: 'btn-compact', texte: 'Exporter',
+          title: 'GeoJSON — s\'ouvre dans QGIS ou ArcGIS sans réglage',
+          onclick: function () { telechargerReleves(f.id); }
         }),
         el('button', {
           type: 'button', classe: 'btn-compact', texte: 'Importer',
@@ -2062,7 +2053,7 @@
       rafraichirBadgeFichier();
       rafraichirEtatFichier();
       rafraichirLiaison(filiereId);
-      toast('CSV ' + Cfg.filiere(filiereId).label + ' lié et initialisé.', 'succes');
+      toast('Fichier ' + Cfg.filiere(filiereId).label + ' lié et initialisé.', 'succes');
     }).catch(function () { /* l'utilisateur a annulé le sélecteur */ });
   }
 
@@ -2070,7 +2061,7 @@
     Store.ouvrirFichierExistant(filiereId).then(function () {
       return Store.lireFichier(filiereId);
     }).then(function (texte) {
-      if (texte && texte.trim()) fusionnerCsv(texte, filiereId);
+      if (texte && texte.trim()) fusionnerReleves(texte, filiereId);
       return synchroniserFichier(filiereId);
     }).then(function () {
       rafraichirBadgeFichier();
@@ -2086,16 +2077,41 @@
       rafraichirBadgeFichier();
       rafraichirEtatFichier();
       rafraichirLiaison(filiereId);
-      toast('CSV ' + Cfg.filiere(filiereId).label + ' délié. Les données restent dans le navigateur.', 'info');
+      toast('Fichier ' + Cfg.filiere(filiereId).label + ' délié. Les données restent dans le navigateur.', 'info');
     });
   }
 
   /**
-   * Ajoute les lignes d'un CSV à une filière sans écraser l'existant.
-   * Une ligne portant une autre filière est rejetée : chaque fichier est mono-filière.
+   * Remet un relevé relu au format d'écriture de l'application : le `47.5175`
+   * d'un JSON redevient `47.5175000`. Sans ce passage, réexporter un fichier
+   * importé produirait un document différent de l'original à mesure identique,
+   * et comparer deux sorties ne dirait plus rien.
    */
-  function fusionnerCsv(texte, filiereId) {
-    var lignes = Csv.parser(texte, Csv.detecterSeparateur(texte));
+  function normaliserNombres(point) {
+    Object.keys(D).forEach(function (c) {
+      if (point[c] === undefined || point[c] === null || point[c] === '') return;
+      var n = nombre(point[c], D[c]);
+      if (n !== '') point[c] = n;
+    });
+    return point;
+  }
+
+  /**
+   * Ajoute les relevés d'un GeoJSON à une filière sans écraser l'existant.
+   * Un relevé portant une autre filière est rejeté : chaque fichier est
+   * mono-filière, et la colonne `filiere` est le seul garde-fou contre un
+   * `eau.geojson` versé par erreur dans SPANC.
+   *
+   * @returns {number} relevés ajoutés, ou -1 si le document n'est pas un
+   *          GeoJSON — un fichier illisible doit être refusé en bloc, pas
+   *          absorbé à moitié.
+   */
+  function fusionnerReleves(texte, filiereId) {
+    var lignes = Geojson.analyser(texte);
+    if (!lignes) {
+      toast('Fichier refusé : ce n\'est pas un GeoJSON lisible.', 'erreur');
+      return -1;
+    }
     var connus = {};
     etat.points.forEach(function (p) { connus[p.id] = true; });
 
@@ -2109,7 +2125,7 @@
       if (!l.id) l.id = idUnique();
       l.filiere = filiereId;
       connus[l.id] = true;
-      etat.points.push(l);
+      etat.points.push(normaliserNombres(l));
       ajoutes++;
     });
 
@@ -2135,7 +2151,7 @@
     if (!fichier || !Cfg.filiere(filiereId)) { ev.target.value = ''; return; }
 
     fichier.text().then(function (texte) {
-      fusionnerCsv(texte, filiereId);
+      fusionnerReleves(texte, filiereId);
       return synchroniserFichier(filiereId);
     }).then(function () {
       rafraichirStats();

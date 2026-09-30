@@ -2,7 +2,7 @@
 
 ## Constat
 
-L'onglet **SPANC** et son fichier `spanc.csv` enregistrent, pour chaque installation :
+L'onglet **SPANC** et son fichier `spanc.geojson` enregistrent, pour chaque installation :
 
 - `latitude` / `longitude` / `x_l93` / `y_l93` — localisation de l'installation
 - `type_materiel` / `modele` / `detail` — nature du dispositif en place
@@ -23,7 +23,7 @@ concernés.
 
 ## Ce que fait l'application
 
-- Les données restent dans le navigateur (`localStorage`) et dans le fichier `spanc.csv` choisi.
+- Les données restent dans le navigateur (`localStorage`) et dans le fichier `spanc.geojson` choisi.
 - Aucun envoi réseau : aucune requête sortante hors le lien OpenStreetMap ouvert
   manuellement par l'agent.
 - Aucun compte, aucune télémétrie, aucun script tiers.
@@ -40,11 +40,11 @@ Ces points relèvent de la collectivité, pas de l'outil :
   automatiquement.
 - **Information des personnes** — mention d'information lors du contrôle.
 - **Registre des traitements** — inscription du traitement.
-- **Sécurité du support** — le fichier `spanc.csv` et le navigateur ne sont pas chiffrés. Un poste
+- **Sécurité du support** — le fichier `spanc.geojson` et le navigateur ne sont pas chiffrés. Un poste
   ou un téléphone perdu expose les données. Chiffrement du disque et verrouillage
   de session à prévoir.
-- **Destinataires** — qui reçoit le fichier `spanc.csv`, par quel canal. Le fichier étant séparé de ceux des ouvrages publics, il peut être diffusé indépendamment.
-- **Recoupement** — croiser `spanc.csv` avec le cadastre ou un fichier d'usagers
+- **Destinataires** — qui reçoit le fichier `spanc.geojson`, par quel canal. Le fichier étant séparé de ceux des ouvrages publics, il peut être diffusé indépendamment.
+- **Recoupement** — croiser `spanc.geojson` avec le cadastre ou un fichier d'usagers
   reconstitue l'identité des propriétaires. C'est un traitement en soi, à couvrir.
 - **Le champ `observations` est le point faible.** Rien n'empêche un agent d'y
   écrire « M. Dupont refuse le contrôle » ou « absent, revenir après 18 h ». Ce

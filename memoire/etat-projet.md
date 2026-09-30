@@ -3,7 +3,7 @@
 > Mémoire de travail. À relire en début de session **avant** d'ouvrir le code,
 > à mettre à jour en fin de session. Évite de relire toute l'application à chaque fois.
 
-**Dernière mise à jour :** 29/09/2026 — **incrément 0 (socle)**
+**Dernière mise à jour :** 30/09/2026 — **incrément 1, étape 1/3** (socle = incrément 0)
 **Branche :** `claude/geoloc-web-app-duccxo`, fusionnée dans `main`
 **En ligne :** https://yoann-cramatte.github.io/Groma/ — dépôt public, licence AGPL-3.0
 
@@ -40,18 +40,18 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 |---|---|---|
 | `CLAUDE.md` | Consignes de développement — à relire avant de coder | oui |
 | `LICENSE` | AGPL-3.0, texte canonique (661 lignes) vérifié sur deux sources | oui |
-| `README.md` | Documentation complète : CSV, GPS, carte, PWA, affichage, limites | oui |
+| `README.md` | Documentation complète : GeoJSON, GPS, carte, PWA, affichage, limites | oui |
 | `index.html` | Coquille : en-tête, nav, conteneur, toast, manifeste, enregistrement du SW | oui |
 | `manifest.webmanifest` | PWA : nom, icônes, plein écran. `start_url`/`scope` **relatifs** | oui |
 | `service-worker.js` | Cache hors ligne, stratégie cache-d'abord + revalidation | oui |
 | `icons/` | Icônes PWA dérivées de `favicon.svg` (192, 512, maskable, apple) | oui |
 | `.github/workflows/pages.yml` | Publication GitHub Pages à chaque passage sur `main` | oui |
 | `css/style.css` | Feuille unique, réglée pour la tablette, paliers 768 / 480 / 360 px + paysage court | oui |
-| `js/config.js` | **Source de vérité du schéma** : filières, cascade, couleurs, colonnes CSV | oui |
+| `js/config.js` | **Source de vérité du schéma** : filières, cascade, couleurs, champs, `DECIMALES` | oui |
 | `js/catalogue.js` | Catalogue matériel 3 niveaux, graine livrée, lecture/écriture `parametres.csv` | oui |
 | `js/lambert93.js` | WGS84 → EPSG:2154, constantes IGN | oui, vérifié |
-| `js/csv.js` | Sérialisation / lecture RFC 4180, BOM UTF-8, détection de séparateur | oui, aller-retour testé |
-| `js/geojson.js` | Sérialisation RFC 7946 pour les SIG — géométrie, types, pas de BOM | oui, sortie vérifiée |
+| `js/csv.js` | RFC 4180, BOM UTF-8, détection de séparateur — **catalogue uniquement** | oui, aller-retour testé |
+| `js/geojson.js` | RFC 7946 — **seul format des relevés** : export, fichier lié, import | oui, aller-retour testé |
 | `js/store.js` | `localStorage` (points, config, compteurs, favoris) + IndexedDB (handles) | oui |
 | `js/geo.js` | API Geolocation, relevé ponctuel et série affinée | oui, agrégation testée |
 | `js/carte.js` | Visualiseur de tuiles WMTS/XYZ, fonds gratuits, validation | oui, projection vérifiée |
@@ -68,12 +68,24 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
    par l'application (`COLONNES_TECHNIQUES`), soit un niveau de cascade — le
    formulaire ne se regarnit pas champ par champ. La note est l'exception assumée :
    elle porte ce qu'aucune nomenclature ne prévoit.
-2. **Un CSV par filière** (`eau.csv`, `assainissement.csv`, `spanc.csv`). Les trois
-   ont aujourd'hui les mêmes vingt colonnes, mais gardent chacune leur fichier : la
-   colonne `filiere` est le garde-fou à l'import, et rien n'oblige les trois à rester
-   alignées. Le stockage interne, lui, reste un stock unique.
+2. **Un GeoJSON par filière** (`eau.geojson`, `assainissement.geojson`,
+   `spanc.geojson`). Les trois ont aujourd'hui les mêmes vingt et un champs, mais
+   gardent chacune leur fichier : le champ `filiere` est le garde-fou à l'import, et
+   rien n'oblige les trois à rester alignées. Le stockage interne, lui, reste un stock
+   unique.
    **`parametres.csv` est le quatrième fichier** : il porte le catalogue, pas des
    relevés, et ne se mélange jamais aux trois autres.
+2 bis. **Le GeoJSON est le seul format des relevés** — export, fichier lié et import.
+   Le CSV a été retiré des relevés le 30/09/2026 : un `eau.csv` réenregistré par un
+   tableur français transformait `47.5` en `47,5` et rendait les coordonnées
+   illisibles, sans message. Ne pas le réintroduire comme « format de confort ».
+2 ter. **`Cfg.DECIMALES` est la seule table de décimales.** Deux chemins produisent
+   des relevés — la saisie et l'import d'un fichier — et deux écritures d'une même
+   valeur (`47.5175` d'un côté, `47.5175000` de l'autre) rendent deux exports
+   incomparables à mesure identique. Toute nouvelle colonne numérique s'y inscrit.
+2 quater. **La clé IndexedDB des handles reste `csv-<filiere>`**, malgré le passage au
+   GeoJSON. La renommer perdrait toutes les liaisons déjà enregistrées sur les
+   tablettes, sans aucun message, et il faudrait relier chaque fichier à la main.
 3. **`localStorage` fait autorité.** Chaque fichier disque est une projection
    réécrite intégralement ; un échec d'écriture ne doit jamais perdre une saisie
    terrain. Seule la filière touchée est réécrite (sauf purge et changement de
@@ -242,9 +254,16 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 - [x] ~~Service worker~~ — coquille en cache, démarrage hors réseau, 27/09/2026.
 - [x] ~~Avertir avant la perte des données~~ — bandeau par filière + stockage
       persistant, 27/09/2026.
-- [x] ~~Export GeoJSON~~ — RFC 7946, un bouton par filière, 29/09/2026. Les données
-      partent dans QGIS : c'est désormais le format recommandé, le CSV reste pour
-      le tableur et le fichier lié.
+- [x] ~~Export GeoJSON~~ — RFC 7946, un bouton par filière, 29/09/2026.
+- [x] ~~Retirer le CSV des relevés~~ — 30/09/2026. Export, fichier lié et import sont
+      passés au GeoJSON ; `analyser()` ajouté à `geojson.js` ; aller-retour vérifié sans
+      perte sur les dix-sept champs. Le CSV ne sert plus qu'au catalogue.
+- [ ] **Catalogue en JSON hiérarchique** (étape 2/3 de l'incrément 1), import CSV
+      conservé : une nomenclature arrive souvent en tableur.
+- [ ] **Onglet mobilier urbain** (étape 3/3) — lampadaire, banc, barrière. Nom
+      **MOBILIER** proposé, **pas encore confirmé par Yoann**. Attention :
+      `.onglets { grid-template-columns: repeat(4, 1fr) }` est codé en dur dans
+      `css/style.css` et doit devenir dynamique pour un cinquième onglet.
 - [ ] Dédoublonnage à l'import sur `reference` en plus de `id` (saisie multi-appareils).
 - [ ] Export consolidé des trois filières, si le besoin d'une vue unique revient.
 - [ ] Mise en cache des tuiles pour l'ajustement hors réseau.
@@ -267,6 +286,11 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 
 ## Points de vigilance
 
+- **Playwright ne trouve pas son Chromium dans ce conteneur** : il attend le build
+  1243, seul le 1194 est installé, et `npx playwright install` n'a pas de réseau.
+  Les deux audits lisent `CHROMIUM_PATH` — l'exporter avant de lancer :
+  `export CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`.
+  Sans ça, `audit-pwa` échoue au lancement du navigateur et non sur un défaut réel.
 - **RGPD / SPANC** : ni nom ni adresse ne sont saisis — mais une
   position à quelques mètres sur une installation ANC désigne un foyer. Le traitement
   reste soumis au RGPD, seul le risque en cas de fuite baisse. **Le champ

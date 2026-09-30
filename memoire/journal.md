@@ -7,6 +7,65 @@ Une entrée par session de travail, la plus récente en haut.
 
 ---
 
+## 30/09/2026 — Le GeoJSON devient le seul format des relevés (incrément 1, étape 1/3)
+
+**Demande :** trois changements annoncés, à faire l'un après l'autre. Celui-ci est le
+premier — « pour le tableur on supprime ». Le CSV disparaît des relevés.
+
+**Ce que ça touchait, au-delà du bouton.** Le CSV n'était pas qu'une sortie : il était
+aussi le **fichier lié** réécrit à chaque enregistrement, et le format de l'**import**.
+Les trois chemins sont passés au GeoJSON, sinon l'application aurait lu un format
+qu'elle n'écrit plus.
+
+- `geojson.js` gagne `analyser(texte)` — la moitié manquante. Sans relecture, le
+  GeoJSON ne pouvait être qu'une sortie, pas un fichier de travail.
+- `store.js` : `TYPES` sépare les sélecteurs de fichiers. Relevés → `.geojson` seul ;
+  catalogue → `.json` **et** `.csv`, parce qu'une nomenclature arrive souvent en
+  tableur.
+- Un seul bouton *Exporter* par filière au lieu de deux : le format n'est plus un
+  choix à faire sur le terrain.
+
+**Un défaut trouvé par le test, pas par la lecture.** L'aller-retour perdait la forme
+des nombres : l'application écrit `47.5175000` (sept décimales, fixées), le JSON relu
+rendait `47.5175`. Valeur identique, écriture différente — donc réexporter un fichier
+importé produisait un document différent de l'original à mesure égale, et comparer deux
+sorties ne disait plus rien.
+
+Corrigé en déplaçant les décimales dans **`Cfg.DECIMALES`** : une seule table, utilisée
+par le chemin de saisie *et* par `normaliserNombres()` à l'import. Deux chemins
+produisent des relevés ; ils ne peuvent pas avoir deux conventions d'écriture. Les
+dix-sept champs du relevé sont maintenant identiques après aller-retour, vérifié champ
+par champ.
+
+**La clé IndexedDB des handles reste `csv-<filiere>`.** La renommer aurait perdu toutes
+les liaisons déjà enregistrées sur la tablette de Yoann, sans aucun message, et il
+aurait fallu relier chaque fichier à la main. Un commentaire le dit sur place.
+
+**Vérifications :** `audit-pwa` et `audit-responsive` sans défaut ; les cinq scripts
+Playwright jetables repassent (`verif`, `verif-geojson` réécrit pour le cycle complet
+export → purge → import, `verif-alerte`, `verif-liaison`, `verif-details`). Le nouveau
+`verif-geojson` contrôle en plus les deux refus : document étranger et fichier d'une
+autre filière, stock intact dans les deux cas.
+
+**Deux scripts de test mentaient**, pas l'application : ils attendaient encore
+« Exporter le CSV » et `eau.csv`. Expectations mises à jour.
+
+**Playwright ne trouvait plus son Chromium** (build 1243 attendu, 1194 installé).
+Contourné par `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`.
+À savoir pour la prochaine session : les deux audits lisent cette variable.
+
+**Documentation alignée :** README (exemple remplacé par une sortie GeoJSON réelle,
+produite par `serialiser` et non écrite à la main ; section « Pourquoi pas de CSV pour
+les relevés » qui garde la comparaison en gardant la trace de l'arbitrage) et
+`docs/RGPD.md` (`spanc.csv` → `spanc.geojson`).
+
+**Reste des trois changements :** (2) catalogue en JSON hiérarchique, import CSV
+conservé ; (3) nouvel onglet mobilier urbain — nom **MOBILIER** proposé, pas encore
+confirmé par Yoann. Attention : `.onglets { grid-template-columns: repeat(4, 1fr) }`
+est codé en dur et doit devenir dynamique pour un cinquième onglet.
+
+---
+
 ## 29/09/2026 — Export GeoJSON, parce que les données vont dans QGIS
 
 **Demande :** les relevés seront traités dans QGIS. Choisir le format le plus adapté
