@@ -1,0 +1,34 @@
+{
+  "appName": "Groma",
+  "version": "1.0",
+  "company": "EuropaSoft",
+  "developer": "Yoann CRAMATTE",
+  "website": "https://yoann-cramatte.github.io/Groma/",
+  "repository": "https://github.com/Yoann-CRAMATTE/Groma",
+  "contact": "contact@europasoft.eu",
+  "copyright": "© 2026 Yoann CRAMATTE — Licence AGPL-3.0",
+  "description": "Relevé GPS d'ouvrages de terrain (Eau, Assainissement, SPANC) : viseur fixe sur photo aérienne, catalogue de matériel en cascade, export GeoJSON pour les SIG. PWA hors ligne, sans dépendance.",
+  "changelog": [
+    {
+      "version": "1.0",
+      "date": "2026-09-30",
+      "changes": [
+        "Le GeoJSON devient le seul format des relevés : export, fichier lié et import",
+        "Un seul bouton Exporter par filière",
+        "Le CSV ne sert plus qu'au catalogue de matériel"
+      ]
+    },
+    {
+      "version": "0.0",
+      "date": "2026-09-29",
+      "changes": [
+        "Socle (incrément 0) mis en ligne sur GitHub Pages, licence AGPL-3.0",
+        "Export GeoJSON (RFC 7946) pour QGIS",
+        "PWA installable, démarrage sans réseau",
+        "Bandeau d'alerte quand des relevés n'existent que dans le navigateur",
+        "Liaison au fichier proposée, réparée, et détection de sa disparition",
+        "GéoLoc renommé Groma, dépôt dédié"
+      ]
+    }
+  ]
+}

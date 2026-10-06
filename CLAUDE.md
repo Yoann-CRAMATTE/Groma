@@ -24,7 +24,7 @@ l'application — un viseur fixe, une carte qui glisse dessous.
 
 Application web de relevé GPS d'ouvrages de terrain, pour quiconque doit noter *où
 se trouve quoi* et en ressortir des données propres. Trois filières livrées —
-**EAU**, **ASSAINISSEMENT**, **SPANC** — un fichier CSV par filière, plus un
+**EAU**, **ASSAINISSEMENT**, **SPANC** — un fichier GeoJSON par filière, plus un
 catalogue de matériel dans son propre fichier.
 
 Ces trois filières sont la configuration d'origine, pas une limite : le catalogue

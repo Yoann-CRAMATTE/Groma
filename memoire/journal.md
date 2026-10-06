@@ -7,6 +7,24 @@ Une entrée par session de travail, la plus récente en haut.
 
 ---
 
+## 06/10/2026 — Bootstrap du poste : AppInfo.json, graphe graphify, descriptions remises à jour
+
+**Demande :** initialisation du projet sur ce poste (hook de session), puis les trois
+corrections relevées au passage.
+
+- `AppInfo.json` créé selon la convention EuropaSoft : version **1.0** = incrément 1,
+  changelog 1.0 (GeoJSON seul) et 0.0 (socle). Copyright écrit « Licence AGPL-3.0 »,
+  pas « Tous droits réservés » : la mention du modèle contredirait la licence du dépôt.
+  L'application ne le lit pas encore — ni dans `index.html`, ni dans `COQUILLE`.
+- Graphe graphify construit dans `graphify-out/`, **ignoré par git** : il recopie le
+  journal et des chemins absolus de la machine, et Pages publie tout le dépôt.
+- `manifest.webmanifest` et `CLAUDE.md` disaient encore « un fichier CSV par
+  filière », faux depuis le 30/09. Corrigé en GeoJSON. `audit-pwa` : aucun défaut.
+- Playwright installé localement (`npm install playwright`, ignoré par git) avec son
+  Chromium : les audits tournent sur ce Mac.
+
+---
+
 ## 30/09/2026 — Le GeoJSON devient le seul format des relevés (incrément 1, étape 1/3)
 
 **Demande :** trois changements annoncés, à faire l'un après l'autre. Celui-ci est le

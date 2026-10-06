@@ -57,6 +57,7 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 | `js/carte.js` | Visualiseur de tuiles WMTS/XYZ, fonds gratuits, validation | oui, projection vérifiée |
 | `js/app.js` | Construction du DOM, formulaires, liste, configuration | oui |
 | `serveur.py` | Serveur local — indispensable, le GPS refuse `file://` | oui |
+| `AppInfo.json` | Identité de l'app (nom, version, éditeur, licence) et changelog — convention EuropaSoft, **pas encore lu par l'application** | oui |
 | `docs/RGPD.md` | Point de vigilance sur les données SPANC | oui |
 | `tests/audit-responsive.mjs` | Affichage sur 15 formats (tablettes + téléphones) + contrôle de la cascade | oui |
 | `tests/audit-pwa.mjs` | Manifeste, icônes, service worker, cohérence `index.html` ↔ `COQUILLE`, démarrage hors réseau | oui |
