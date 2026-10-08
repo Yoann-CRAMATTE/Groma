@@ -168,10 +168,19 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
    disparu : sans `getFile()`, l'application se croit reliée et chaque écriture
    échoue sans rien dire.
 23. **Marges d'encoche partout où quelque chose colle au bord.** En-tête, bas de
-   page, quatre côtés des fenêtres. `viewport-fit=cover` plus
-   `black-translucent` étendent la page sous les barres système d'iOS : sans
-   `env(safe-area-inset-*)`, le titre passe sous l'heure. Une hauteur en `vh`
-   ignore ces marges — utiliser `100%` du conteneur déjà décalé.
+   page, quatre côtés des fenêtres. `viewport-fit=cover` étend la page sous les
+   barres système : sans `env(safe-area-inset-*)`, le titre passe sous l'heure.
+   Une hauteur en `vh` ignore ces marges — utiliser `100%` du conteneur déjà
+   décalé. iOS est passé de `black-translucent` à `default` le 08/10/2026 : en
+   thème clair, l'heure s'écrivait en blanc sur l'en-tête blanc.
+24. **Aucune couleur en dur hors des jetons de `:root`.** Le thème sombre est
+   déclaré deux fois (appareil en sombre + choix explicite) : un jeton ajouté à
+   l'un s'ajoute aux trois blocs. Seules exceptions, commentées : les voiles et
+   repères posés sur la carte, qui se lisent sur la photo aérienne, et la
+   pastille du message de confirmation, qui se lit sur son fond inversé.
+25. **Une couleur de filière ne sert jamais telle quelle en texte.** Passer par
+   `--accent-texte` ou un `color-mix(... var(--texte))` : en brut, le vert et le
+   bleu ciel tombent sous 3:1 sur le papier clair.
 
 ## Décisions prises
 
@@ -244,6 +253,14 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
   commencé est dans le stash `WIP photo (mis de cote - redesign tablet)`.
 - **Séparateur `;` par défaut** : Excel français découpe sur `;`, pas sur `,`.
 - **BOM UTF-8** : sans lui, Excel FR casse les accents.
+- **Thème clair par défaut** (08/10/2026) : l'outil sert dehors, et les reflets
+  écrasent un écran sombre bien avant un écran clair. Le sombre reste au choix dans
+  Configuration › Affichage, ou suit l'appareil (`auto`). La préférence s'enregistre
+  dès le choix, sans passer par « Enregistrer la configuration ».
+- **Pas de police embarquée** : une police distante casserait le hors-ligne, et une
+  police dans le dépôt s'ajouterait à `COQUILLE` sans bénéfice lisible au soleil.
+  Pile système pour le texte, `ui-monospace` pour les coordonnées et références,
+  c'est-à-dire là où l'on compare des chiffres.
 
 ## Reste à faire (par ordre d'utilité)
 

@@ -15,8 +15,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Relevé GPS d'ouvrages Eau, Assainissement et SPANC vers un fichier GeoJSON par filière, prêt pour QGIS.">
-  <meta name="color-scheme" content="dark">
-  <meta name="theme-color" content="#0b0f14">
+  <meta name="color-scheme" content="light dark">
+  <!-- Réécrite par app.js selon le thème choisi dans Configuration. -->
+  <meta name="theme-color" content="#ffffff">
   <title>Groma</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="manifest" href="manifest.webmanifest">
@@ -26,7 +27,9 @@
   <link rel="apple-touch-icon" href="icons/icone-apple-180.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <!-- « default » et non « black-translucent » : en thème clair, l'heure et la
+       batterie s'écriraient en blanc sur l'en-tête blanc. -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Groma">
 
   <link rel="stylesheet" href="css/style.css">
@@ -35,7 +38,15 @@
   <!-- En-tête et onglets collent ensemble : évite d'aligner la nav sur une hauteur codée en dur. -->
   <div class="barre-haute">
     <header class="entete">
-      <h1>GRO<span>MA</span></h1>
+      <h1>
+        <!-- La groma : une croix de visée sur son cercle de mire. -->
+        <svg class="marque" viewBox="0 0 26 26" aria-hidden="true" focusable="false">
+          <circle cx="13" cy="13" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/>
+          <path d="M13 1.5v7M13 17.5v7M1.5 13h7M17.5 13h7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="13" cy="13" r="1.8" fill="currentColor"/>
+        </svg>
+        Groma
+      </h1>
       <span class="badge-fichier" id="badge-fichier" data-etat="neutre">…</span>
     </header>
 

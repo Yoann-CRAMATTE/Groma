@@ -1,19 +1,88 @@
 /* Groma — feuille unique. Écrite pour la tablette, l'outil de terrain réel ;
    les paliers descendants la rendent utilisable jusqu'au petit smartphone. */
 
+/* Thème clair par défaut : l'outil sert dehors, et un fond sombre se noie sous
+   les reflets du soleil bien plus vite qu'un fond clair. Le papier est cassé,
+   pas blanc pur, pour ne pas éblouir à l'ombre. Le sombre reste disponible :
+   choisi dans Configuration, ou laissé à l'appareil (data-theme="auto"). */
 :root {
+  color-scheme: light;
   --accent: #0ea5e9;
+  --fond: #f3f1ec;
+  --fond-2: #ffffff;
+  --fond-3: #ebe8e1;
+  --bord: #d9d3c7;
+  /* Les champs ont leur propre bord : 3:1 minimum pour qu'un contour de
+     saisie reste visible au soleil, là où le bord décoratif peut s'effacer. */
+  --bord-champ: #8f877a;
+  --texte: #161a20;
+  --texte-faible: #4b535f;
+  --survol: #e3dfd6;
+  --segment-actif: #ffffff;
+  --danger: #b42318;
+  --succes: #1d7a3a;
+  --alerte: #9a5b00;
+  --alerte-fond: #fdf4e3;
+  --alerte-bord: #e3b25c;
+  --voile: rgba(22, 26, 32, 0.45);
+  --ombre-1: 0 1px 2px rgba(22, 26, 32, 0.06), 0 2px 8px rgba(22, 26, 32, 0.05);
+  --ombre-2: 0 12px 40px rgba(22, 26, 32, 0.22);
+  --rayon: 12px;
+  --gouttiere: 16px;
+  --police-chiffres: ui-monospace, "SF Mono", "Roboto Mono", Menlo, Consolas, monospace;
+
+  /* Les couleurs de filière sont choisies pour un fond sombre : en texte sur
+     papier clair, le vert et le bleu ciel tombent sous 3:1. Mélangées à la
+     couleur du texte, elles foncent ici et s'éclaircissent en thème sombre,
+     sans seconde palette à tenir à jour dans config.js. */
+  --accent-texte: color-mix(in oklab, var(--accent) 58%, var(--texte));
+}
+
+/* Le thème sombre est déclaré deux fois : une pour l'appareil réglé en sombre,
+   une pour le choix explicite. Pas de nesting CSS : les tablettes de terrain
+   ont parfois quelques années de retard de navigateur. */
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] {
+    color-scheme: dark;
+    --fond: #0b0f14;
+    --fond-2: #121821;
+    --fond-3: #1a2331;
+    --bord: #26313f;
+    --bord-champ: #5a6a80;
+    --texte: #e6edf5;
+    --texte-faible: #93a2b5;
+    --survol: #222d3d;
+    --segment-actif: #2a3648;
+    --danger: #f87171;
+    --succes: #4ade80;
+    --alerte: #fbbf24;
+    --alerte-fond: rgba(245, 158, 11, 0.08);
+    --alerte-bord: rgba(245, 158, 11, 0.55);
+    --voile: rgba(3, 6, 10, 0.75);
+    --ombre-1: none;
+    --ombre-2: 0 18px 50px rgba(0, 0, 0, 0.6);
+  }
+}
+
+:root[data-theme="sombre"] {
+  color-scheme: dark;
   --fond: #0b0f14;
   --fond-2: #121821;
   --fond-3: #1a2331;
   --bord: #26313f;
+  --bord-champ: #5a6a80;
   --texte: #e6edf5;
   --texte-faible: #93a2b5;
-  --danger: #ef4444;
-  --succes: #22c55e;
-  --alerte: #f59e0b;
-  --rayon: 10px;
-  --gouttiere: 16px;
+  --survol: #222d3d;
+  --segment-actif: #2a3648;
+  --danger: #f87171;
+  --succes: #4ade80;
+  --alerte: #fbbf24;
+  --alerte-fond: rgba(245, 158, 11, 0.08);
+  --alerte-bord: rgba(245, 158, 11, 0.55);
+  --voile: rgba(3, 6, 10, 0.75);
+  --ombre-1: none;
+  --ombre-2: 0 18px 50px rgba(0, 0, 0, 0.6);
 }
 
 * { box-sizing: border-box; }
@@ -45,8 +114,9 @@ body {
   top: 0;
   z-index: 20;
   background: var(--fond-2);
+  box-shadow: var(--ombre-1);
   /* Le fond monte sous la barre d'état plutôt que de s'arrêter net : la zone
-     système reste sombre, dans la continuité de l'application. */
+     système reste dans la continuité de l'application. */
   padding-top: env(safe-area-inset-top);
 }
 
@@ -59,14 +129,24 @@ body {
   border-bottom: 1px solid var(--bord);
 }
 
+/* La marque est l'instrument : une croix de visée dans son cercle, le geste
+   central de l'application. Elle prend la couleur de l'onglet actif. */
 .entete h1 {
-  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 1.15rem;
   margin: 0;
-  letter-spacing: 0.14em;
-  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-weight: 700;
 }
 
-.entete h1 span { color: var(--accent); }
+.marque {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  color: var(--accent-texte);
+}
 
 .badge-fichier {
   font-size: 0.72rem;
@@ -109,10 +189,12 @@ body {
   white-space: nowrap;
 }
 
+.onglet:hover { color: var(--texte); }
+
 .onglet[aria-selected="true"] {
   color: var(--couleur-onglet, var(--accent));
+  color: color-mix(in oklab, var(--couleur-onglet, var(--accent)) 58%, var(--texte));
   border-bottom-color: var(--couleur-onglet, var(--accent));
-  background: rgba(255, 255, 255, 0.03);
 }
 
 /* Deux libellés par onglet : le long disparaît quand il ne tient plus. */
@@ -139,14 +221,15 @@ main { padding: var(--gouttiere); max-width: 1080px; margin: 0 auto; }
   margin-bottom: 14px;
 }
 
+/* Titres en casse normale et à la couleur du texte : les petites capitales
+   grises étaient le texte le moins lisible de l'écran, au soleil surtout. */
 .bloc > h2,
 .bloc-titre h2 {
   margin: 0 0 12px;
-  font-size: 0.75rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--texte-faible);
-  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  color: var(--texte);
+  font-weight: 650;
 }
 
 .bloc-titre {
@@ -180,21 +263,25 @@ main { padding: var(--gouttiere); max-width: 1080px; margin: 0 auto; }
   letter-spacing: 0.04em;
 }
 
-.champ label .requis { color: var(--accent); }
+.champ label .requis { color: var(--accent-texte); }
 
 input, select, textarea {
   font: inherit;
   font-size: 0.95rem;
   color: var(--texte);
-  background: var(--fond-3);
-  border: 1px solid var(--bord);
+  background: var(--fond-2);
+  border: 1px solid var(--bord-champ);
   border-radius: 8px;
   padding: 10px 11px;
   width: 100%;
   min-height: 44px; /* cible tactile confortable avec des gants */
 }
 
+input::placeholder, textarea::placeholder { color: var(--texte-faible); opacity: 1; }
+
 textarea { min-height: 80px; resize: vertical; }
+
+input[type="checkbox"] { accent-color: var(--accent); }
 
 input:focus, select:focus, textarea:focus {
   outline: 2px solid var(--accent);
@@ -212,24 +299,46 @@ button {
   font: inherit;
   font-weight: 600;
   border-radius: 8px;
-  border: 1px solid var(--bord);
-  background: var(--fond-3);
+  border: 1px solid var(--bord-champ);
+  background: var(--fond-2);
   color: var(--texte);
   padding: 12px 16px;
   min-height: 46px;
   cursor: pointer;
 }
 
-button:hover:not(:disabled) { border-color: var(--accent); }
+/* Le survol fonce le fond au lieu de colorer le bord : un bord coloré se
+   confondait avec l'état actif des fonds de carte. */
+button:hover:not(:disabled) { background: var(--survol); }
 button:disabled { opacity: 0.45; cursor: not-allowed; }
 
-.btn-primaire {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #06121c;
+/* Un halo net au clavier seulement : au doigt, il resterait collé au bouton
+   après chaque appui. */
+button:focus-visible, a:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
-.btn-danger { color: var(--danger); border-color: rgba(239, 68, 68, 0.4); }
+/* Texte quasi noir sur les trois couleurs de filière : au moins 4,5:1 sur
+   chacune, quel que soit le thème. */
+.btn-primaire {
+  background: var(--accent);
+  border-color: transparent;
+  color: #06121c;
+  box-shadow: var(--ombre-1);
+}
+
+.btn-primaire:hover:not(:disabled) {
+  background: var(--accent);
+  filter: brightness(1.06);
+}
+
+/* L'onglet Configuration n'a pas de filière : sa couleur est un gris ardoise,
+   qui faisait passer son bouton principal pour désactivé. Il prend l'encre. */
+#vue-configuration .btn-primaire { background: var(--texte); color: var(--fond-2); }
+#vue-configuration .btn-primaire:hover:not(:disabled) { background: var(--texte); }
+
+.btn-danger { color: var(--danger); border-color: color-mix(in oklab, var(--danger) 45%, transparent); }
 .btn-plein { flex: 1 1 100%; }
 
 /* ---------- Acquisition GPS ---------- */
@@ -246,11 +355,15 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .progression[hidden] { display: none; }
 
+/* Avance par mise à l'échelle, pas par largeur : un tic toutes les 200 ms
+   pendant toute la mesure ne doit pas relancer la mise en page de la fenêtre. */
 .progression-barre {
   height: 100%;
-  width: 0;
+  width: 100%;
   background: var(--accent);
-  transition: width 0.2s linear;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.2s linear;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -277,8 +390,9 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .position dd {
   margin: 2px 0 0;
+  font-family: var(--police-chiffres);
   font-variant-numeric: tabular-nums;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
 }
 
 .position .vide { color: var(--texte-faible); }
@@ -327,15 +441,16 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   font-variant-numeric: tabular-nums;
 }
 
-.liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+/* Les relevés sont des lignes d'un registre, séparées d'un filet, pas des
+   cartes posées dans la carte du bloc : l'onglet dit déjà la filière. */
+.liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 
 .point {
-  border: 1px solid var(--bord);
-  border-left: 3px solid var(--accent);
-  border-radius: 8px;
-  padding: 10px 12px;
-  background: var(--fond-3);
+  border-top: 1px solid var(--bord);
+  padding: 12px 0;
 }
+
+.point:first-child { border-top: 0; padding-top: 4px; }
 
 .point-entete {
   display: flex;
@@ -344,7 +459,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   gap: 10px;
 }
 
-.point-ref { font-weight: 600; font-size: 0.9rem; flex: 1; }
+.point-ref { font-family: var(--police-chiffres); font-weight: 600; font-size: 0.88rem; flex: 1; }
 .point-date { font-size: 0.7rem; color: var(--texte-faible); white-space: nowrap; }
 .point-detail { font-size: 0.8rem; color: var(--texte-faible); margin-top: 4px; word-break: break-word; }
 .point-coord {
@@ -359,7 +474,8 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* Cible tactile : un lien de 14 px de haut est inutilisable au doigt. */
 .lien-carte {
-  color: var(--accent);
+  color: var(--accent-texte);
+  font-family: var(--police-chiffres);
   text-decoration: none;
   border: 1px solid var(--bord);
   border-radius: 6px;
@@ -369,13 +485,13 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   align-items: center;
 }
 
-.lien-carte:hover, .lien-carte:focus { border-color: var(--accent); text-decoration: underline; }
+.lien-carte:hover, .lien-carte:focus-visible { border-color: var(--accent); text-decoration: underline; }
 
-.point-precision { color: var(--texte-faible); }
+.point-precision { color: var(--texte-faible); font-family: var(--police-chiffres); }
 
 .point-methode {
   color: var(--succes);
-  border: 1px solid rgba(34, 197, 94, 0.35);
+  border: 1px solid color-mix(in oklab, var(--succes) 40%, transparent);
   border-radius: 999px;
   padding: 2px 8px;
   font-size: 0.7rem;
@@ -391,16 +507,30 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   padding: 18px 0;
 }
 
-/* ---------- Fichiers CSV (un par filière) ---------- */
+/* ---------- Fichiers (un par filière) ---------- */
 
 .fichiers { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
 
 .fichier {
   border: 1px solid var(--bord);
-  border-left: 3px solid var(--accent);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 10px 12px;
-  background: var(--fond-3);
+  background: var(--fond);
+}
+
+/* Une pastille porte la couleur de filière ; le libellé reste au contraste du
+   texte, ce que le vert ou le bleu ciel n'atteignent pas sur fond clair. */
+.fichier-filiere::before,
+.cat-nom::before,
+.stat-label::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--couleur-filiere, var(--texte-faible));
+  vertical-align: 0.05em;
 }
 
 .fichier-entete {
@@ -417,6 +547,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   font-weight: 600;
   letter-spacing: 0.08em;
   white-space: nowrap;
+  color: var(--texte-faible);
 }
 
 .fichier .note { margin: 6px 0 0; }
@@ -434,10 +565,11 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 }
 
 .note-alerte {
-  border-left: 3px solid var(--alerte);
-  background: rgba(245, 158, 11, 0.07);
+  border: 1px solid var(--alerte-bord);
+  background: var(--alerte-fond);
+  color: var(--texte);
   padding: 10px 12px;
-  border-radius: 0 8px 8px 0;
+  border-radius: 10px;
 }
 
 .stats { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -445,12 +577,12 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .stat {
   flex: 1 1 120px;
   border: 1px solid var(--bord);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 10px 12px;
-  background: var(--fond-3);
+  background: var(--fond);
 }
 
-.stat-valeur { font-size: 1.5rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stat-valeur { font-family: var(--police-chiffres); font-size: 1.5rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 .stat-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--texte-faible); }
 
 .case { display: flex; align-items: center; gap: 10px; min-height: 44px; }
@@ -520,10 +652,9 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   gap: 10px 14px;
   margin-top: 14px;
   padding: 12px 14px;
-  border: 1px solid var(--alerte);
-  border-left-width: 3px;
-  border-radius: 0 8px 8px 0;
-  background: rgba(245, 158, 11, 0.07);
+  border: 1px solid var(--alerte-bord);
+  border-radius: 10px;
+  background: var(--alerte-fond);
 }
 
 .alerte-sauvegarde[hidden] { display: none; }
@@ -533,11 +664,10 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
    ou fichier disparu — pour qu'il garde sa valeur d'avertissement. */
 .alerte-liaison[data-etat="absent"] {
   border-color: var(--bord);
-  border-left-color: var(--accent);
   background: var(--fond-2);
 }
 
-.alerte-liaison[data-etat="absent"] .alerte-texte strong { color: var(--accent); }
+.alerte-liaison[data-etat="absent"] .alerte-texte strong { color: var(--accent-texte); }
 
 .alerte-texte {
   flex: 1 1 200px;
@@ -598,8 +728,8 @@ body[data-modale] { overflow: hidden; }
   padding: 8px 12px;
   min-height: 40px;
   border-radius: 999px;
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: color-mix(in oklab, var(--accent) 55%, transparent);
+  color: var(--accent-texte);
   background: transparent;
 }
 
@@ -616,7 +746,7 @@ body[data-modale] { overflow: hidden; }
 }
 
 .point-etoile--actif { color: var(--alerte); }
-.point-etoile:hover:not(:disabled) { border-color: var(--alerte); color: var(--alerte); }
+.point-etoile:hover:not(:disabled) { background: var(--survol); color: var(--alerte); }
 
 .zone-position {
   padding-bottom: 14px;
@@ -640,6 +770,7 @@ body[data-modale] { overflow: hidden; }
 }
 
 .cascade select { background: var(--fond-2); }
+.cascade .champ label { color: var(--texte); font-weight: 600; }
 .cascade select:disabled { opacity: 0.5; }
 
 /* ---------- Note de terrain ---------- */
@@ -655,9 +786,8 @@ body[data-modale] { overflow: hidden; }
 
 .cat-filiere {
   border: 1px solid var(--bord);
-  border-left: 3px solid var(--couleur-filiere, var(--accent));
-  border-radius: 8px;
-  background: var(--fond-3);
+  border-radius: 10px;
+  background: var(--fond);
 }
 
 .cat-filiere > summary {
@@ -677,7 +807,7 @@ body[data-modale] { overflow: hidden; }
   font-weight: 600;
   font-size: 0.8rem;
   letter-spacing: 0.08em;
-  color: var(--couleur-filiere, var(--accent));
+  color: var(--texte);
 }
 
 .cat-compte { font-size: 0.74rem; color: var(--texte-faible); }
@@ -732,7 +862,6 @@ body[data-modale] { overflow: hidden; }
 
 .cat-suppr:hover { border-color: var(--danger); }
 
-.fichier--parametres { border-left-color: var(--texte-faible); }
 
 /* ---------- Modale carte ---------- */
 
@@ -757,7 +886,7 @@ body[data-modale] { overflow: hidden; }
 .modale-fond {
   position: absolute;
   inset: 0;
-  background: rgba(3, 6, 10, 0.75);
+  background: var(--voile);
 }
 
 .modale-fenetre {
@@ -772,7 +901,7 @@ body[data-modale] { overflow: hidden; }
   border: 1px solid var(--bord);
   border-radius: var(--rayon);
   padding: 14px;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--ombre-2);
 }
 
 .modale-entete {
@@ -787,11 +916,10 @@ body[data-modale] { overflow: hidden; }
 .modale-entete h2 {
   margin: 0;
   flex: 1;
-  font-size: 0.78rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--texte-faible);
-  font-weight: 600;
+  font-size: 1.1rem;
+  letter-spacing: -0.01em;
+  color: var(--texte);
+  font-weight: 650;
 }
 
 .modale-fermer {
@@ -804,6 +932,8 @@ body[data-modale] { overflow: hidden; }
 
 /* ---------- Carte ---------- */
 
+/* Les voiles posés sur la carte restent sombres dans les deux thèmes : ils se
+   lisent sur la photo aérienne, qui ne change pas avec le thème. */
 .carte {
   position: relative;
   height: clamp(220px, 44vh, 400px);
@@ -881,7 +1011,7 @@ body[data-modale] { overflow: hidden; }
   margin: 0;
   text-align: center;
   font-size: 0.82rem;
-  color: var(--alerte);
+  color: #fbbf24;
   background: rgba(11, 15, 20, 0.88);
   border-radius: 8px;
   padding: 10px;
@@ -905,7 +1035,7 @@ body[data-modale] { overflow: hidden; }
   align-items: center;
   justify-content: center;
   background: rgba(11, 15, 20, 0.82);
-  color: var(--texte-faible);
+  color: #c9d3df;
   font-size: 0.86rem;
   letter-spacing: 0.04em;
 }
@@ -930,7 +1060,7 @@ body[data-modale] { overflow: hidden; }
   margin: 0;
   padding: 3px 7px;
   font-size: 0.65rem;
-  color: var(--texte);
+  color: #e6edf5;
   background: rgba(11, 15, 20, 0.78);
   border-top-left-radius: 6px;
   pointer-events: none;
@@ -952,18 +1082,34 @@ body[data-modale] { overflow: hidden; }
   margin-top: 10px;
 }
 
-.carte-fonds { display: flex; gap: 6px; }
+/* Un seul fond actif à la fois : un sélecteur segmenté le montre d'un coup
+   d'œil, là où trois boutons à bord coloré se confondaient avec le survol. */
+.carte-fonds {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--bord);
+  border-radius: 10px;
+  background: var(--fond-3);
+}
 
 .carte-fond {
   padding: 7px 11px;
   min-height: 36px;
   font-size: 0.76rem;
   font-weight: 500;
+  border-color: transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--texte-faible);
 }
 
-.carte-fond--actif {
-  border-color: var(--accent);
-  color: var(--accent);
+.carte-fond--actif,
+.carte-fond--actif:hover:not(:disabled) {
+  background: var(--segment-actif);
+  color: var(--texte);
+  font-weight: 650;
+  box-shadow: var(--ombre-1);
 }
 
 .carte-zoom { display: flex; align-items: center; gap: 6px; }
@@ -994,7 +1140,12 @@ body[data-modale] { overflow: hidden; }
   font-variant-numeric: tabular-nums;
 }
 
-.carte-coord { font-weight: 600; }
+.carte-coord {
+  font-family: var(--police-chiffres);
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
 .carte-ecart { color: var(--texte-faible); }
 .carte-ecart.ecart-fort { color: var(--alerte); }
 .carte-echelle { margin-left: auto; }
@@ -1015,13 +1166,12 @@ body[data-modale] { overflow: hidden; }
 
 .fond {
   border: 1px solid var(--bord);
-  border-left: 3px solid var(--accent);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 11px 12px;
-  background: var(--fond-3);
+  background: var(--fond);
 }
 
-.fond--invalide { border-left-color: var(--danger); }
+.fond--invalide { border-color: var(--danger); }
 
 .fond-probleme { color: var(--danger); margin-top: 8px; }
 
@@ -1036,26 +1186,43 @@ body[data-modale] { overflow: hidden; }
 
 /* ---------- Toast ---------- */
 
+/* Inversé par rapport à la page dans les deux thèmes : le message se détache
+   sans couleur de fond à choisir. La pastille dit le type. */
 #toast {
   position: fixed;
   left: 50%;
   bottom: 22px;
   transform: translateX(-50%) translateY(140%);
-  background: var(--fond-3);
-  border: 1px solid var(--bord);
-  border-left: 3px solid var(--accent);
-  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--texte);
+  color: var(--fond-2);
+  border-radius: 10px;
   padding: 12px 16px;
-  font-size: 0.85rem;
+  font-size: 0.86rem;
+  font-weight: 500;
   max-width: calc(100vw - 32px);
-  transition: transform 0.22s ease;
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
   z-index: 50;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--ombre-2);
 }
 
+#toast::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+#toast:empty { visibility: hidden; }
 #toast[data-visible="true"] { transform: translateX(-50%) translateY(0); }
-#toast[data-type="erreur"] { border-left-color: var(--danger); }
-#toast[data-type="succes"] { border-left-color: var(--succes); }
+/* Couleurs vives fixes : la pastille se lit sur le fond inversé du message,
+   pas sur la page. */
+#toast[data-type="erreur"]::before { background: #ef4444; }
+#toast[data-type="succes"]::before { background: #22c55e; }
 
 @media (prefers-reduced-motion: reduce) {
   #toast { transition: none; }
@@ -1085,7 +1252,7 @@ body[data-modale] { overflow: hidden; }
   .modale-fenetre { max-width: 720px; padding: 20px; }
   .btn-creer { min-height: 60px; }
 
-  .point { padding: 14px 16px; }
+  .point { padding: 14px 0; }
   .fichiers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 }
 

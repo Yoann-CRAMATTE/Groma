@@ -836,13 +836,13 @@
     info.setAttribute('data-niveau', 'info');
     info.textContent = 'Recherche du signal GPS… restez immobile au-dessus de l\'ouvrage.';
     jauge.hidden = false;
-    barre.style.width = '0%';
+    barre.style.transform = 'scaleX(0)';
 
     // La barre avance même sans nouvelle mesure : le GPS peut rester muet.
     var debut = Date.now();
     var total = Math.max(5, etat.config.dureeAffinage || 30);
     var tic = setInterval(function () {
-      barre.style.width = Math.min(100, (Date.now() - debut) / (total * 1000) * 100) + '%';
+      barre.style.transform = 'scaleX(' + Math.min(1, (Date.now() - debut) / (total * 1000)) + ')';
     }, 200);
 
     var serie = Geo.localiserPrecis(etat.config, function (p) {
@@ -1130,7 +1130,7 @@
       el('button', { type: 'button', classe: 'btn-danger', texte: 'Supprimer', onclick: function () { supprimerPoint(filiereId, p.id); } })
     ]));
 
-    return el('li', { classe: 'point', style: 'border-left-color:' + f.couleur }, enfants);
+    return el('li', { classe: 'point' }, enfants);
   }
 
   function rafraichirListe(filiereId) {
@@ -1459,6 +1459,14 @@
           el('option', { value: ',', texte: ', (standard international)' }),
           el('option', { value: '\t', texte: 'Tabulation' })
         ])
+      ]),
+      el('div', { classe: 'champ' }, [
+        el('label', { for: 'cfg-theme', texte: 'Affichage' }),
+        el('select', { id: 'cfg-theme', onchange: actionChangerTheme }, [
+          el('option', { value: 'clair', texte: 'Clair — lisible en plein soleil' }),
+          el('option', { value: 'sombre', texte: 'Sombre' }),
+          el('option', { value: 'auto', texte: 'Selon le réglage de l\'appareil' })
+        ])
       ])
     ]);
 
@@ -1574,10 +1582,10 @@
 
   /** Une carte par filière : nom du fichier, état de liaison et actions associées. */
   function construireCarteFichier(f) {
-    return el('div', { classe: 'fichier', style: 'border-left-color:' + f.couleur }, [
+    return el('div', { classe: 'fichier', style: '--couleur-filiere:' + f.couleur }, [
       el('div', { classe: 'fichier-entete' }, [
         el('span', { classe: 'fichier-nom', texte: f.fichier }),
-        el('span', { classe: 'fichier-filiere', style: 'color:' + f.couleur, texte: f.label })
+        el('span', { classe: 'fichier-filiere', texte: f.label })
       ]),
       el('p', { classe: 'note', id: 'cfg-etat-' + f.id }),
       el('div', { classe: 'actions' }, [
@@ -1986,6 +1994,7 @@
     document.getElementById('cfg-hautePrecision').checked = !!c.hautePrecision;
     document.getElementById('cfg-afficherLambert').checked = !!c.afficherLambert;
     document.getElementById('cfg-separateur').value = c.separateur;
+    document.getElementById('cfg-theme').value = c.theme;
   }
 
   function enregistrerConfiguration() {
@@ -1997,7 +2006,8 @@
       dureeAffinage: Math.max(5, Number(document.getElementById('cfg-dureeAffinage').value) || 30),
       hautePrecision: document.getElementById('cfg-hautePrecision').checked,
       afficherLambert: document.getElementById('cfg-afficherLambert').checked,
-      separateur: document.getElementById('cfg-separateur').value
+      separateur: document.getElementById('cfg-separateur').value,
+      theme: document.getElementById('cfg-theme').value
     };
     Store.ecrireConfig(etat.config);
     synchroniserTout();
@@ -2010,7 +2020,7 @@
     if (!hote) return;
     vider(hote);
     Cfg.FILIERES.forEach(function (f) {
-      hote.appendChild(el('div', { classe: 'stat', style: 'border-left:3px solid ' + f.couleur }, [
+      hote.appendChild(el('div', { classe: 'stat', style: '--couleur-filiere:' + f.couleur }, [
         el('div', { classe: 'stat-valeur', texte: String(pointsDe(f.id).length) }),
         el('div', { classe: 'stat-label', texte: f.label })
       ]));
@@ -2209,6 +2219,42 @@
     global.addEventListener('orientationchange', poser);
   }
 
+  // ---------------------------------------------------------------- thème
+
+  /**
+   * Le thème est une préférence d'affichage, pas un paramètre de relevé : il
+   * s'applique et s'enregistre dès le choix, sans attendre « Enregistrer la
+   * configuration », pour que l'agent voie tout de suite ce qu'il obtient.
+   */
+  function actionChangerTheme(ev) {
+    etat.config.theme = ev.target.value;
+    Store.ecrireConfig(etat.config);
+    appliquerTheme(etat.config.theme);
+  }
+
+  function appliquerTheme(theme) {
+    var valide = theme === 'sombre' || theme === 'auto' ? theme : 'clair';
+    document.documentElement.setAttribute('data-theme', valide);
+    accorderBarreSysteme();
+  }
+
+  /** La barre d'état Android prend la couleur de l'en-tête, quel que soit le thème. */
+  function accorderBarreSysteme() {
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) return;
+    var fond = getComputedStyle(document.documentElement).getPropertyValue('--fond-2').trim();
+    if (fond) meta.setAttribute('content', fond);
+  }
+
+  function suivreThemeAppareil() {
+    if (!window.matchMedia) return;
+    var requete = window.matchMedia('(prefers-color-scheme: dark)');
+    var rappel = function () { if (etat.config.theme === 'auto') accorderBarreSysteme(); };
+    // Safari antérieur à 14 ne connaît que addListener.
+    if (requete.addEventListener) requete.addEventListener('change', rappel);
+    else if (requete.addListener) requete.addListener(rappel);
+  }
+
   function avertirContexte() {
     if (!Geo.contexteSecurise()) {
       toast('Page non servie en HTTPS ou localhost : le GPS sera refusé par le navigateur.', 'erreur');
@@ -2217,6 +2263,8 @@
 
   function demarrer() {
     etat.config = Store.lireConfig();
+    appliquerTheme(etat.config.theme);
+    suivreThemeAppareil();
     etat.points = Store.lirePoints();
     etat.favoris = Store.lireFavoris();
     etat.sauvegardes = Store.lireSauvegardes();

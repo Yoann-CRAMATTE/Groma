@@ -546,6 +546,22 @@ Règles tenues à toutes les largeurs :
 La hauteur de l'en-tête n'est pas codée en dur : `app.js` la mesure et la publie dans
 la variable CSS `--h-entete`, que le mode paysage utilise pour se caler.
 
+### Thème clair, pour le plein soleil
+
+L'application s'ouvre en **thème clair** : papier cassé, texte quasi noir, contours
+de champs à 3:1 au moins. Dehors, les reflets écrasent un écran sombre bien avant un
+écran clair. **Configuration › Affichage** propose aussi le thème **sombre**, ou de
+suivre le réglage de l'appareil. Le choix s'applique et s'enregistre aussitôt.
+
+Les couleurs de filière ne servent jamais telles quelles en texte, parce que le vert
+et le bleu ciel tombent sous 3:1 sur fond clair. Elles sont mélangées à la couleur du
+texte (`color-mix`), ce qui les fonce en clair et les éclaircit en sombre : tous les
+libellés colorés dépassent 4,8:1 dans les deux thèmes. Les voiles posés sur la carte
+restent sombres dans les deux thèmes, parce qu'ils se lisent sur la photo aérienne.
+
+Sur iPhone, la barre d'état est en mode `default` (fond clair, texte noir). Une
+installation antérieure garde l'ancien réglage jusqu'à sa réinstallation.
+
 ### Rejouer l'audit
 
 ```bash

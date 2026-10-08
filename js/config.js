@@ -122,7 +122,10 @@
     fondCarte: 'photo',
     // Liste vide = fonds gratuits par défaut de carte.js. Remplie, elle les remplace.
     fondsCarte: [],
-    separateur: ';'
+    separateur: ';',
+    // Clair par défaut : c'est le seul lisible en plein soleil. 'sombre' ou 'auto'
+    // (selon le réglage de l'appareil) se choisissent dans Configuration.
+    theme: 'clair'
   };
 
   global.GromaConfig = {

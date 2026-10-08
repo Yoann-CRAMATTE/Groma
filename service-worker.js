@@ -17,7 +17,7 @@
  */
 'use strict';
 
-var VERSION = 'groma-1';
+var VERSION = 'groma-2';
 
 // Tout ce qu'il faut pour démarrer hors réseau. `addAll` est atomique : si un
 // seul fichier manque, l'installation échoue et l'ancien cache reste en place —

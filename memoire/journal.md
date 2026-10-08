@@ -7,6 +7,46 @@ Une entrée par session de travail, la plus récente en haut.
 
 ---
 
+## 08/10/2026 — Thème de terrain clair et identité « arpenteur »
+
+**Demande :** audit de l'interface, puis la rendre plus belle. Direction validée à deux
+questions : thème clair de terrain plus sombre au choix, et identité « arpenteur ».
+
+**Audit (14/20).** Accessibilité, performance et responsive tenaient. Deux faiblesses :
+un thème sombre seul, pour un outil qui sert en plein soleil, et un aspect générique
+de tableau de bord. Les bordures gauches colorées revenaient neuf fois, les titres en
+petites capitales grises étaient le texte le moins lisible de l'écran, et les
+coordonnées ne se distinguaient pas du reste.
+
+**Fait :**
+- Jetons de couleur réécrits. Clair par défaut (papier `#f3f1ec`, texte `#161a20`),
+  sombre déclaré deux fois (`prefers-color-scheme` sous `data-theme="auto"`, et
+  `data-theme="sombre"`). Contrastes mesurés dans le navigateur : libellés colorés
+  4,8:1 au moins, texte secondaire 6,3:1, contours de champs 3,2:1.
+- Configuration › Affichage : clair, sombre, ou selon l'appareil. `meta theme-color`
+  suit le thème choisi, y compris quand l'appareil bascule en mode `auto`.
+- Marque : une croix de visée en SVG dans l'en-tête, à la couleur de l'onglet actif.
+  Le favicon (une épingle) n'a pas changé, les icônes PWA en dérivent.
+- Plus aucune bordure latérale colorée : les relevés deviennent des lignes de registre
+  séparées d'un filet, et la filière se lit à une pastille.
+- Fenêtre de mesure : titre lisible, coordonnées en chasse fixe et plus grandes, fonds
+  de carte en sélecteur segmenté. Le survol fonce le fond au lieu de colorer le bord.
+- Message de confirmation inversé avec une pastille de type. `:focus-visible` sur les
+  boutons et les liens. La jauge GPS avance par `scaleX`, plus par `width`.
+- `VERSION` du service worker passée à `groma-2` : CSS et JS doivent changer ensemble,
+  pas fichier par fichier.
+
+**Vérifié :** `audit-responsive` et `audit-pwa` sans défaut. Un script jetable a
+vérifié le thème : persistance au rechargement, mode `auto` qui suit l'appareil,
+« Enregistrer la configuration » qui garde le thème. Le détecteur de design ne
+signale plus rien (9 signalements avant).
+
+**Défaut repéré en passant, non corrigé ici :** `enregistrerConfiguration()` remplace
+`etat.config` sans `fondCarte` ni `fondsCarte`, ce qui fait perdre les fonds
+personnalisés à l'enregistrement. Une tâche séparée est proposée pour le corriger.
+
+---
+
 ## 06/10/2026 — Bootstrap du poste : AppInfo.json, graphe graphify, descriptions remises à jour
 
 **Demande :** initialisation du projet sur ce poste (hook de session), puis les trois
