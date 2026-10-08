@@ -69,12 +69,53 @@
       'Puits perdu': [['Maçonné', 'Busé'], ['À supprimer']],
       "Absence d'installation": [['Rejet direct', 'Aucun dispositif'], []],
       'Autre': [['Non listé'], []]
+    },
+    // Amorce demandée le 08/10/2026 : bancs, panneaux (cédez-le-passage en
+    // tête), passages piétons, poubelles, complétée de quelques équipements
+    // courants. Pas validée métier, comme le reste de la graine : à corriger
+    // depuis Configuration ou parametres.csv.
+    voirie: {
+      'Panneau de signalisation': [['Cédez le passage', 'Stop', 'Passage piéton', 'Interdiction', 'Obligation',
+        'Danger', 'Indication', 'Directionnel'], ['Sur mât', 'Sur candélabre', 'En applique']],
+      'Banc': [['Bois', 'Métal', 'Béton', 'Mixte'], ['Avec dossier', 'Sans dossier']],
+      'Poubelle / corbeille': [['Simple', 'Double', 'Tri sélectif'], ['Sur pied', 'Murale', 'Sur candélabre']],
+      'Passage piéton': [['Peinture', 'Résine', 'Surélevé'], []],
+      'Candélabre': [['Mât acier', 'Mât aluminium', 'Console murale'], ['LED', 'Sodium', 'Autre source']],
+      'Potelet / borne': [['Fixe', 'Amovible', 'Escamotable'], []],
+      'Arceau vélo': [['Simple', 'Range-vélos multiple'], []],
+      'Autre': [['Non listé'], []]
     }
   };
 
-  function defaut() {
+  /**
+   * Filières déjà semées dans le catalogue enregistré. Une filière ajoutée au
+   * code après coup (la voirie, le 08/10/2026) n'a aucune ligne dans le
+   * catalogue d'un agent déjà équipé : ses listes s'ouvriraient vides. Elle
+   * reçoit sa graine une seule fois. Une filière vidée volontairement depuis
+   * Configuration reste vide, parce qu'elle figure déjà dans cette liste.
+   */
+  var CLE_SEMEES = 'groma.catalogue.filieres';
+  // Absente : catalogue enregistré avant l'existence de cette clé, donc semé
+  // avec les trois filières d'origine.
+  var SEMEES_ORIGINE = ['eau', 'assainissement', 'spanc'];
+
+  function lireSemees() {
+    try {
+      var texte = localStorage.getItem(CLE_SEMEES);
+      return texte ? JSON.parse(texte) : SEMEES_ORIGINE.slice();
+    } catch (e) {
+      return SEMEES_ORIGINE.slice();
+    }
+  }
+
+  function ecrireSemees(liste) {
+    try { localStorage.setItem(CLE_SEMEES, JSON.stringify(liste)); } catch (e) { /* mode privé */ }
+  }
+
+  function defaut(seules) {
     var lignes = [];
     Object.keys(GRAINE).forEach(function (fil) {
+      if (seules && seules.indexOf(fil) < 0) return;
       Object.keys(GRAINE[fil]).forEach(function (type) {
         var paire = GRAINE[fil][type];
         paire[0].forEach(function (modele) {
@@ -118,7 +159,21 @@
     }
     // Absence ≠ catalogue vide : au premier lancement on sert la graine, sinon
     // les trois listes s'ouvrent vides et l'application paraît cassée.
-    lignes = brut === null ? defaut() : normaliser(brut);
+    if (brut === null) {
+      // Toutes les filières sont semées d'un coup : sans cette trace, le premier
+      // enregistrement du catalogue ferait passer la voirie pour nouvelle au
+      // lancement suivant, et sa graine serait ajoutée une seconde fois.
+      ecrireSemees(Object.keys(GRAINE));
+      lignes = defaut();
+      return lignes;
+    }
+    lignes = normaliser(brut);
+    var semees = lireSemees();
+    var nouvelles = Object.keys(GRAINE).filter(function (fil) { return semees.indexOf(fil) < 0; });
+    if (nouvelles.length) {
+      definir(lignes.concat(defaut(nouvelles)));
+      ecrireSemees(semees.concat(nouvelles));
+    }
     return lignes;
   }
 
@@ -135,6 +190,7 @@
   }
 
   function reinitialiser() {
+    ecrireSemees(Object.keys(GRAINE));
     return definir(defaut());
   }
 

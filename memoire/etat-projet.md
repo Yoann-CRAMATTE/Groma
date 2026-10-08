@@ -57,6 +57,7 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 | `js/carte.js` | Visualiseur de tuiles WMTS/XYZ, fonds gratuits, validation | oui, projection vérifiée |
 | `js/app.js` | Construction du DOM, formulaires, liste, configuration | oui |
 | `serveur.py` | Serveur local — indispensable, le GPS refuse `file://` | oui |
+| `AppInfo.json` | Identité de l'app (nom, version, éditeur, licence) et changelog — convention EuropaSoft, **pas encore lu par l'application** | oui |
 | `docs/RGPD.md` | Point de vigilance sur les données SPANC | oui |
 | `tests/audit-responsive.mjs` | Affichage sur 15 formats (tablettes + téléphones) + contrôle de la cascade | oui |
 | `tests/audit-pwa.mjs` | Manifeste, icônes, service worker, cohérence `index.html` ↔ `COQUILLE`, démarrage hors réseau | oui |
@@ -69,9 +70,9 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
    formulaire ne se regarnit pas champ par champ. La note est l'exception assumée :
    elle porte ce qu'aucune nomenclature ne prévoit.
 2. **Un GeoJSON par filière** (`eau.geojson`, `assainissement.geojson`,
-   `spanc.geojson`). Les trois ont aujourd'hui les mêmes vingt et un champs, mais
-   gardent chacune leur fichier : le champ `filiere` est le garde-fou à l'import, et
-   rien n'oblige les trois à rester alignées. Le stockage interne, lui, reste un stock
+   `spanc.geojson`, `voirie.geojson`). Toutes ont aujourd'hui les mêmes vingt et un
+   champs, mais gardent chacune leur fichier : le champ `filiere` est le garde-fou à
+   l'import, et rien ne les oblige à rester alignées. Le stockage interne, lui, reste un stock
    unique.
    **`parametres.csv` est le quatrième fichier** : il porte le catalogue, pas des
    relevés, et ne se mélange jamais aux trois autres.
@@ -104,8 +105,10 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 9. **Ordre de lecture d'un onglet de relevé, non négociable** : bouton « Créer une
    mesure », recherche, relevés effectués du plus récent au plus ancien. L'écran de
    fond est ce qu'on *consulte* ; la saisie vit dans une fenêtre par-dessus.
-   **Les trois onglets partagent ce code** (`construireVueFiliere`) : une
-   modification de mise en forme tombe sur les trois sans recopie.
+   **Les onglets de relevé partagent ce code** (`construireVueFiliere`) : une
+   modification de mise en forme tombe sur tous sans recopie. Ajouter une filière,
+   c'est une entrée dans `FILIERES` (config.js) et sa graine dans `catalogue.js` :
+   les onglets, l'audit hors ligne et le nombre de colonnes suivent seuls.
 9 bis. **Ordre de la fenêtre de mesure, non négociable** : carte au zoom maximal avec
    viseur fixe, barre de carte (fonds, zoom, GPS), coordonnées et écart, état GPS,
    tableau de position, cascade, observation, boutons. La carte **est** l'outil de
@@ -167,10 +170,26 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
    disparu : sans `getFile()`, l'application se croit reliée et chaque écriture
    échoue sans rien dire.
 23. **Marges d'encoche partout où quelque chose colle au bord.** En-tête, bas de
-   page, quatre côtés des fenêtres. `viewport-fit=cover` plus
-   `black-translucent` étendent la page sous les barres système d'iOS : sans
-   `env(safe-area-inset-*)`, le titre passe sous l'heure. Une hauteur en `vh`
-   ignore ces marges — utiliser `100%` du conteneur déjà décalé.
+   page, quatre côtés des fenêtres. `viewport-fit=cover` étend la page sous les
+   barres système : sans `env(safe-area-inset-*)`, le titre passe sous l'heure.
+   Une hauteur en `vh` ignore ces marges — utiliser `100%` du conteneur déjà
+   décalé. iOS reste en `black-translucent` : l'en-tête est une bande d'encre
+   sombre dans les deux thèmes, l'heure s'y écrit en blanc. Si un jour l'en-tête
+   devient clair, passer à `default`, sinon l'heure disparaît.
+24. **Aucune couleur en dur hors des jetons de `:root`.** Le thème sombre est
+   déclaré deux fois (appareil en sombre + choix explicite) : un jeton ajouté à
+   l'un s'ajoute aux trois blocs. Seules exceptions, commentées : les voiles et
+   repères posés sur la carte, qui se lisent sur la photo aérienne ; les
+   pastilles de la bande d'en-tête (sombre dans les deux thèmes) ; l'étoile de
+   favori et la pastille « affiné », lisibles sur les deux fonds de fiche ; la
+   pastille du message de confirmation, qui se lit sur son fond inversé.
+25. **Une couleur de filière ne sert jamais telle quelle en texte.** Passer par
+   `--accent-texte` ou un `color-mix(... var(--texte))` : en brut, le vert et le
+   bleu ciel tombent sous 3:1 sur le papier clair.
+26. **Le rechargement automatique d'une nouvelle version épargne la mesure en cours.**
+   `index.html` recharge la page sur `controllerchange`, sauf si `body[data-modale]`
+   est posé. Une nouvelle fenêtre de saisie doit poser cet attribut, sinon une
+   livraison pendant la saisie la viderait.
 
 ## Décisions prises
 
@@ -179,9 +198,19 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 - **File System Access API + repli export** : le navigateur ne peut pas écrire
   librement sur le disque. Chrome/Edge écrivent dans le fichier lié ; ailleurs,
   téléchargement manuel. Pas de troisième voie sans serveur.
-- **Trois fichiers, un stock** : éclater aussi le `localStorage` n'apporterait rien
-  et compliquerait purge, statistiques et filtre. C'est le format d'export qui est
-  triple, pas le modèle de données.
+- **Un fichier par filière, un stock** : éclater aussi le `localStorage` n'apporterait
+  rien et compliquerait purge, statistiques et filtre. C'est le format d'export qui
+  est éclaté, pas le modèle de données.
+- **Filière Voirie** (08/10/2026, demande de Yoann) : orange `#ff8a3d`, préfixe `VOI`,
+  picto candélabre. Catalogue livré : ce que Yoann a cité (bancs, panneaux dont
+  cédez-le-passage, passages piétons, poubelles), plus candélabres, potelets et
+  arceaux vélo. **Amorce non validée.** La clé `groma.catalogue.filieres` mémorise les
+  filières déjà semées : une filière ajoutée au code reçoit sa graine une seule fois
+  chez un agent déjà équipé, et une filière vidée volontairement reste vide.
+- **Pictos d'onglet** en SVG tracé à la main (goutte, station d'épuration, maison et
+  cuve, candélabre, réglages), au trait de la croix de visée. Pas d'émojis : leur
+  aspect change d'un appareil à l'autre. Nom complet au-dessus de 1100 px, nom court
+  en dessous, picto seul sous 600 px.
 - **Import mono-filière** : une ligne portant une autre `filiere` est rejetée. Sans
   ce contrôle, un `eau.csv` importé dans SPANC passerait sans bruit.
 - **Double libellé d'onglet** plutôt que troncature par ellipsis : « ASSAINISSEMENT »
@@ -243,6 +272,18 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
   commencé est dans le stash `WIP photo (mis de cote - redesign tablet)`.
 - **Séparateur `;` par défaut** : Excel français découpe sur `;`, pas sur `,`.
 - **BOM UTF-8** : sans lui, Excel FR casse les accents.
+- **Thème clair par défaut** (08/10/2026) : l'outil sert dehors, et les reflets
+  écrasent un écran sombre bien avant un écran clair. Le sombre reste au choix dans
+  Configuration › Affichage, ou suit l'appareil (`auto`). La préférence s'enregistre
+  dès le choix, sans passer par « Enregistrer la configuration ».
+- **Style « carte topo »** (08/10/2026), choisi par Yoann parmi trois maquettes
+  (pixel art, verre, topo). Le verre a été écarté pour la lisibilité au soleil et le
+  coût du flou sur tablette, le pixel art parce que ses chiffres se lisaient mal.
+  Contours de 2 à 3 px et relief plein `--relief` : ils restent visibles dehors.
+- **Une seule police embarquée**, Bricolage Grotesque (OFL), dans `fonts/` et dans
+  `COQUILLE`. Elle sert aux titres, à la marque et aux boutons. Le texte courant
+  reste en police système, les coordonnées en `ui-monospace`. Une police distante
+  casserait le hors-ligne.
 
 ## Reste à faire (par ordre d'utilité)
 

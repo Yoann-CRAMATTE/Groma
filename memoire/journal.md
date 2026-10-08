@@ -7,6 +7,115 @@ Une entrée par session de travail, la plus récente en haut.
 
 ---
 
+## 08/10/2026 — Thème de terrain clair et identité « arpenteur »
+
+**Demande :** audit de l'interface, puis la rendre plus belle. Direction validée à deux
+questions : thème clair de terrain plus sombre au choix, et identité « arpenteur ».
+
+**Audit (14/20).** Accessibilité, performance et responsive tenaient. Deux faiblesses :
+un thème sombre seul, pour un outil qui sert en plein soleil, et un aspect générique
+de tableau de bord. Les bordures gauches colorées revenaient neuf fois, les titres en
+petites capitales grises étaient le texte le moins lisible de l'écran, et les
+coordonnées ne se distinguaient pas du reste.
+
+**Fait :**
+- Jetons de couleur réécrits. Clair par défaut (papier `#f3f1ec`, texte `#161a20`),
+  sombre déclaré deux fois (`prefers-color-scheme` sous `data-theme="auto"`, et
+  `data-theme="sombre"`). Contrastes mesurés dans le navigateur : libellés colorés
+  4,8:1 au moins, texte secondaire 6,3:1, contours de champs 3,2:1.
+- Configuration › Affichage : clair, sombre, ou selon l'appareil. `meta theme-color`
+  suit le thème choisi, y compris quand l'appareil bascule en mode `auto`.
+- Marque : une croix de visée en SVG dans l'en-tête, à la couleur de l'onglet actif.
+  Le favicon (une épingle) n'a pas changé, les icônes PWA en dérivent.
+- Plus aucune bordure latérale colorée : les relevés deviennent des lignes de registre
+  séparées d'un filet, et la filière se lit à une pastille.
+- Fenêtre de mesure : titre lisible, coordonnées en chasse fixe et plus grandes, fonds
+  de carte en sélecteur segmenté. Le survol fonce le fond au lieu de colorer le bord.
+- Message de confirmation inversé avec une pastille de type. `:focus-visible` sur les
+  boutons et les liens. La jauge GPS avance par `scaleX`, plus par `width`.
+- `VERSION` du service worker passée à `groma-2` : CSS et JS doivent changer ensemble,
+  pas fichier par fichier.
+
+**Vérifié :** `audit-responsive` et `audit-pwa` sans défaut. Un script jetable a
+vérifié le thème : persistance au rechargement, mode `auto` qui suit l'appareil,
+« Enregistrer la configuration » qui garde le thème. Le détecteur de design ne
+signale plus rien (9 signalements avant).
+
+**Deuxième passe, même séance : style « carte topo ».** Yoann a trouvé le résultat
+« simple, professionnel » et voulait plus pétillant et coloré : pixel art, verre, ou
+autre. Trois maquettes ont été rendues dans un vrai navigateur, sur le même écran.
+- *Pixel art* : la plus marquée, mais « 47.5175 » se lisait « 47.S175 » en police pixel.
+- *Verre* : jolie, mais du texte gris sur verre translucide se lit mal au soleil, et
+  `backdrop-filter` fait saccader la carte sur une tablette d'entrée de gamme.
+- *Topo pop*, retenue : courbes de niveau en fond (masque SVG peint par `--courbes`,
+  qui suit le thème), bande d'en-tête à l'encre, onglets en pastilles avec un liseré
+  de filière, jaune soleil pour toute action principale, fiches et boutons cerclés
+  d'encre avec relief plein, boutons qui s'enfoncent à l'appui. Bricolage Grotesque
+  (22 Ko, OFL) téléchargée avec l'accord de Yoann, ajoutée à `COQUILLE`.
+- La barre d'état iOS revient en `black-translucent` : l'en-tête est sombre dans les
+  deux thèmes.
+- Un défaut est apparu à 280 px : le sélecteur de fond débordait de la fenêtre de
+  mesure de 4 px. Il passe désormais sur deux lignes. Contrastes remesurés : 4,8:1 au
+  minimum, partout.
+
+**Troisième passe : onglet Voirie et pictos.** Demande de Yoann : un onglet Voirie, et
+des pictos pour raccourcir les noms (goutte, station d'épuration, candélabre ou banc).
+- Validé à quatre questions : catalogue de départ avec ses exemples (bancs, panneaux,
+  cédez-le-passage, passage piéton, poubelle), picto et nom, orange `#ff8a3d`,
+  préfixe `VOI`.
+- `catalogue.js` sème une filière nouvelle une seule fois chez un agent déjà équipé
+  (clé `groma.catalogue.filieres`). Vérifié par script : une ligne personnelle
+  conservée, 59 lignes de voirie ajoutées, aucun doublon au rechargement ni après un
+  premier lancement suivi d'un enregistrement du catalogue.
+- Relevé de voirie bout à bout : `VOI-0001`, export `voirie-2026-10-08.geojson`, champ
+  `filiere` à `voirie`.
+- Onglets en grille à colonnes automatiques. L'audit hors ligne comptait quatre
+  onglets en dur : il lit maintenant le nombre de filières dans config.js.
+  « Exporter les 3 » est devenu « Tout exporter ».
+
+**Retouche des onglets.** Yoann a lu le liseré de couleur sous les onglets fermés et
+l'aplat de l'onglet ouvert comme deux styles incohérents. Désormais, chaque onglet
+porte une teinte pâle de sa filière (30 % mêlée à la bande). L'onglet ouvert prend
+l'aplat vif, avec un socle plus sombre de la même couleur et un léger soulèvement.
+Contraste du texte mesuré entre 6,9:1 et 9,5:1 sur les cinq onglets, dans les deux
+thèmes.
+
+**Mise à jour visible dès l'ouverture.** Demande de Yoann : retrouver toutes les
+modifications à la prochaine ouverture, en local comme en ligne. Avant, une PWA
+installée servait son cache à l'ouverture qui suivait une livraison, et la nouvelle
+version n'apparaissait qu'à l'ouverture suivante.
+- `index.html` recharge la page une fois quand un nouveau worker prend la main, sauf
+  si une fenêtre de mesure est ouverte, pour ne pas perdre une saisie. Testé par script
+  en changeant `VERSION` à chaud : un rechargement au repos, aucun pendant une mesure.
+- Le précache passe par `cache: 'reload'` : le cache HTTP de GitHub Pages (dix
+  minutes) pouvait glisser l'ancienne feuille de style dans le nouveau cache.
+- `.claude/launch.json` : « Groma local » lance `serveur.py` sur le port 8123, pour
+  l'aperçu dans l'application Claude.
+
+**Défaut repéré en passant, non corrigé ici :** `enregistrerConfiguration()` remplace
+`etat.config` sans `fondCarte` ni `fondsCarte`, ce qui fait perdre les fonds
+personnalisés à l'enregistrement. Une tâche séparée est proposée pour le corriger.
+
+---
+
+## 06/10/2026 — Bootstrap du poste : AppInfo.json, graphe graphify, descriptions remises à jour
+
+**Demande :** initialisation du projet sur ce poste (hook de session), puis les trois
+corrections relevées au passage.
+
+- `AppInfo.json` créé selon la convention EuropaSoft : version **1.0** = incrément 1,
+  changelog 1.0 (GeoJSON seul) et 0.0 (socle). Copyright écrit « Licence AGPL-3.0 »,
+  pas « Tous droits réservés » : la mention du modèle contredirait la licence du dépôt.
+  L'application ne le lit pas encore — ni dans `index.html`, ni dans `COQUILLE`.
+- Graphe graphify construit dans `graphify-out/`, **ignoré par git** : il recopie le
+  journal et des chemins absolus de la machine, et Pages publie tout le dépôt.
+- `manifest.webmanifest` et `CLAUDE.md` disaient encore « un fichier CSV par
+  filière », faux depuis le 30/09. Corrigé en GeoJSON. `audit-pwa` : aucun défaut.
+- Playwright installé localement (`npm install playwright`, ignoré par git) avec son
+  Chromium : les audits tournent sur ce Mac.
+
+---
+
 ## 30/09/2026 — Le GeoJSON devient le seul format des relevés (incrément 1, étape 1/3)
 
 **Demande :** trois changements annoncés, à faire l'un après l'autre. Celui-ci est le

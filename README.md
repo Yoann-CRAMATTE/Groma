@@ -124,18 +124,24 @@ c'est le point qui compte en tournée, hors couverture.
 
 ## Ce qu'on relève, et comment c'est rangé
 
-Trois filières de relevé — **EAU**, **ASSAINISSEMENT**, **SPANC** — plus un onglet
-**CONFIGURATION**. Les trois filières partagent exactement le même écran ; seuls leur
-catalogue de matériel, leur couleur et leur fichier diffèrent.
+Quatre filières de relevé — **EAU**, **ASSAINISSEMENT**, **SPANC**, **VOIRIE** — plus
+un onglet **CONFIGURATION**. Les filières partagent exactement le même écran ; seuls
+leur catalogue de matériel, leur couleur, leur picto et leur fichier diffèrent.
 
-| Onglet | Couleur | Fichier | Références | Colonnes |
-|---|---|---|---|---|
-| EAU | `#0ea5e9` bleu | `eau.geojson` | `AEP-0001` | 21 |
-| ASSAINISSEMENT | `#22c55e` vert | `assainissement.geojson` | `AC-0001` | 21 |
-| SPANC | `#a855f7` violet | `spanc.geojson` | `ANC-0001` | 21 |
-| CONFIGURATION | `#94a3b8` gris | `parametres.csv` | — | 4 |
+| Onglet | Picto | Couleur | Fichier | Références | Colonnes |
+|---|---|---|---|---|---|
+| EAU | goutte | `#0ea5e9` bleu | `eau.geojson` | `AEP-0001` | 21 |
+| ASSAINISSEMENT | station d'épuration | `#22c55e` vert | `assainissement.geojson` | `AC-0001` | 21 |
+| SPANC | maison et cuve enterrée | `#a855f7` violet | `spanc.geojson` | `ANC-0001` | 21 |
+| VOIRIE | candélabre | `#ff8a3d` orange | `voirie.geojson` | `VOI-0001` | 21 |
+| CONFIGURATION | réglages | `#94a3b8` gris | `parametres.csv` | — | 4 |
 
-Ces trois filières sont la configuration livrée, pas une limite du logiciel :
+Le catalogue Voirie livré (panneaux dont cédez-le-passage, bancs, poubelles, passages
+piétons, candélabres, potelets, arceaux vélo) est une **amorce à valider**, comme le
+reste du catalogue. Un agent qui avait déjà Groma reçoit ces lignes une seule fois, en
+plus de son catalogue. Une filière vidée volontairement dans Configuration reste vide.
+
+Ces filières sont la configuration livrée, pas une limite du logiciel :
 **le catalogue de matériel s'édite depuis l'application**, sans toucher au code. Si
 vous relevez des bornes incendie ou des stations de mesure, vous remplacez le
 catalogue et les listes suivent.
@@ -255,7 +261,7 @@ Format des relevés : **GeoJSON, UTF-8 sans BOM** (un BOM casserait les analyseu
 JSON stricts), indenté pour rester lisible à l'œil, point décimal imposé par la
 norme JSON.
 
-### Champs — identiques dans les trois fichiers
+### Champs — identiques dans les quatre fichiers
 
 **Dans la géométrie** — c'est là qu'un SIG les cherche :
 
@@ -285,7 +291,7 @@ les niveaux de la cascade : ils décrivent **ce qu'est** l'ouvrage. `observation
 **ce qui cloche** — tampon scellé, accès par la cour du 12, vanne bloquée. Le
 catalogue ne peut pas prévoir ça.
 
-Les trois filières ont aujourd'hui les mêmes champs mais gardent chacune leur
+Les filières ont aujourd'hui les mêmes champs mais gardent chacune leur
 fichier : `filiere` sert de garde-fou à l'import, et rien n'oblige les trois à rester
 alignées si une d'elles a besoin d'un champ propre.
 
@@ -317,7 +323,7 @@ effacée en silence : à la relecture du point, elle réapparaît marquée
 | Mode | Navigateurs | Comportement |
 |---|---|---|
 | **Fichier lié** (File System Access API) | Chrome, Edge (bureau et Android) | Configuration → carte de la filière → *Créer / remplacer* ou *Lier un existant*. Le fichier de cette filière est réécrit intégralement à chaque enregistrement, suppression ou import. Les trois liaisons sont indépendantes. |
-| **Export manuel** | Firefox, Safari, iOS | *Exporter* par filière, ou *Exporter les 3*. Le catalogue a son propre *Exporter*. |
+| **Export manuel** | Firefox, Safari, iOS | *Exporter* par filière, ou *Tout exporter*. Le catalogue a son propre *Exporter*. |
 
 Dans les deux cas, `localStorage` fait autorité : aucune saisie n'est perdue si
 l'écriture disque échoue. Les fichiers liés survivent au rechargement (handles
@@ -337,7 +343,7 @@ relevés d'origine, au même nombre de décimales. C'est ce qui permet de repren
 tournée commencée sur une autre tablette.
 
 > Le stockage interne (`localStorage`) reste un stock unique, discriminé par la
-> colonne `filiere`. C'est le format d'export qui est éclaté en trois fichiers.
+> colonne `filiere`. C'est le format d'export qui est éclaté en un fichier par filière.
 > Le catalogue, lui, est stocké à part : ce n'est pas une donnée de relevé.
 
 ---
@@ -531,7 +537,8 @@ téléphone quand la tablette n'est pas là.
 | Palier | Adaptation |
 |---|---|
 | ≥ 768 px | Cascade sur trois colonnes, cartes de fichiers sur deux colonnes, champs et boutons à 48 px. La fenêtre de mesure tient alors en un écran, carte comprise. |
-| ≤ 480 px | Libellés d'onglets abrégés : `EAU` · `ASSAIN.` · `SPANC` · `CONFIG`. Le libellé complet reste exposé aux lecteurs d'écran via `aria-label`. Seuil mesuré : « CONFIGURATION » déborde encore de sa colonne à 430 px. |
+| ≤ 1100 px | Libellés d'onglets abrégés à côté du picto : `EAU` · `ASSAIN.` · `SPANC` · `VOIRIE` · `CONFIG`. Avec cinq colonnes, « ASSAINISSEMENT » ne tient plus en entier. |
+| ≤ 600 px | Picto seul dans les onglets. Le libellé complet reste exposé aux lecteurs d'écran via `aria-label`. |
 | < 480 px | Le message de confirmation passe en bandeau pleine largeur (centré, il se repliait en colonne étroite). |
 | < 360 px | Gouttière à 10 px, marges et typographie compactées, boutons des cartes fichier en grille à deux colonnes, en-tête de carte sur deux lignes. |
 | Paysage, hauteur < 480 px | L'en-tête glisse hors écran au défilement, la barre d'onglets reste collée : 47 px de barres fixes au lieu de 84. |
@@ -545,6 +552,27 @@ Règles tenues à toutes les largeurs :
 
 La hauteur de l'en-tête n'est pas codée en dur : `app.js` la mesure et la publie dans
 la variable CSS `--h-entete`, que le mode paysage utilise pour se caler.
+
+### Thème « carte topo », clair pour le plein soleil
+
+L'application s'ouvre en **thème clair** : papier crème parcouru de courbes de niveau,
+encre marine, jaune soleil pour l'action. Les fiches et les boutons ont un contour
+épais et un relief plein, et les boutons s'enfoncent à l'appui. Ce n'est pas qu'un
+style : un contour de 2 px reste visible au soleil, là où un filet gris disparaît, et
+le relief donne un retour qu'on sent même avec des gants. Dehors, les reflets écrasent
+un écran sombre bien avant un écran clair. **Configuration › Affichage** propose aussi le thème **sombre**, ou de
+suivre le réglage de l'appareil. Le choix s'applique et s'enregistre aussitôt.
+
+Les couleurs de filière ne servent jamais telles quelles en texte, parce que le vert
+et le bleu ciel tombent sous 3:1 sur fond clair. Elles sont mélangées à la couleur du
+texte (`color-mix`), ce qui les fonce en clair et les éclaircit en sombre : tous les
+libellés colorés dépassent 4,8:1 dans les deux thèmes. Les voiles posés sur la carte
+restent sombres dans les deux thèmes, parce qu'ils se lisent sur la photo aérienne.
+
+Titres, marque et boutons utilisent **Bricolage Grotesque** (licence SIL OFL, texte
+dans `fonts/OFL.txt`). La police est dans le dépôt et précachée par le service worker,
+donc disponible hors réseau. Le texte courant reste en police système et les
+coordonnées en chasse fixe.
 
 ### Rejouer l'audit
 
@@ -627,7 +655,7 @@ Ajouter un *champ* aux relevés, en revanche, se fait dans `js/config.js` :
 - Pas de photo rattachée aux points.
 - L'import fusionne sur l'identifiant `id` ; deux relevés du même ouvrage saisis sur
   deux appareils différents produisent deux lignes.
-- Les trois fichiers sont indépendants : aucune vue consolidée des trois filières
+- Les fichiers sont indépendants : aucune vue consolidée des filières
   n'est produite. À faire dans le SIG ou le tableur si besoin.
 - Le catalogue s'édite ligne à ligne : renommer un type partout se fait dans
   `parametres.csv` au tableur, pas dans l'interface.

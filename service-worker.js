@@ -17,7 +17,7 @@
  */
 'use strict';
 
-var VERSION = 'groma-1';
+var VERSION = 'groma-2';
 
 // Tout ce qu'il faut pour démarrer hors réseau. `addAll` est atomique : si un
 // seul fichier manque, l'installation échoue et l'ancien cache reste en place —
@@ -28,6 +28,10 @@ var COQUILLE = [
   './manifest.webmanifest',
   './favicon.svg',
   './css/style.css',
+  // Chargée par la feuille de style, pas par index.html : l'audit ne la voit
+  // pas, il faut l'inscrire à la main. Absente, les titres retombent en police
+  // système hors réseau, sans rien casser.
+  './fonts/bricolage-grotesque-latin.woff2',
   './js/lambert93.js',
   './js/carte.js',
   './js/config.js',
@@ -45,7 +49,12 @@ var COQUILLE = [
 self.addEventListener('install', function (ev) {
   ev.waitUntil(
     caches.open(VERSION)
-      .then(function (cache) { return cache.addAll(COQUILLE); })
+      // cache: 'reload' contourne le cache HTTP du navigateur. GitHub Pages sert
+      // ses fichiers avec dix minutes de validité : sans cela, une nouvelle
+      // version pouvait précacher l'ancienne feuille de style sous son nom.
+      .then(function (cache) {
+        return cache.addAll(COQUILLE.map(function (u) { return new Request(u, { cache: 'reload' }); }));
+      })
       // Sans cela, la nouvelle version attend la fermeture de tous les onglets.
       // En PWA installée, l'application peut rester ouverte des jours : un
       // correctif n'atteindrait jamais le terrain.

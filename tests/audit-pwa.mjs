@@ -90,7 +90,11 @@ ok(etat.entrees >= references.length, etat.entrees + ' entrées précachées');
 console.log('\n— Hors réseau');
 await ctx.setOffline(true);
 await onglet.reload({ waitUntil: 'load' });
-ok(await onglet.$$eval('.onglet', ns => ns.length) === 4, 'les quatre onglets se construisent');
+// Une par filière déclarée dans config.js, plus Configuration : le compte suit
+// les filières ajoutées au lieu d'être écrit en dur.
+const attendus = await onglet.evaluate(() => window.GromaConfig.FILIERES.length + 1);
+const construits = await onglet.$$eval('.onglet', ns => ns.length);
+ok(construits === attendus, 'les ' + attendus + ' onglets se construisent');
 
 await onglet.click('#eau-btn-creer');
 await onglet.waitForSelector('#eau-modale-mesure:not([hidden])', { timeout: 5000 });

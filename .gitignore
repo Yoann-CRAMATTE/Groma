@@ -4,3 +4,10 @@ package.json
 dist/
 *.pyc
 __pycache__/
+
+# Graphe de connaissances local (graphify) : contient le journal et des chemins
+# absolus de la machine, et Pages publierait tout le dépôt.
+graphify-out/
+
+# Marqueur du bootstrap Claude Code : propre à chaque poste.
+.claude/.bootstrap-done

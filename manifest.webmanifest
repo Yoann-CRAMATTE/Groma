@@ -1,14 +1,14 @@
 {
   "name": "Groma — relevé GPS d'ouvrages",
   "short_name": "Groma",
-  "description": "Relevé GPS d'ouvrages Eau, Assainissement et SPANC vers un fichier CSV par filière.",
+  "description": "Relevé GPS d'ouvrages Eau, Assainissement, SPANC et Voirie vers un fichier GeoJSON par filière, prêt pour les SIG.",
   "lang": "fr",
   "dir": "ltr",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
-  "background_color": "#0b0f14",
-  "theme_color": "#0b0f14",
+  "background_color": "#fff8ef",
+  "theme_color": "#1b1340",
   "categories": ["utilities", "productivity"],
   "icons": [
     {

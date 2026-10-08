@@ -23,11 +23,11 @@ sol pour marquer un point précis. Le nom décrit l'interaction centrale de
 l'application — un viseur fixe, une carte qui glisse dessous.
 
 Application web de relevé GPS d'ouvrages de terrain, pour quiconque doit noter *où
-se trouve quoi* et en ressortir des données propres. Trois filières livrées —
-**EAU**, **ASSAINISSEMENT**, **SPANC** — un fichier CSV par filière, plus un
+se trouve quoi* et en ressortir des données propres. Quatre filières livrées —
+**EAU**, **ASSAINISSEMENT**, **SPANC**, **VOIRIE** — un fichier GeoJSON par filière, plus un
 catalogue de matériel dans son propre fichier.
 
-Ces trois filières sont la configuration d'origine, pas une limite : le catalogue
+Ces filières sont la configuration d'origine, pas une limite : le catalogue
 s'édite depuis l'application. Ne jamais coder en dur une hypothèse qui vaudrait
 seulement pour un réseau d'eau.
 

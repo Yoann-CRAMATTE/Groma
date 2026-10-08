@@ -37,6 +37,7 @@
       labelCourt: 'EAU',
       titre: 'Eau potable (AEP)',
       couleur: '#0ea5e9',
+      icone: 'goutte',
       prefixe: 'AEP',
       fichier: 'eau.geojson'
     },
@@ -46,6 +47,7 @@
       labelCourt: 'ASSAIN.',
       titre: 'Assainissement collectif',
       couleur: '#22c55e',
+      icone: 'station',
       prefixe: 'AC',
       fichier: 'assainissement.geojson'
     },
@@ -55,10 +57,23 @@
       labelCourt: 'SPANC',
       titre: 'Assainissement non collectif',
       couleur: '#a855f7',
+      icone: 'fosse',
       prefixe: 'ANC',
       // Une installation ANC se trouve chez un particulier : la position seule
       // désigne un foyer, même sans nom ni adresse. Cf. docs/RGPD.md.
       fichier: 'spanc.geojson'
+    },
+    {
+      id: 'voirie',
+      label: 'VOIRIE',
+      labelCourt: 'VOIRIE',
+      titre: 'Voirie et espace public',
+      // Orange chantier : distinct des trois autres filières et du jaune réservé
+      // aux boutons d'action.
+      couleur: '#ff8a3d',
+      icone: 'candelabre',
+      prefixe: 'VOI',
+      fichier: 'voirie.geojson'
     }
   ];
 
@@ -90,10 +105,10 @@
   };
 
   /**
-   * Colonnes d'une filière, dans l'ordre du fichier. Les trois filières ont
+   * Colonnes d'une filière, dans l'ordre du fichier. Les filières ont
    * aujourd'hui les mêmes,
    * mais gardent chacune leur fichier : la colonne « filiere » sert de garde-fou
-   * à l'import, et rien n'oblige les trois à rester alignées.
+   * à l'import, et rien ne les oblige à rester alignées.
    */
   function colonnesFiliere(filiereId) {
     if (!filiere(filiereId)) return [];
@@ -122,7 +137,10 @@
     fondCarte: 'photo',
     // Liste vide = fonds gratuits par défaut de carte.js. Remplie, elle les remplace.
     fondsCarte: [],
-    separateur: ';'
+    separateur: ';',
+    // Clair par défaut : c'est le seul lisible en plein soleil. 'sombre' ou 'auto'
+    // (selon le réglage de l'appareil) se choisissent dans Configuration.
+    theme: 'clair'
   };
 
   global.GromaConfig = {
