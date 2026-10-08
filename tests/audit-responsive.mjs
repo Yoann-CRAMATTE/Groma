@@ -24,7 +24,7 @@ const TABLETTE = [
 ];
 const PORTRAIT = [280, 320, 360, 390, 412, 430, 480, 540];
 const PAYSAGE = [{ width: 568, height: 320 }, { width: 653, height: 280 }];
-const ONGLETS = ['eau', 'assainissement', 'spanc', 'configuration'];
+const ONGLETS = ['eau', 'assainissement', 'spanc', 'voirie', 'configuration'];
 const POSITION = { latitude: 47.5175, longitude: 7.0803, accuracy: 6 };
 
 let defauts = 0;

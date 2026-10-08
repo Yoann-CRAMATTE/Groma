@@ -7,12 +7,14 @@
   "repository": "https://github.com/Yoann-CRAMATTE/Groma",
   "contact": "contact@europasoft.eu",
   "copyright": "© 2026 Yoann CRAMATTE — Licence AGPL-3.0",
-  "description": "Relevé GPS d'ouvrages de terrain (Eau, Assainissement, SPANC) : viseur fixe sur photo aérienne, catalogue de matériel en cascade, export GeoJSON pour les SIG. PWA hors ligne, sans dépendance.",
+  "description": "Relevé GPS d'ouvrages de terrain (Eau, Assainissement, SPANC, Voirie) : viseur fixe sur photo aérienne, catalogue de matériel en cascade, export GeoJSON pour les SIG. PWA hors ligne, sans dépendance.",
   "changelog": [
     {
       "version": "1.1",
       "date": "2026-10-08",
       "changes": [
+        "Nouvel onglet Voirie (fichier voirie.geojson, références VOI) avec un catalogue de départ à valider",
+        "Pictos dans les onglets : goutte, station d'épuration, maison et cuve, candélabre, réglages",
         "Nouveau style « carte topo » : courbes de niveau, encre marine, jaune soleil, boutons en relief",
         "Thème clair par défaut, lisible en plein soleil ; sombre ou selon l'appareil dans Configuration",
         "Marque Groma redessinée : la croix de visée de l'instrument",

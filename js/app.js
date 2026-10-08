@@ -347,15 +347,41 @@
     document.documentElement.style.setProperty('--accent', couleur);
   }
 
+  /**
+   * Pictos des onglets, dessinés au même trait que la croix de visée de
+   * l'en-tête : 24 × 24, trait de 2, bouts arrondis, couleur du texte. Des
+   * tracés écrits ici plutôt que des émojis, qui changent d'aspect d'un
+   * appareil à l'autre et manquent sur certains Android.
+   */
+  var PICTOS = {
+    goutte: '<path d="M12 3c3.6 4.5 6 8 6 11a6 6 0 0 1-12 0c0-3 2.4-6.5 6-11z"/><path d="M9.5 14.5a2.5 2.5 0 0 0 2.5 2.5"/>',
+    // Station d'épuration vue du ciel : deux bassins ronds reliés, le
+    // clarificateur central marqué d'un point.
+    station: '<circle cx="7" cy="13" r="4.5"/><circle cx="17" cy="13" r="4.5"/><path d="M11.5 13h1"/><circle cx="7" cy="13" r="1" fill="currentColor"/><circle cx="17" cy="13" r="1" fill="currentColor"/>',
+    // Assainissement non collectif : la maison, le sol, la cuve enterrée.
+    fosse: '<path d="M5 10.5 12 5l7 5.5"/><path d="M7 9.5V14h10V9.5"/><path d="M2.5 16.5h19"/><rect x="7" y="18.5" width="10" height="3.5" rx="1.75"/>',
+    candelabre: '<path d="M8 21V7a3 3 0 0 1 3-3h4"/><path d="M14 4h5.5l-1.2 2.5h-3.1z"/><path d="M5 21h6"/><path d="M16.8 9.5v1.5M14.6 9l-.7 1.2M19 9l.7 1.2"/>',
+    reglages: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>'
+  };
+
+  function picto(nom) {
+    var hote = el('span', { classe: 'onglet-picto', 'aria-hidden': 'true' });
+    // Tracés figés ci-dessus, jamais une donnée saisie : innerHTML est sans risque.
+    hote.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" ' +
+      'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">' + (PICTOS[nom] || '') + '</svg>';
+    return hote;
+  }
+
   function construireOnglets() {
     var nav = document.getElementById('onglets');
     vider(nav);
     var entrees = Cfg.FILIERES.map(function (f) {
-      return { id: f.id, label: f.label, labelCourt: f.labelCourt, couleur: f.couleur };
-    }).concat([{ id: 'configuration', label: 'CONFIGURATION', labelCourt: 'CONFIG', couleur: '#94a3b8' }]);
+      return { id: f.id, label: f.label, labelCourt: f.labelCourt, couleur: f.couleur, icone: f.icone };
+    }).concat([{ id: 'configuration', label: 'CONFIGURATION', labelCourt: 'CONFIG', couleur: '#94a3b8', icone: 'reglages' }]);
 
     entrees.forEach(function (e) {
-      // Deux libellés : sous 400 px, « ASSAINISSEMENT » ne tient pas sans être coupé.
+      // Picto et deux libellés : le long sur tablette large, le court en dessous,
+      // le picto seul au téléphone. aria-label garde le nom complet partout.
       var b = el('button', {
         classe: 'onglet',
         type: 'button',
@@ -367,6 +393,7 @@
         style: '--couleur-onglet:' + e.couleur,
         onclick: function () { activerOnglet(e.id); }
       }, [
+        picto(e.icone),
         el('span', { classe: 'onglet-long', texte: e.label }),
         el('span', { classe: 'onglet-court', texte: e.labelCourt })
       ]);
@@ -1473,7 +1500,7 @@
     var blocFichier = el('section', { classe: 'bloc' }, [
       el('div', { classe: 'bloc-titre' }, [
         el('h2', { texte: 'Fichiers de relevés' }),
-        el('button', { type: 'button', classe: 'btn-compact', texte: 'Exporter les 3', onclick: telechargerTous })
+        el('button', { type: 'button', classe: 'btn-compact', texte: 'Tout exporter', onclick: telechargerTous })
       ]),
       el('p', { classe: 'note', texte: 'Un GeoJSON par filière, prêt à ouvrir dans QGIS. Chaque fichier ne contient que les colonnes de sa filière. Le catalogue a le sien, plus bas.' }),
       el('div', { classe: 'fichiers' }, Cfg.FILIERES.map(construireCarteFichier)),

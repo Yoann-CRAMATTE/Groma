@@ -58,6 +58,21 @@ autre. Trois maquettes ont été rendues dans un vrai navigateur, sur le même �
   mesure de 4 px. Il passe désormais sur deux lignes. Contrastes remesurés : 4,8:1 au
   minimum, partout.
 
+**Troisième passe : onglet Voirie et pictos.** Demande de Yoann : un onglet Voirie, et
+des pictos pour raccourcir les noms (goutte, station d'épuration, candélabre ou banc).
+- Validé à quatre questions : catalogue de départ avec ses exemples (bancs, panneaux,
+  cédez-le-passage, passage piéton, poubelle), picto et nom, orange `#ff8a3d`,
+  préfixe `VOI`.
+- `catalogue.js` sème une filière nouvelle une seule fois chez un agent déjà équipé
+  (clé `groma.catalogue.filieres`). Vérifié par script : une ligne personnelle
+  conservée, 59 lignes de voirie ajoutées, aucun doublon au rechargement ni après un
+  premier lancement suivi d'un enregistrement du catalogue.
+- Relevé de voirie bout à bout : `VOI-0001`, export `voirie-2026-10-08.geojson`, champ
+  `filiere` à `voirie`.
+- Onglets en grille à colonnes automatiques. L'audit hors ligne comptait quatre
+  onglets en dur : il lit maintenant le nombre de filières dans config.js.
+  « Exporter les 3 » est devenu « Tout exporter ».
+
 **Défaut repéré en passant, non corrigé ici :** `enregistrerConfiguration()` remplace
 `etat.config` sans `fondCarte` ni `fondsCarte`, ce qui fait perdre les fonds
 personnalisés à l'enregistrement. Une tâche séparée est proposée pour le corriger.
