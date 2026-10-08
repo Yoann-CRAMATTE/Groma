@@ -1,40 +1,58 @@
 /* Groma — feuille unique. Écrite pour la tablette, l'outil de terrain réel ;
    les paliers descendants la rendent utilisable jusqu'au petit smartphone. */
 
-/* Thème clair par défaut : l'outil sert dehors, et un fond sombre se noie sous
-   les reflets du soleil bien plus vite qu'un fond clair. Le papier est cassé,
-   pas blanc pur, pour ne pas éblouir à l'ombre. Le sombre reste disponible :
-   choisi dans Configuration, ou laissé à l'appareil (data-theme="auto"). */
+/* Police des titres, de la marque et des boutons. Embarquée dans le dépôt et
+   précachée par le service worker : une police distante disparaîtrait hors
+   réseau. Licence SIL OFL, texte dans fonts/OFL.txt. Le texte courant reste en
+   police système, les coordonnées en chasse fixe. */
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("../fonts/bricolage-grotesque-latin.woff2") format("woff2");
+  font-weight: 500 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Monde « carte topo » : papier crème parcouru de courbes de niveau, encre
+   marine, jaune soleil pour l'action. Le clair reste le thème par défaut, parce
+   que l'outil sert dehors et que les reflets écrasent un écran sombre. Les
+   contours épais et les reliefs pleins ne sont pas qu'un style : ils restent
+   visibles au soleil, là où un filet gris de 1 px disparaît.
+   Le sombre est choisi dans Configuration ou laissé à l'appareil. */
 :root {
   color-scheme: light;
   --accent: #0ea5e9;
-  --fond: #f3f1ec;
+  --fond: #fff8ef;
   --fond-2: #ffffff;
-  --fond-3: #ebe8e1;
-  --bord: #d9d3c7;
-  /* Les champs ont leur propre bord : 3:1 minimum pour qu'un contour de
-     saisie reste visible au soleil, là où le bord décoratif peut s'effacer. */
-  --bord-champ: #8f877a;
-  --texte: #161a20;
-  --texte-faible: #4b535f;
-  --survol: #e3dfd6;
-  --segment-actif: #ffffff;
-  --danger: #b42318;
-  --succes: #1d7a3a;
-  --alerte: #9a5b00;
-  --alerte-fond: #fdf4e3;
-  --alerte-bord: #e3b25c;
-  --voile: rgba(22, 26, 32, 0.45);
-  --ombre-1: 0 1px 2px rgba(22, 26, 32, 0.06), 0 2px 8px rgba(22, 26, 32, 0.05);
-  --ombre-2: 0 12px 40px rgba(22, 26, 32, 0.22);
-  --rayon: 12px;
+  --fond-3: #fff0dc;
+  --encre: #1b1340;
+  --bord: #eadcc6;
+  --bord-champ: #1b1340;
+  --texte: #1b1340;
+  --texte-faible: #5b5480;
+  --survol: #fff3c4;
+  --soleil: #ffd84d;
+  --sur-couleur: #0f0b26;
+  --bande: #1b1340;
+  --bande-2: #2c2163;
+  --bande-texte: #d6cff7;
+  --courbes: #ffd2a1;
+  --danger: #c42b1c;
+  --succes: #137a3a;
+  --alerte: #8a5300;
+  --alerte-fond: #fff4d1;
+  --voile: rgba(27, 19, 64, 0.55);
+  --relief: 0 4px 0 var(--encre);
+  --relief-petit: 0 3px 0 var(--encre);
+  --rayon: 18px;
   --gouttiere: 16px;
+  --police-titres: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --police-chiffres: ui-monospace, "SF Mono", "Roboto Mono", Menlo, Consolas, monospace;
 
-  /* Les couleurs de filière sont choisies pour un fond sombre : en texte sur
-     papier clair, le vert et le bleu ciel tombent sous 3:1. Mélangées à la
-     couleur du texte, elles foncent ici et s'éclaircissent en thème sombre,
-     sans seconde palette à tenir à jour dans config.js. */
+  /* Les couleurs de filière sont vives : en texte sur papier clair, le vert et
+     le bleu ciel tombent sous 3:1. Mélangées à la couleur du texte, elles
+     foncent ici et s'éclaircissent en sombre, sans seconde palette à tenir à
+     jour dans config.js. En aplat, elles portent toujours --sur-couleur. */
   --accent-texte: color-mix(in oklab, var(--accent) 58%, var(--texte));
 }
 
@@ -44,45 +62,47 @@
 @media (prefers-color-scheme: dark) {
   :root[data-theme="auto"] {
     color-scheme: dark;
-    --fond: #0b0f14;
-    --fond-2: #121821;
-    --fond-3: #1a2331;
-    --bord: #26313f;
-    --bord-champ: #5a6a80;
-    --texte: #e6edf5;
-    --texte-faible: #93a2b5;
-    --survol: #222d3d;
-    --segment-actif: #2a3648;
-    --danger: #f87171;
-    --succes: #4ade80;
-    --alerte: #fbbf24;
-    --alerte-fond: rgba(245, 158, 11, 0.08);
-    --alerte-bord: rgba(245, 158, 11, 0.55);
-    --voile: rgba(3, 6, 10, 0.75);
-    --ombre-1: none;
-    --ombre-2: 0 18px 50px rgba(0, 0, 0, 0.6);
+    --fond: #120c2e;
+    --fond-2: #1e1650;
+    --fond-3: #281e63;
+    --encre: #05030f;
+    --bord: #3a2f80;
+    --bord-champ: #8f84d6;
+    --texte: #f5f1ff;
+    --texte-faible: #c2b9ef;
+    --survol: #2f2470;
+    --bande: #0b0720;
+    --bande-2: #241a5a;
+    --bande-texte: #c9c1f2;
+    --courbes: #241b5c;
+    --danger: #ff8a7a;
+    --succes: #5ee38f;
+    --alerte: #ffd25e;
+    --alerte-fond: #2d2350;
+    --voile: rgba(5, 3, 15, 0.75);
   }
 }
 
 :root[data-theme="sombre"] {
   color-scheme: dark;
-  --fond: #0b0f14;
-  --fond-2: #121821;
-  --fond-3: #1a2331;
-  --bord: #26313f;
-  --bord-champ: #5a6a80;
-  --texte: #e6edf5;
-  --texte-faible: #93a2b5;
-  --survol: #222d3d;
-  --segment-actif: #2a3648;
-  --danger: #f87171;
-  --succes: #4ade80;
-  --alerte: #fbbf24;
-  --alerte-fond: rgba(245, 158, 11, 0.08);
-  --alerte-bord: rgba(245, 158, 11, 0.55);
-  --voile: rgba(3, 6, 10, 0.75);
-  --ombre-1: none;
-  --ombre-2: 0 18px 50px rgba(0, 0, 0, 0.6);
+  --fond: #120c2e;
+  --fond-2: #1e1650;
+  --fond-3: #281e63;
+  --encre: #05030f;
+  --bord: #3a2f80;
+  --bord-champ: #8f84d6;
+  --texte: #f5f1ff;
+  --texte-faible: #c2b9ef;
+  --survol: #2f2470;
+  --bande: #0b0720;
+  --bande-2: #241a5a;
+  --bande-texte: #c9c1f2;
+  --courbes: #241b5c;
+  --danger: #ff8a7a;
+  --succes: #5ee38f;
+  --alerte: #ffd25e;
+  --alerte-fond: #2d2350;
+  --voile: rgba(5, 3, 15, 0.75);
 }
 
 * { box-sizing: border-box; }
@@ -90,7 +110,6 @@
 html, body {
   margin: 0;
   padding: 0;
-  background: var(--fond);
   color: var(--texte);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 16px;
@@ -101,6 +120,22 @@ html, body {
    sans ces marges, l'en-tête passe sous l'heure et la batterie sur iPhone, et
    la dernière ligne sous la barre de gestes. `env()` vaut zéro partout
    ailleurs — aucun effet sur un écran sans encoche. */
+html { background: var(--fond); }
+
+/* Courbes de niveau en fond : un masque SVG peint à la couleur --courbes, pour
+   que le motif suive le thème sans seconde image. Le fond reste sur <html> :
+   posé sur <body>, il recouvrirait ce calque placé en dessous du contenu. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--courbes);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='440' height='320'%3E%3Cg fill='none' stroke='%23000' stroke-width='1.6'%3E%3Cpath d='M-20 60 C80 10 160 110 260 60 S420 20 470 70'/%3E%3Cpath d='M-20 100 C80 50 160 150 260 100 S420 60 470 110'/%3E%3Cpath d='M-20 140 C90 90 170 190 270 140 S420 100 470 150'/%3E%3Cpath d='M-20 220 C70 170 170 270 270 220 S420 180 470 230'/%3E%3Cpath d='M-20 260 C70 210 170 310 270 260 S420 220 470 270'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 440px 320px repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='440' height='320'%3E%3Cg fill='none' stroke='%23000' stroke-width='1.6'%3E%3Cpath d='M-20 60 C80 10 160 110 260 60 S420 20 470 70'/%3E%3Cpath d='M-20 100 C80 50 160 150 260 100 S420 60 470 110'/%3E%3Cpath d='M-20 140 C90 90 170 190 270 140 S420 100 470 150'/%3E%3Cpath d='M-20 220 C70 170 170 270 270 220 S420 180 470 230'/%3E%3Cpath d='M-20 260 C70 210 170 310 270 260 S420 220 470 270'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 440px 320px repeat;
+}
+
 body {
   padding-bottom: calc(40px + env(safe-area-inset-bottom));
   padding-left: env(safe-area-inset-left);
@@ -113,8 +148,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: var(--fond-2);
-  box-shadow: var(--ombre-1);
+  background: var(--bande);
   /* Le fond monte sous la barre d'état plutôt que de s'arrêter net : la zone
      système reste dans la continuité de l'application. */
   padding-top: env(safe-area-inset-top);
@@ -126,75 +160,88 @@ body {
   justify-content: space-between;
   gap: 12px;
   padding: 12px var(--gouttiere);
-  border-bottom: 1px solid var(--bord);
 }
 
 /* La marque est l'instrument : une croix de visée dans son cercle, le geste
-   central de l'application. Elle prend la couleur de l'onglet actif. */
+   central de l'application, en jaune soleil sur la bande d'encre. */
 .entete h1 {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 1.15rem;
+  font-family: var(--police-titres);
+  font-size: 1.4rem;
   margin: 0;
-  letter-spacing: -0.01em;
-  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+  color: var(--soleil);
 }
 
 .marque {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   flex: 0 0 auto;
-  color: var(--accent-texte);
 }
 
+/* Sur la bande d'encre, sombre dans les deux thèmes : les pastilles ont des
+   couleurs fixes, lisibles sur ce fond-là. */
 .badge-fichier {
-  font-size: 0.72rem;
-  color: var(--texte-faible);
-  border: 1px solid var(--bord);
+  font-family: var(--police-titres);
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--bande-texte);
+  background: var(--bande-2);
   border-radius: 999px;
-  padding: 4px 10px;
+  padding: 5px 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 45vw;
 }
 
-.badge-fichier[data-etat="lie"] { color: var(--succes); border-color: var(--succes); }
-.badge-fichier[data-etat="absent"] { color: var(--alerte); border-color: var(--alerte); }
-.badge-fichier[data-etat="neutre"] { color: var(--texte-faible); border-color: var(--bord); }
+.badge-fichier[data-etat="lie"] { color: #0b3d1d; background: #3ee07a; }
+.badge-fichier[data-etat="absent"] { color: #2a0d05; background: #ff6b4a; }
+.badge-fichier[data-etat="neutre"] { color: var(--bande-texte); background: var(--bande-2); }
 
 /* ---------- Onglets ---------- */
 
+/* Des pastilles sur la bande d'encre : chaque filière garde un liseré de sa
+   couleur, l'onglet actif en prend l'aplat. */
 .onglets {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  border-bottom: 1px solid var(--bord);
+  gap: 8px;
+  padding: 0 var(--gouttiere) 10px;
 }
 
 .onglet {
   appearance: none;
   border: 0;
-  background: transparent;
-  color: var(--texte-faible);
+  border-radius: 14px;
+  background: var(--bande-2);
+  color: var(--bande-texte);
   font: inherit;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  padding: 12px 4px;
+  font-family: var(--police-titres);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 11px 4px;
+  min-height: 44px;
   cursor: pointer;
-  border-bottom: 3px solid transparent;
+  box-shadow: inset 0 -4px 0 var(--couleur-onglet, var(--accent));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.onglet:hover { color: var(--texte); }
+/* Sélecteurs à :not(:disabled) : sans eux, le survol générique des boutons,
+   plus spécifique, remplaçait l'aplat de l'onglet actif sous le doigt. */
+.onglet:hover:not(:disabled) { background: var(--bande-2); color: #ffffff; }
 
-.onglet[aria-selected="true"] {
-  color: var(--couleur-onglet, var(--accent));
-  color: color-mix(in oklab, var(--couleur-onglet, var(--accent)) 58%, var(--texte));
-  border-bottom-color: var(--couleur-onglet, var(--accent));
+.onglet[aria-selected="true"],
+.onglet[aria-selected="true"]:hover:not(:disabled) {
+  background: var(--couleur-onglet, var(--accent));
+  color: var(--sur-couleur);
+  box-shadow: none;
 }
 
 /* Deux libellés par onglet : le long disparaît quand il ne tient plus. */
@@ -202,7 +249,8 @@ body {
 
 /* Seuil mesuré : « CONFIGURATION » déborde encore de sa colonne à 430 px. */
 @media (max-width: 480px) {
-  .onglet { font-size: 0.68rem; letter-spacing: 0.03em; padding: 12px 2px; }
+  .onglets { gap: 6px; }
+  .onglet { font-size: 0.7rem; letter-spacing: 0.02em; padding: 11px 2px; }
   .onglet-long { display: none; }
   .onglet-court { display: inline; }
 }
@@ -215,10 +263,19 @@ main { padding: var(--gouttiere); max-width: 1080px; margin: 0 auto; }
 
 .bloc {
   background: var(--fond-2);
-  border: 1px solid var(--bord);
+  border: 2px solid var(--encre);
   border-radius: var(--rayon);
+  box-shadow: var(--relief);
   padding: 14px;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
+}
+
+/* La liste des relevés n'a pas de cadre : chaque relevé est déjà une fiche. */
+.bloc--registre {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
 }
 
 /* Titres en casse normale et à la couleur du texte : les petites capitales
@@ -226,10 +283,11 @@ main { padding: var(--gouttiere); max-width: 1080px; margin: 0 auto; }
 .bloc > h2,
 .bloc-titre h2 {
   margin: 0 0 12px;
-  font-size: 1rem;
-  letter-spacing: -0.01em;
+  font-family: var(--police-titres);
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
   color: var(--texte);
-  font-weight: 650;
+  font-weight: 800;
 }
 
 .bloc-titre {
@@ -270,9 +328,9 @@ input, select, textarea {
   font-size: 0.95rem;
   color: var(--texte);
   background: var(--fond-2);
-  border: 1px solid var(--bord-champ);
-  border-radius: 8px;
-  padding: 10px 11px;
+  border: 2px solid var(--bord-champ);
+  border-radius: 12px;
+  padding: 9px 12px;
   width: 100%;
   min-height: 44px; /* cible tactile confortable avec des gants */
 }
@@ -295,50 +353,45 @@ input[aria-invalid="true"], select[aria-invalid="true"] { border-color: var(--da
 
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
 
+/* Un bouton est une pièce en relief : il s'enfonce à l'appui. Au doigt et
+   avec des gants, c'est le seul retour qu'on sent avant que l'écran change. */
 button {
   font: inherit;
-  font-weight: 600;
-  border-radius: 8px;
-  border: 1px solid var(--bord-champ);
+  font-weight: 700;
+  border-radius: 12px;
+  border: 2px solid var(--encre);
   background: var(--fond-2);
   color: var(--texte);
-  padding: 12px 16px;
+  padding: 11px 16px;
   min-height: 46px;
   cursor: pointer;
+  box-shadow: var(--relief-petit);
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
 }
 
-/* Le survol fonce le fond au lieu de colorer le bord : un bord coloré se
-   confondait avec l'état actif des fonds de carte. */
 button:hover:not(:disabled) { background: var(--survol); }
-button:disabled { opacity: 0.45; cursor: not-allowed; }
+button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--encre); }
+button:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
 
 /* Un halo net au clavier seulement : au doigt, il resterait collé au bouton
    après chaque appui. */
 button:focus-visible, a:focus-visible, summary:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
 }
 
-/* Texte quasi noir sur les trois couleurs de filière : au moins 4,5:1 sur
-   chacune, quel que soit le thème. */
+/* Jaune soleil pour l'action, dans tous les onglets : la couleur dit « ici on
+   agit », la filière se lit déjà à l'onglet. */
 .btn-primaire {
-  background: var(--accent);
-  border-color: transparent;
-  color: #06121c;
-  box-shadow: var(--ombre-1);
+  font-family: var(--police-titres);
+  font-weight: 800;
+  background: var(--soleil);
+  color: var(--sur-couleur);
 }
 
-.btn-primaire:hover:not(:disabled) {
-  background: var(--accent);
-  filter: brightness(1.06);
-}
+.btn-primaire:hover:not(:disabled) { background: #ffe27a; }
 
-/* L'onglet Configuration n'a pas de filière : sa couleur est un gris ardoise,
-   qui faisait passer son bouton principal pour désactivé. Il prend l'encre. */
-#vue-configuration .btn-primaire { background: var(--texte); color: var(--fond-2); }
-#vue-configuration .btn-primaire:hover:not(:disabled) { background: var(--texte); }
-
-.btn-danger { color: var(--danger); border-color: color-mix(in oklab, var(--danger) 45%, transparent); }
+.btn-danger { color: var(--danger); }
 .btn-plein { flex: 1 1 100%; }
 
 /* ---------- Acquisition GPS ---------- */
@@ -346,9 +399,10 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
 /* L'acquisition n'a plus de bouton : elle part à l'ouverture de la fenêtre de
    mesure. Seule la jauge dit que la série tourne encore. */
 .progression {
-  height: 4px;
-  background: var(--fond-3);
-  border-radius: 2px;
+  height: 10px;
+  background: var(--fond-2);
+  border: 2px solid var(--encre);
+  border-radius: 999px;
   overflow: hidden;
   margin-top: 10px;
 }
@@ -441,16 +495,17 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
-/* Les relevés sont des lignes d'un registre, séparées d'un filet, pas des
-   cartes posées dans la carte du bloc : l'onglet dit déjà la filière. */
-.liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+/* Chaque relevé est une fiche posée sur la carte, comme une étiquette de
+   terrain ; la liste qui les porte n'a pas de cadre (.bloc--registre). */
+.liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
 
 .point {
-  border-top: 1px solid var(--bord);
-  padding: 12px 0;
+  background: var(--fond-2);
+  border: 2px solid var(--encre);
+  border-radius: var(--rayon);
+  box-shadow: var(--relief);
+  padding: 12px 14px;
 }
-
-.point:first-child { border-top: 0; padding-top: 4px; }
 
 .point-entete {
   display: flex;
@@ -459,7 +514,14 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
   gap: 10px;
 }
 
-.point-ref { font-family: var(--police-chiffres); font-weight: 600; font-size: 0.88rem; flex: 1; }
+.point-ref {
+  font-family: var(--police-titres);
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  color: var(--accent-texte);
+  flex: 1;
+}
 .point-date { font-size: 0.7rem; color: var(--texte-faible); white-space: nowrap; }
 .point-detail { font-size: 0.8rem; color: var(--texte-faible); margin-top: 4px; word-break: break-word; }
 .point-coord {
@@ -476,29 +538,33 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
 .lien-carte {
   color: var(--accent-texte);
   font-family: var(--police-chiffres);
+  font-weight: 600;
   text-decoration: none;
-  border: 1px solid var(--bord);
-  border-radius: 6px;
+  background: color-mix(in oklab, var(--accent) 14%, var(--fond-2));
+  border: 2px solid var(--accent);
+  border-radius: 10px;
   padding: 8px 10px;
   min-height: 36px;
   display: inline-flex;
   align-items: center;
 }
 
-.lien-carte:hover, .lien-carte:focus-visible { border-color: var(--accent); text-decoration: underline; }
+.lien-carte:hover, .lien-carte:focus-visible { text-decoration: underline; }
 
-.point-precision { color: var(--texte-faible); font-family: var(--police-chiffres); }
+.point-precision { color: var(--texte-faible); font-family: var(--police-chiffres); font-weight: 700; }
 
+/* Aplat vert fixe : la pastille se lit de la même façon dans les deux thèmes. */
 .point-methode {
-  color: var(--succes);
-  border: 1px solid color-mix(in oklab, var(--succes) 40%, transparent);
+  color: #0b3d1d;
+  background: #3ee07a;
   border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 0.7rem;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 .point-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-.point-actions button { padding: 7px 12px; min-height: 36px; font-size: 0.78rem; font-weight: 500; }
+.point-actions button { padding: 7px 12px; min-height: 38px; font-size: 0.8rem; }
 
 .vide-message {
   color: var(--texte-faible);
@@ -512,8 +578,8 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
 .fichiers { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
 
 .fichier {
-  border: 1px solid var(--bord);
-  border-radius: 10px;
+  border: 2px solid var(--bord);
+  border-radius: 14px;
   padding: 10px 12px;
   background: var(--fond);
 }
@@ -525,8 +591,8 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
 .stat-label::before {
   content: "";
   display: inline-block;
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   margin-right: 6px;
   border-radius: 50%;
   background: var(--couleur-filiere, var(--texte-faible));
@@ -565,7 +631,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
 }
 
 .note-alerte {
-  border: 1px solid var(--alerte-bord);
+  border: 2px solid var(--encre);
   background: var(--alerte-fond);
   color: var(--texte);
   padding: 10px 12px;
@@ -576,13 +642,13 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
 
 .stat {
   flex: 1 1 120px;
-  border: 1px solid var(--bord);
-  border-radius: 10px;
+  border: 2px solid var(--bord);
+  border-radius: 14px;
   padding: 10px 12px;
   background: var(--fond);
 }
 
-.stat-valeur { font-family: var(--police-chiffres); font-size: 1.5rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stat-valeur { font-family: var(--police-titres); font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 .stat-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--texte-faible); }
 
 .case { display: flex; align-items: center; gap: 10px; min-height: 44px; }
@@ -612,10 +678,11 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
 }
 
 .barre-recherche input {
-  min-height: 48px;
+  min-height: 50px;
   font-size: 1rem;
+  border-color: var(--encre);
   border-radius: 999px;
-  padding-left: 16px;
+  padding-left: 18px;
 }
 
 .barre-recherche .compteur {
@@ -634,11 +701,16 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
 /* Première chose à l'écran, pleine largeur : c'est l'action de l'onglet. */
 .btn-creer {
   width: 100%;
-  min-height: 56px;
-  font-size: 1.05rem;
-  letter-spacing: 0.02em;
-  margin-top: 14px;
+  min-height: 62px;
+  font-size: 1.25rem;
+  letter-spacing: -0.01em;
+  border-width: 3px;
+  border-radius: 20px;
+  box-shadow: 0 5px 0 var(--encre);
+  margin-top: 16px;
 }
+
+.btn-creer:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 2px 0 var(--encre); }
 
 /* ---------- Relevés encore dans le seul navigateur ---------- */
 
@@ -652,8 +724,9 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
   gap: 10px 14px;
   margin-top: 14px;
   padding: 12px 14px;
-  border: 1px solid var(--alerte-bord);
-  border-radius: 10px;
+  border: 2px solid var(--encre);
+  border-radius: 16px;
+  box-shadow: var(--relief-petit);
   background: var(--alerte-fond);
 }
 
@@ -723,14 +796,14 @@ body[data-modale] { overflow: hidden; }
 }
 
 .favori {
-  font-size: 0.8rem;
-  font-weight: 500;
-  padding: 8px 12px;
+  font-size: 0.82rem;
+  padding: 8px 14px;
   min-height: 40px;
   border-radius: 999px;
-  border-color: color-mix(in oklab, var(--accent) 55%, transparent);
+  border-color: var(--accent);
   color: var(--accent-texte);
-  background: transparent;
+  background: color-mix(in oklab, var(--accent) 12%, var(--fond-2));
+  box-shadow: none;
 }
 
 .point-etoile {
@@ -739,19 +812,22 @@ body[data-modale] { overflow: hidden; }
   min-height: 40px;
   font-size: 1.1rem;
   line-height: 1;
+  font-size: 1.35rem;
   border-color: transparent;
   background: transparent;
+  box-shadow: none;
   color: var(--texte-faible);
   flex-shrink: 0;
 }
 
-.point-etoile--actif { color: var(--alerte); }
-.point-etoile:hover:not(:disabled) { background: var(--survol); color: var(--alerte); }
+/* Orange vif fixe : l'étoile se lit sur la fiche blanche comme sur la violette. */
+.point-etoile--actif { color: #ff9f1c; }
+.point-etoile:hover:not(:disabled) { background: var(--survol); color: #ff9f1c; }
 
 .zone-position {
   padding-bottom: 14px;
   margin-bottom: 14px;
-  border-bottom: 1px solid var(--bord);
+  border-bottom: 2px dashed var(--bord);
 }
 
 /* ---------- Cascade type / modèle / détail ---------- */
@@ -764,13 +840,13 @@ body[data-modale] { overflow: hidden; }
   gap: 12px;
   padding: 12px;
   margin-bottom: 14px;
-  background: var(--fond-3);
-  border: 1px solid var(--bord);
-  border-radius: 8px;
+  background: color-mix(in oklab, var(--accent) 12%, var(--fond-2));
+  border: 2px solid var(--encre);
+  border-radius: 16px;
 }
 
 .cascade select { background: var(--fond-2); }
-.cascade .champ label { color: var(--texte); font-weight: 600; }
+.cascade .champ label { color: var(--texte); font-weight: 700; }
 .cascade select:disabled { opacity: 0.5; }
 
 /* ---------- Note de terrain ---------- */
@@ -785,8 +861,8 @@ body[data-modale] { overflow: hidden; }
 .catalogue { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
 
 .cat-filiere {
-  border: 1px solid var(--bord);
-  border-radius: 10px;
+  border: 2px solid var(--bord);
+  border-radius: 14px;
   background: var(--fond);
 }
 
@@ -858,6 +934,7 @@ body[data-modale] { overflow: hidden; }
   color: var(--danger);
   border-color: transparent;
   background: transparent;
+  box-shadow: none;
 }
 
 .cat-suppr:hover { border-color: var(--danger); }
@@ -898,10 +975,10 @@ body[data-modale] { overflow: hidden; }
   max-height: 100%;
   overflow-y: auto;
   background: var(--fond-2);
-  border: 1px solid var(--bord);
-  border-radius: var(--rayon);
+  border: 3px solid var(--encre);
+  border-radius: 22px;
   padding: 14px;
-  box-shadow: var(--ombre-2);
+  box-shadow: 0 6px 0 var(--encre);
 }
 
 .modale-entete {
@@ -916,10 +993,11 @@ body[data-modale] { overflow: hidden; }
 .modale-entete h2 {
   margin: 0;
   flex: 1;
-  font-size: 1.1rem;
-  letter-spacing: -0.01em;
+  font-family: var(--police-titres);
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
   color: var(--texte);
-  font-weight: 650;
+  font-weight: 800;
 }
 
 .modale-fermer {
@@ -938,8 +1016,9 @@ body[data-modale] { overflow: hidden; }
   position: relative;
   height: clamp(220px, 44vh, 400px);
   overflow: hidden;
-  border: 1px solid var(--bord);
-  border-radius: 8px;
+  border: 3px solid var(--encre);
+  border-radius: 18px;
+  box-shadow: var(--relief);
   background: var(--fond-3);
   cursor: grab;
   touch-action: none; /* sans quoi le défilement de la page capte le geste */
@@ -973,10 +1052,13 @@ body[data-modale] { overflow: hidden; }
   box-shadow: 0 0 0 1px rgba(2, 8, 20, 0.7);
 }
 
+/* Le cercle de précision prend la couleur de la filière : on sait d'un coup
+   d'œil dans quel onglet on relève. */
 .carte-marqueur--precision {
   border-radius: 50%;
-  background: rgba(56, 189, 248, 0.14);
-  border: 1px solid rgba(56, 189, 248, 0.5);
+  background: rgba(56, 189, 248, 0.18);
+  background: color-mix(in oklab, var(--accent) 22%, transparent);
+  border: 3px solid var(--accent);
 }
 
 /* Le repère ne bouge jamais : c'est la carte qui se déplace dessous. */
@@ -1086,30 +1168,33 @@ body[data-modale] { overflow: hidden; }
    d'œil, là où trois boutons à bord coloré se confondaient avec le survol. */
 .carte-fonds {
   display: flex;
-  gap: 2px;
+  gap: 3px;
   padding: 3px;
-  border: 1px solid var(--bord);
-  border-radius: 10px;
-  background: var(--fond-3);
+  border: 2px solid var(--encre);
+  border-radius: 14px;
+  background: var(--fond-2);
+  box-shadow: var(--relief-petit);
 }
 
 .carte-fond {
   padding: 7px 11px;
   min-height: 36px;
-  font-size: 0.76rem;
-  font-weight: 500;
+  font-size: 0.78rem;
+  font-weight: 700;
   border-color: transparent;
-  border-radius: 7px;
+  border-radius: 10px;
   background: transparent;
+  box-shadow: none;
   color: var(--texte-faible);
 }
 
+.carte-fond:active:not(:disabled) { transform: none; box-shadow: none; }
+
 .carte-fond--actif,
 .carte-fond--actif:hover:not(:disabled) {
-  background: var(--segment-actif);
-  color: var(--texte);
-  font-weight: 650;
-  box-shadow: var(--ombre-1);
+  background: var(--accent);
+  color: var(--sur-couleur);
+  font-weight: 800;
 }
 
 .carte-zoom { display: flex; align-items: center; gap: 6px; }
@@ -1142,8 +1227,8 @@ body[data-modale] { overflow: hidden; }
 
 .carte-coord {
   font-family: var(--police-chiffres);
-  font-size: 1.05rem;
-  font-weight: 650;
+  font-size: 1.15rem;
+  font-weight: 800;
   letter-spacing: -0.01em;
 }
 .carte-ecart { color: var(--texte-faible); }
@@ -1165,8 +1250,8 @@ body[data-modale] { overflow: hidden; }
 .fonds { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
 
 .fond {
-  border: 1px solid var(--bord);
-  border-radius: 10px;
+  border: 2px solid var(--bord);
+  border-radius: 14px;
   padding: 11px 12px;
   background: var(--fond);
 }
@@ -1198,14 +1283,15 @@ body[data-modale] { overflow: hidden; }
   gap: 10px;
   background: var(--texte);
   color: var(--fond-2);
-  border-radius: 10px;
+  border: 2px solid var(--encre);
+  border-radius: 14px;
   padding: 12px 16px;
-  font-size: 0.86rem;
-  font-weight: 500;
+  font-size: 0.88rem;
+  font-weight: 700;
   max-width: calc(100vw - 32px);
   transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
   z-index: 50;
-  box-shadow: var(--ombre-2);
+  box-shadow: var(--relief);
 }
 
 #toast::before {
@@ -1252,7 +1338,7 @@ body[data-modale] { overflow: hidden; }
   .modale-fenetre { max-width: 720px; padding: 20px; }
   .btn-creer { min-height: 60px; }
 
-  .point { padding: 14px 0; }
+  .point { padding: 14px 16px; }
   .fichiers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 }
 
@@ -1283,7 +1369,8 @@ body[data-modale] { overflow: hidden; }
   .entete { padding: 6px var(--gouttiere); }
   .entete h1 { font-size: 0.85rem; }
 
-  .onglet { padding: 8px 4px; }
+  .onglets { padding-bottom: 6px; }
+  .onglet { padding: 7px 4px; min-height: 36px; }
 
   main { padding-top: 10px; }
   .bloc { padding: 10px 12px; margin-bottom: 10px; }
@@ -1329,7 +1416,10 @@ body[data-modale] { overflow: hidden; }
   .carte { height: clamp(200px, 40vh, 320px); }
   .carte--mesure { height: clamp(170px, 30vh, 260px); }
   .carte-barre { gap: 8px; }
-  .carte-fond { padding: 7px 9px; font-size: 0.72rem; }
+  /* Le sélecteur segmenté passe sur deux lignes plutôt que de déborder : à
+     280 px, les trois libellés ne tiennent pas côte à côte. */
+  .carte-fonds { flex-wrap: wrap; }
+  .carte-fond { flex: 1 1 auto; padding: 7px 8px; font-size: 0.72rem; }
   .carte-echelle { margin-left: 0; }
 
   .stat { flex-basis: calc(50% - 5px); padding: 9px 10px; }

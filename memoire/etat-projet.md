@@ -171,12 +171,15 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
    page, quatre côtés des fenêtres. `viewport-fit=cover` étend la page sous les
    barres système : sans `env(safe-area-inset-*)`, le titre passe sous l'heure.
    Une hauteur en `vh` ignore ces marges — utiliser `100%` du conteneur déjà
-   décalé. iOS est passé de `black-translucent` à `default` le 08/10/2026 : en
-   thème clair, l'heure s'écrivait en blanc sur l'en-tête blanc.
+   décalé. iOS reste en `black-translucent` : l'en-tête est une bande d'encre
+   sombre dans les deux thèmes, l'heure s'y écrit en blanc. Si un jour l'en-tête
+   devient clair, passer à `default`, sinon l'heure disparaît.
 24. **Aucune couleur en dur hors des jetons de `:root`.** Le thème sombre est
    déclaré deux fois (appareil en sombre + choix explicite) : un jeton ajouté à
    l'un s'ajoute aux trois blocs. Seules exceptions, commentées : les voiles et
-   repères posés sur la carte, qui se lisent sur la photo aérienne, et la
+   repères posés sur la carte, qui se lisent sur la photo aérienne ; les
+   pastilles de la bande d'en-tête (sombre dans les deux thèmes) ; l'étoile de
+   favori et la pastille « affiné », lisibles sur les deux fonds de fiche ; la
    pastille du message de confirmation, qui se lit sur son fond inversé.
 25. **Une couleur de filière ne sert jamais telle quelle en texte.** Passer par
    `--accent-texte` ou un `color-mix(... var(--texte))` : en brut, le vert et le
@@ -257,10 +260,14 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
   écrasent un écran sombre bien avant un écran clair. Le sombre reste au choix dans
   Configuration › Affichage, ou suit l'appareil (`auto`). La préférence s'enregistre
   dès le choix, sans passer par « Enregistrer la configuration ».
-- **Pas de police embarquée** : une police distante casserait le hors-ligne, et une
-  police dans le dépôt s'ajouterait à `COQUILLE` sans bénéfice lisible au soleil.
-  Pile système pour le texte, `ui-monospace` pour les coordonnées et références,
-  c'est-à-dire là où l'on compare des chiffres.
+- **Style « carte topo »** (08/10/2026), choisi par Yoann parmi trois maquettes
+  (pixel art, verre, topo). Le verre a été écarté pour la lisibilité au soleil et le
+  coût du flou sur tablette, le pixel art parce que ses chiffres se lisaient mal.
+  Contours de 2 à 3 px et relief plein `--relief` : ils restent visibles dehors.
+- **Une seule police embarquée**, Bricolage Grotesque (OFL), dans `fonts/` et dans
+  `COQUILLE`. Elle sert aux titres, à la marque et aux boutons. Le texte courant
+  reste en police système, les coordonnées en `ui-monospace`. Une police distante
+  casserait le hors-ligne.
 
 ## Reste à faire (par ordre d'utilité)
 

@@ -41,6 +41,23 @@ vérifié le thème : persistance au rechargement, mode `auto` qui suit l'appare
 « Enregistrer la configuration » qui garde le thème. Le détecteur de design ne
 signale plus rien (9 signalements avant).
 
+**Deuxième passe, même séance : style « carte topo ».** Yoann a trouvé le résultat
+« simple, professionnel » et voulait plus pétillant et coloré : pixel art, verre, ou
+autre. Trois maquettes ont été rendues dans un vrai navigateur, sur le même écran.
+- *Pixel art* : la plus marquée, mais « 47.5175 » se lisait « 47.S175 » en police pixel.
+- *Verre* : jolie, mais du texte gris sur verre translucide se lit mal au soleil, et
+  `backdrop-filter` fait saccader la carte sur une tablette d'entrée de gamme.
+- *Topo pop*, retenue : courbes de niveau en fond (masque SVG peint par `--courbes`,
+  qui suit le thème), bande d'en-tête à l'encre, onglets en pastilles avec un liseré
+  de filière, jaune soleil pour toute action principale, fiches et boutons cerclés
+  d'encre avec relief plein, boutons qui s'enfoncent à l'appui. Bricolage Grotesque
+  (22 Ko, OFL) téléchargée avec l'accord de Yoann, ajoutée à `COQUILLE`.
+- La barre d'état iOS revient en `black-translucent` : l'en-tête est sombre dans les
+  deux thèmes.
+- Un défaut est apparu à 280 px : le sélecteur de fond débordait de la fenêtre de
+  mesure de 4 px. Il passe désormais sur deux lignes. Contrastes remesurés : 4,8:1 au
+  minimum, partout.
+
 **Défaut repéré en passant, non corrigé ici :** `enregistrerConfiguration()` remplace
 `etat.config` sans `fondCarte` ni `fondsCarte`, ce qui fait perdre les fonds
 personnalisés à l'enregistrement. Une tâche séparée est proposée pour le corriger.

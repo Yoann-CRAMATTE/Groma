@@ -28,6 +28,10 @@ var COQUILLE = [
   './manifest.webmanifest',
   './favicon.svg',
   './css/style.css',
+  // Chargée par la feuille de style, pas par index.html : l'audit ne la voit
+  // pas, il faut l'inscrire à la main. Absente, les titres retombent en police
+  // système hors réseau, sans rien casser.
+  './fonts/bricolage-grotesque-latin.woff2',
   './js/lambert93.js',
   './js/carte.js',
   './js/config.js',

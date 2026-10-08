@@ -13,10 +13,12 @@
       "version": "1.1",
       "date": "2026-10-08",
       "changes": [
+        "Nouveau style « carte topo » : courbes de niveau, encre marine, jaune soleil, boutons en relief",
         "Thème clair par défaut, lisible en plein soleil ; sombre ou selon l'appareil dans Configuration",
         "Marque Groma redessinée : la croix de visée de l'instrument",
-        "Coordonnées et références en chiffres à chasse fixe, mises en avant dans la fenêtre de mesure",
-        "Sélecteur segmenté pour le fond de carte, titres lisibles, pastilles de filière",
+        "Onglets en pastilles colorées par filière, relevés présentés en fiches",
+        "Coordonnées en chasse fixe, mises en avant dans la fenêtre de mesure ; fond de carte en sélecteur segmenté",
+        "Police Bricolage Grotesque embarquée pour fonctionner hors réseau",
         "Halo de focus au clavier, jauge GPS animée sans recalcul de mise en page"
       ]
     },

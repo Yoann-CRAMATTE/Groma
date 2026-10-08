@@ -810,7 +810,7 @@
         onclick: function () { ouvrirMesure(f.id); }
       }),
       recherche,
-      el('section', { classe: 'bloc' }, [
+      el('section', { classe: 'bloc bloc--registre' }, [
         el('div', { classe: 'bloc-titre' }, [
           el('h2', { texte: 'Relevés effectués' }),
           el('span', { classe: 'bloc-soustitre', texte: 'du plus récent au plus ancien' })
@@ -2238,11 +2238,11 @@
     accorderBarreSysteme();
   }
 
-  /** La barre d'état Android prend la couleur de l'en-tête, quel que soit le thème. */
+  /** La barre d'état Android prend la couleur de la bande d'en-tête, selon le thème. */
   function accorderBarreSysteme() {
     var meta = document.querySelector('meta[name="theme-color"]');
     if (!meta) return;
-    var fond = getComputedStyle(document.documentElement).getPropertyValue('--fond-2').trim();
+    var fond = getComputedStyle(document.documentElement).getPropertyValue('--bande').trim();
     if (fond) meta.setAttribute('content', fond);
   }
 
