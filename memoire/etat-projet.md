@@ -183,13 +183,13 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
    pastilles de la bande d'en-tête (sombre dans les deux thèmes) ; l'étoile de
    favori et la pastille « affiné », lisibles sur les deux fonds de fiche ; la
    pastille du message de confirmation, qui se lit sur son fond inversé.
+25. **Une couleur de filière ne sert jamais telle quelle en texte.** Passer par
+   `--accent-texte` ou un `color-mix(... var(--texte))` : en brut, le vert et le
+   bleu ciel tombent sous 3:1 sur le papier clair.
 26. **Le rechargement automatique d'une nouvelle version épargne la mesure en cours.**
    `index.html` recharge la page sur `controllerchange`, sauf si `body[data-modale]`
    est posé. Une nouvelle fenêtre de saisie doit poser cet attribut, sinon une
    livraison pendant la saisie la viderait.
-25. **Une couleur de filière ne sert jamais telle quelle en texte.** Passer par
-   `--accent-texte` ou un `color-mix(... var(--texte))` : en brut, le vert et le
-   bleu ciel tombent sous 3:1 sur le papier clair.
 
 ## Décisions prises
 
