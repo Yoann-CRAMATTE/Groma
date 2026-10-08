@@ -80,6 +80,18 @@ l'aplat vif, avec un socle plus sombre de la même couleur et un léger soulève
 Contraste du texte mesuré entre 6,9:1 et 9,5:1 sur les cinq onglets, dans les deux
 thèmes.
 
+**Mise à jour visible dès l'ouverture.** Demande de Yoann : retrouver toutes les
+modifications à la prochaine ouverture, en local comme en ligne. Avant, une PWA
+installée servait son cache à l'ouverture qui suivait une livraison, et la nouvelle
+version n'apparaissait qu'à l'ouverture suivante.
+- `index.html` recharge la page une fois quand un nouveau worker prend la main, sauf
+  si une fenêtre de mesure est ouverte, pour ne pas perdre une saisie. Testé par script
+  en changeant `VERSION` à chaud : un rechargement au repos, aucun pendant une mesure.
+- Le précache passe par `cache: 'reload'` : le cache HTTP de GitHub Pages (dix
+  minutes) pouvait glisser l'ancienne feuille de style dans le nouveau cache.
+- `.claude/launch.json` : « Groma local » lance `serveur.py` sur le port 8123, pour
+  l'aperçu dans l'application Claude.
+
 **Défaut repéré en passant, non corrigé ici :** `enregistrerConfiguration()` remplace
 `etat.config` sans `fondCarte` ni `fondsCarte`, ce qui fait perdre les fonds
 personnalisés à l'enregistrement. Une tâche séparée est proposée pour le corriger.

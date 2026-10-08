@@ -49,7 +49,12 @@ var COQUILLE = [
 self.addEventListener('install', function (ev) {
   ev.waitUntil(
     caches.open(VERSION)
-      .then(function (cache) { return cache.addAll(COQUILLE); })
+      // cache: 'reload' contourne le cache HTTP du navigateur. GitHub Pages sert
+      // ses fichiers avec dix minutes de validité : sans cela, une nouvelle
+      // version pouvait précacher l'ancienne feuille de style sous son nom.
+      .then(function (cache) {
+        return cache.addAll(COQUILLE.map(function (u) { return new Request(u, { cache: 'reload' }); }));
+      })
       // Sans cela, la nouvelle version attend la fermeture de tous les onglets.
       // En PWA installée, l'application peut rester ouverte des jours : un
       // correctif n'atteindrait jamais le terrain.

@@ -73,6 +73,17 @@
     // conséquence — Groma fonctionne à l'identique sans service worker, il
     // n'apporte que l'installation et le hors-ligne.
     if ('serviceWorker' in navigator) {
+      // Une page déjà contrôlée qui change de worker vient de recevoir une
+      // nouvelle version : elle se recharge pour l'afficher, au lieu d'attendre
+      // l'ouverture suivante. Sauf pendant une mesure — un rechargement
+      // perdrait la saisie en cours ; la nouvelle version attendra.
+      var dejaControlee = !!navigator.serviceWorker.controller;
+      var rechargee = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (!dejaControlee || rechargee || document.body.hasAttribute('data-modale')) return;
+        rechargee = true;
+        window.location.reload();
+      });
       window.addEventListener('load', function () {
         navigator.serviceWorker.register('service-worker.js').catch(function () {});
       });

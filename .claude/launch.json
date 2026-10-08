@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Groma local",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["serveur.py", "8123"],
+      "port": 8123
+    }
+  ]
+}
