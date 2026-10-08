@@ -73,6 +73,13 @@ des pictos pour raccourcir les noms (goutte, station d'épuration, candélabre o
   onglets en dur : il lit maintenant le nombre de filières dans config.js.
   « Exporter les 3 » est devenu « Tout exporter ».
 
+**Retouche des onglets.** Yoann a lu le liseré de couleur sous les onglets fermés et
+l'aplat de l'onglet ouvert comme deux styles incohérents. Désormais, chaque onglet
+porte une teinte pâle de sa filière (30 % mêlée à la bande). L'onglet ouvert prend
+l'aplat vif, avec un socle plus sombre de la même couleur et un léger soulèvement.
+Contraste du texte mesuré entre 6,9:1 et 9,5:1 sur les cinq onglets, dans les deux
+thèmes.
+
 **Défaut repéré en passant, non corrigé ici :** `enregistrerConfiguration()` remplace
 `etat.config` sans `fondCarte` ni `fondsCarte`, ce qui fait perdre les fonds
 personnalisés à l'enregistrement. Une tâche séparée est proposée pour le corriger.

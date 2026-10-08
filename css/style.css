@@ -216,6 +216,10 @@ body {
   padding: 0 var(--gouttiere) 10px;
 }
 
+/* Chaque onglet porte une teinte pâle de sa filière ; l'onglet ouvert prend
+   l'aplat vif et un socle de la même couleur, plus sombre, qui le fait
+   ressortir. Un simple liseré sous les autres se lisait comme un second état,
+   pas comme la couleur de la filière. */
 .onglet {
   display: flex;
   align-items: center;
@@ -225,7 +229,8 @@ body {
   border: 0;
   border-radius: 14px;
   background: var(--bande-2);
-  color: var(--bande-texte);
+  background: color-mix(in oklab, var(--couleur-onglet, var(--accent)) 30%, var(--bande-2));
+  color: #f3f0ff;
   font: inherit;
   font-family: var(--police-titres);
   font-size: 0.78rem;
@@ -234,22 +239,28 @@ body {
   padding: 11px 4px;
   min-height: 44px;
   cursor: pointer;
-  box-shadow: inset 0 -4px 0 var(--couleur-onglet, var(--accent));
+  box-shadow: none;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 /* Sélecteurs à :not(:disabled) : sans eux, le survol générique des boutons,
-   plus spécifique, remplaçait l'aplat de l'onglet actif sous le doigt. */
-.onglet:hover:not(:disabled) { background: var(--bande-2); color: #ffffff; }
+   plus spécifique, remplaçait la couleur de l'onglet sous le doigt. */
+.onglet:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--couleur-onglet, var(--accent)) 45%, var(--bande-2));
+  color: #ffffff;
+}
 
 .onglet[aria-selected="true"],
 .onglet[aria-selected="true"]:hover:not(:disabled) {
   background: var(--couleur-onglet, var(--accent));
   color: var(--sur-couleur);
-  box-shadow: none;
+  box-shadow: 0 4px 0 color-mix(in oklab, var(--couleur-onglet, var(--accent)) 55%, #000);
+  transform: translateY(-2px);
 }
+
+.onglet:active:not(:disabled) { transform: none; box-shadow: none; }
 
 .onglet-picto { display: inline-flex; flex: 0 0 auto; }
 .onglet-long, .onglet-court { overflow: hidden; text-overflow: ellipsis; }
