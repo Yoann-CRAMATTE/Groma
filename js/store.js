@@ -221,6 +221,54 @@
     });
   }
 
+  // --- Dossier de travail ---------------------------------------------------
+  //
+  // Un seul choix au premier lancement au lieu d'un fichier par filière : on
+  // désigne un dossier, et chaque fichier de relevés comme le catalogue y est
+  // ouvert (ou créé) sous son nom. Les poignées de fichier obtenues sont
+  // enregistrées sous les mêmes clés qu'un fichier lié à la main : écriture,
+  // état et réautorisation restent ceux du mécanisme fichier par fichier.
+
+  var CLE_DOSSIER = 'dossier';
+
+  function dossierDisponible() {
+    return typeof global.showDirectoryPicker === 'function';
+  }
+
+  function dossierCourant() {
+    return idbGet(CLE_DOSSIER).then(function (h) { return h || null; });
+  }
+
+  /**
+   * Ouvre le sélecteur de dossier puis relie chaque fichier. **Depuis un clic.**
+   * `getFileHandle(…, { create: true })` reprend un fichier déjà présent sans
+   * le toucher : c'est à l'appelant de lire son contenu avant toute écriture.
+   *
+   * @param {string[]} cles clés à relier (identifiants de filière, 'parametres')
+   * @returns {Promise<{dossier: FileSystemDirectoryHandle, existants: Object}>}
+   *          existants[cle] vaut true si le fichier était déjà dans le dossier
+   */
+  function choisirDossier(cles) {
+    return global.showDirectoryPicker({ id: 'groma', mode: 'readwrite' }).then(function (dossier) {
+      return idbSet(CLE_DOSSIER, dossier).then(function () {
+        var existants = {};
+        return cles.reduce(function (chaine, cle) {
+          return chaine.then(function () {
+            var nom = nomFichier(cle);
+            // Tester l'existence avant de créer : la création ne dit pas si
+            // le fichier était déjà là.
+            return dossier.getFileHandle(nom).then(
+              function (h) { existants[cle] = true; return h; },
+              function () { return dossier.getFileHandle(nom, { create: true }); }
+            ).then(function (h) { return idbSet(cleHandle(cle), h); });
+          });
+        }, Promise.resolve()).then(function () {
+          return { dossier: dossier, existants: existants };
+        });
+      });
+    });
+  }
+
   function handleCourant(filiereId) {
     return idbGet(cleHandle(filiereId)).then(function (h) { return h || null; });
   }
@@ -261,9 +309,25 @@
   function demanderPermission(filiereId) {
     return handleCourant(filiereId).then(function (handle) {
       if (!handle) return false;
-      return handle.requestPermission({ mode: 'readwrite' })
-        .then(function (etat) { return etat === 'granted'; });
+      return dossierCourant().then(function (dossier) {
+        // Fichier tiré du dossier de travail : on redemande l'accès au dossier,
+        // une seule autorisation pour tous ses fichiers. Si le navigateur ne
+        // l'étend pas aux fichiers, on retombe sur la demande fichier par fichier.
+        var prealable = dossier && dossier.requestPermission
+          ? dossier.requestPermission({ mode: 'readwrite' }).catch(function () { return null; })
+          : Promise.resolve(null);
+        return prealable.then(function () {
+          return handle.queryPermission({ mode: 'readwrite' });
+        }).then(function (etat) {
+          if (etat === 'granted') return 'granted';
+          return handle.requestPermission({ mode: 'readwrite' });
+        });
+      }).then(function (etat) { return etat === 'granted'; });
     }).catch(function () { return false; });
+  }
+
+  function oublierDossier() {
+    return idbDel(CLE_DOSSIER);
   }
 
   /**
@@ -316,6 +380,10 @@
     lireSauvegardes: lireSauvegardes,
     ecrireSauvegardes: ecrireSauvegardes,
     demanderPersistance: demanderPersistance,
+    dossierDisponible: dossierDisponible,
+    dossierCourant: dossierCourant,
+    choisirDossier: choisirDossier,
+    oublierDossier: oublierDossier,
     lireConfig: lireConfig,
     ecrireConfig: ecrireConfig,
     prochaineReference: prochaineReference,

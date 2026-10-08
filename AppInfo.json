@@ -15,7 +15,8 @@
       "changes": [
         "Titre de la filière (picto et nom complet) en tête de chaque onglet : au téléphone, les onglets n'affichent que leur picto",
         "Fonds de carte réduits à l'IGN (photo aérienne et plan) : OpenStreetMap retiré des fonds par défaut",
-        "Le nom de filière ne déborde plus des cartes de fichier sur téléphone"
+        "Le nom de filière ne déborde plus des cartes de fichier sur téléphone",
+        "Au premier lancement (Chrome, Edge, Chrome Android), un seul choix de dossier : les relevés de chaque filière et le catalogue s'y enregistrent automatiquement"
       ]
     },
     {
