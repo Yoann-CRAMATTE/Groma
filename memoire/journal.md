@@ -29,6 +29,31 @@ Une entrée par session de travail, la plus récente en haut.
 - GPS refusé et carte absente sur sa capture : elle venait du navigateur intégré à
   l'application Claude, qui n'a pas la localisation. Pas un défaut de Groma.
 
+**Dossier de travail au premier lancement.** Yoann demandait pourquoi l'application ne
+propose pas, au premier lancement, de choisir où enregistrer, puis d'y écrire seule.
+- Vérifié dans les données de compatibilité MDN : `showSaveFilePicker`,
+  `showOpenFilePicker` et `showDirectoryPicker` existent dans Chrome et Edge 86+ et dans
+  Chrome Android 132+. Ils sont **absents de Safari et de tout iOS**, Firefox compris.
+  L'écriture automatique existait déjà, mais seulement fichier par fichier, et elle
+  était invisible sur iPhone.
+- Terrain réel annoncé : **tablette Android**. Choix retenu : un seul dossier au
+  premier lancement. `Store.choisirDossier` ouvre `showDirectoryPicker` et relie chaque
+  fichier du dossier sous les clés habituelles (`csv-<filiere>`, `csv-parametres`). Tout
+  le mécanisme existant (écriture, états, bandeaux) sert tel quel.
+- Un fichier déjà présent est relu avant toute écriture. Des relevés sont fusionnés et
+  un catalogue est chargé. Un fichier illisible ou d'une autre filière est laissé intact
+  et non relié.
+- La réautorisation passe d'abord par le dossier : une demande au lieu de cinq. Que
+  Chrome Android étende l'accord du dossier à ses fichiers reste **à vérifier sur la
+  tablette**. Sinon, le code redemande fichier par fichier.
+- **Piège de test** : le Chromium de Playwright ferme la page en relisant depuis
+  IndexedDB une poignée de fichier du dossier privé (OPFS). Le vrai Chrome
+  (`channel: 'chrome'`) la relit sans problème. Le test du dossier a donc tourné sous
+  Chrome, sur un profil vierge, avec `showDirectoryPicker` remplacé par le dossier
+  privé. Résultats : relevé repris d'un `eau.geojson` existant, `spanc.geojson`
+  illisible intact, voirie écrite au premier relevé, liaisons conservées au
+  rechargement.
+
 ---
 
 ## 08/10/2026 — Thème de terrain clair et identité « arpenteur »

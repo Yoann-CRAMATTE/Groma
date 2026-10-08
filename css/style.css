@@ -634,6 +634,18 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
 
 .fichiers { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
 
+/* Le dossier de travail passe avant les fichiers un par un : c'est le choix
+   qu'on fait une fois, le reste est du réglage fin. */
+.dossier-travail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin: 10px 0 4px;
+}
+
+.dossier-travail .note { flex: 1 1 220px; margin: 0; }
+
 .fichier {
   border: 2px solid var(--bord);
   border-radius: 14px;

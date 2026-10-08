@@ -321,8 +321,20 @@ effacée en silence : à la relecture du point, elle réapparaît marquée
 
 | Mode | Navigateurs | Comportement |
 |---|---|---|
-| **Fichier lié** (File System Access API) | Chrome, Edge (bureau et Android) | Configuration → carte de la filière → *Créer / remplacer* ou *Lier un existant*. Le fichier de cette filière est réécrit intégralement à chaque enregistrement, suppression ou import. Les trois liaisons sont indépendantes. |
-| **Export manuel** | Firefox, Safari, iOS | *Exporter* par filière, ou *Tout exporter*. Le catalogue a son propre *Exporter*. |
+| **Dossier de travail** (File System Access API) | Chrome, Edge (bureau), Chrome Android 132+ | Au premier lancement, le bandeau demande **où enregistrer les relevés** : on choisit un dossier une fois, Groma y écrit un fichier par filière et `parametres.csv`, puis les réécrit à chaque enregistrement, suppression ou import. Aussi dans Configuration → *Choisir le dossier*. |
+| **Fichier lié** (même API) | mêmes navigateurs | Configuration → carte de la filière → *Créer / remplacer* ou *Lier un existant*, pour ranger une filière à part. Les liaisons sont indépendantes. |
+| **Export manuel** | Firefox, Safari, **iPhone et iPad (tous navigateurs)** | *Exporter* par filière, ou *Tout exporter*. Le catalogue a son propre *Exporter*. Apple n'a pas implémenté ces fonctions dans WebKit, sur lequel reposent tous les navigateurs d'iOS : aucune page web n'y écrit en continu dans un fichier. |
+
+**Un dossier qui contient déjà des fichiers** : chacun est relu avant toute écriture.
+Les relevés qu'il contient rejoignent ceux de l'application, sans doublon, et un
+catalogue existant est chargé. Un fichier illisible, ou qui contient des relevés
+d'une autre filière, est **laissé intact** et n'est pas relié : l'écraser détruirait un
+travail qu'on n'a pas su lire. Un message le signale.
+
+Après un redémarrage du navigateur, l'accès peut devoir être réautorisé. Le bouton
+*Autoriser* redemande l'accès au **dossier**, ce qui couvre tous ses fichiers d'un coup.
+Si le navigateur ne l'étend pas aux fichiers, chaque fichier est redemandé.
+Comportement à confirmer sur la tablette Android.
 
 Dans les deux cas, `localStorage` fait autorité : aucune saisie n'est perdue si
 l'écriture disque échoue. Les fichiers liés survivent au rechargement (handles

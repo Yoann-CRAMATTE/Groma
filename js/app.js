@@ -172,7 +172,9 @@
 
     if (!Store.fsaDisponible()) { hote.hidden = true; return; }
 
-    Store.etatLiaison(filiereId).then(function (etat) {
+    Promise.all([Store.etatLiaison(filiereId), Store.dossierCourant().catch(function () { return null; })]).then(function (r) {
+      var etat = r[0];
+      var dossier = r[1];
       if (etat === 'lie' || (etat === 'absent' && liaisonsRefusees()[filiereId])) {
         hote.hidden = true;
         return;
@@ -190,6 +192,27 @@
         hote.appendChild(el('button', {
           type: 'button', classe: 'btn-primaire btn-compact', texte: 'Autoriser',
           onclick: function () { autoriserLiaison(filiereId); }
+        }));
+        return;
+      }
+
+      // Proposition de départ : un dossier pour tout, plutôt qu'un fichier à
+      // relier dans chacun des onglets. Le choix fichier par fichier reste
+      // dans Configuration pour qui veut ranger ses filières à part.
+      // Un dossier déjà choisi dont ce fichier a été écarté (illisible) : on
+      // propose le fichier seul, reproposer le dossier l'écarterait de nouveau.
+      if (etat === 'absent' && Store.dossierDisponible() && !dossier) {
+        hote.appendChild(el('p', { classe: 'alerte-texte' }, [
+          el('strong', { texte: 'Où enregistrer vos relevés ?' }),
+          ' Choisissez un dossier une fois : Groma y écrira un fichier par filière et le catalogue, mis à jour à chaque relevé.'
+        ]));
+        hote.appendChild(el('button', {
+          type: 'button', classe: 'btn-primaire btn-compact', texte: 'Choisir le dossier',
+          onclick: actionChoisirDossier
+        }));
+        hote.appendChild(el('button', {
+          type: 'button', classe: 'btn-compact', texte: 'Plus tard',
+          onclick: function () { Cfg.FILIERES.forEach(function (x) { refuserLiaison(x.id); }); }
         }));
         return;
       }
@@ -235,10 +258,64 @@
         toast('Accès refusé. Le relevé reste enregistré dans le navigateur.', 'erreur');
         return;
       }
-      return synchroniserFichier(filiereId).then(function () {
-        toast(Cfg.filiere(filiereId).fichier + ' relié et mis à jour.', 'succes');
+      return Store.dossierCourant().then(function (dossier) {
+        if (!dossier) {
+          return synchroniserFichier(filiereId).then(function () {
+            toast(Cfg.filiere(filiereId).fichier + ' relié et mis à jour.', 'succes');
+          });
+        }
+        // L'accord porte sur le dossier : les autres filières en profitent,
+        // leurs bandeaux « à autoriser » doivent tomber eux aussi.
+        return Promise.all([synchroniserTout(), synchroniserParametres()]).then(function () {
+          Cfg.FILIERES.forEach(function (x) { rafraichirLiaison(x.id); });
+          toast('Accès au dossier ' + (dossier.name ? '« ' + dossier.name + ' » ' : '') + 'rétabli.', 'succes');
+        });
       });
     });
+  }
+
+  /**
+   * Un fichier déjà présent dans le dossier n'est réécrit qu'après avoir été
+   * relu. Illisible, ou d'une autre filière : il est laissé intact et non relié
+   * — l'écraser détruirait un travail qu'on n'a pas su lire.
+   */
+  function reprendreFichierDuDossier(cle, texte) {
+    if (!texte || !texte.trim()) return true;
+    if (cle === 'parametres') return chargerCatalogueDepuisTexte(texte);
+    var lignes = Geojson.analyser(texte);
+    var etrangeres = lignes ? lignes.filter(function (l) { return l.filiere && l.filiere !== cle; }).length : 0;
+    if (!lignes || etrangeres) return false;
+    fusionnerReleves(texte, cle);
+    return true;
+  }
+
+  function actionChoisirDossier() {
+    var cles = Cfg.FILIERES.map(function (f) { return f.id; }).concat(['parametres']);
+    var ecartes = [];
+    Store.choisirDossier(cles).then(function (choix) {
+      return cles.reduce(function (chaine, cle) {
+        return chaine.then(function () {
+          if (!choix.existants[cle]) return null;
+          return Store.lireFichier(cle).then(function (texte) {
+            if (reprendreFichierDuDossier(cle, texte)) return null;
+            ecartes.push(cle === 'parametres' ? Catalogue.FICHIER : Cfg.filiere(cle).fichier);
+            return Store.oublierFichier(cle);
+          });
+        });
+      }, Promise.resolve()).then(function () { return choix.dossier; });
+    }).then(function (dossier) {
+      return Promise.all([synchroniserTout(), appliquerCatalogue()]).then(function () { return dossier; });
+    }).then(function (dossier) {
+      Cfg.FILIERES.forEach(function (f) { rafraichirLiaison(f.id); rafraichirListe(f.id); });
+      rafraichirBadgeFichier();
+      rafraichirEtatFichier();
+      rafraichirStats();
+      if (ecartes.length) {
+        toast(ecartes.join(', ') + ' laissé(s) intact(s) : contenu illisible ou d\'une autre filière.', 'erreur');
+      } else {
+        toast('Dossier ' + (dossier.name ? '« ' + dossier.name + ' » ' : '') + 'choisi : chaque relevé y est enregistré.', 'succes');
+      }
+    }).catch(function () { /* sélecteur annulé */ });
   }
 
   // ------------------------------------------------- fichier de relevés
@@ -1513,6 +1590,10 @@
         el('h2', { texte: 'Fichiers de relevés' }),
         el('button', { type: 'button', classe: 'btn-compact', texte: 'Tout exporter', onclick: telechargerTous })
       ]),
+      Store.dossierDisponible() ? el('div', { classe: 'dossier-travail' }, [
+        el('p', { classe: 'note', id: 'cfg-dossier' }),
+        el('button', { type: 'button', classe: 'btn-primaire btn-compact', 'data-fsa': '1', texte: 'Choisir le dossier', onclick: actionChoisirDossier })
+      ]) : null,
       el('p', { classe: 'note', texte: 'Un GeoJSON par filière, prêt à ouvrir dans QGIS. Chaque fichier ne contient que les colonnes de sa filière. Le catalogue a le sien, plus bas.' }),
       el('div', { classe: 'fichiers' }, Cfg.FILIERES.map(construireCarteFichier)),
       el('p', { classe: 'note', id: 'cfg-note-fsa' }),
@@ -2086,6 +2167,14 @@
     }
 
     note.textContent = "L'écriture directe n'existe que sur Chrome et Edge (bureau et Android). Un fichier lié est réécrit intégralement à chaque enregistrement, suppression ou import de sa filière.";
+    var noteDossier = document.getElementById('cfg-dossier');
+    if (noteDossier) {
+      Store.dossierCourant().then(function (d) {
+        noteDossier.textContent = d
+          ? 'Dossier de travail' + (d.name ? ' : « ' + d.name + ' »' : ' choisi') + '. Changer de dossier reprend les fichiers qui s\'y trouvent déjà.'
+          : 'Aucun dossier choisi. Un dossier reçoit d\'un coup tous les fichiers de relevés et le catalogue.';
+      });
+    }
     Cfg.FILIERES.concat([{ id: 'parametres' }]).forEach(function (f) {
       Store.handleCourant(f.id).then(function (h) {
         var n = document.getElementById('cfg-etat-' + f.id);

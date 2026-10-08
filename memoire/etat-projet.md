@@ -190,6 +190,10 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
    `index.html` recharge la page sur `controllerchange`, sauf si `body[data-modale]`
    est posé. Une nouvelle fenêtre de saisie doit poser cet attribut, sinon une
    livraison pendant la saisie la viderait.
+27. **Un fichier trouvé dans le dossier de travail n'est jamais écrasé sans être lu.**
+   `actionChoisirDossier` relit chaque fichier présent ; illisible ou d'une autre
+   filière, il est délié et laissé tel quel. Toute nouvelle façon de relier des
+   fichiers en masse doit garder cette relecture.
 
 ## Décisions prises
 
