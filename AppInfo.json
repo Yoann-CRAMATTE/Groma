@@ -1,6 +1,6 @@
 {
   "appName": "Groma",
-  "version": "1.1",
+  "version": "1.2",
   "company": "EuropaSoft",
   "developer": "Yoann CRAMATTE",
   "website": "https://yoann-cramatte.github.io/Groma/",
@@ -9,6 +9,15 @@
   "copyright": "© 2026 Yoann CRAMATTE — Licence AGPL-3.0",
   "description": "Relevé GPS d'ouvrages de terrain (Eau, Assainissement, SPANC, Voirie) : viseur fixe sur photo aérienne, catalogue de matériel en cascade, export GeoJSON pour les SIG. PWA hors ligne, sans dépendance.",
   "changelog": [
+    {
+      "version": "1.2",
+      "date": "2026-10-08",
+      "changes": [
+        "Titre de la filière (picto et nom complet) en tête de chaque onglet : au téléphone, les onglets n'affichent que leur picto",
+        "Fonds de carte réduits à l'IGN (photo aérienne et plan) : OpenStreetMap retiré des fonds par défaut",
+        "Le nom de filière ne déborde plus des cartes de fichier sur téléphone"
+      ]
+    },
     {
       "version": "1.1",
       "date": "2026-10-08",

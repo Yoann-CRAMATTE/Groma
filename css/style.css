@@ -282,6 +282,36 @@ body {
   .onglet-picto svg { width: 24px; height: 24px; }
 }
 
+/* ---------- Titre de l'onglet ouvert ---------- */
+
+/* Pastille de la couleur de filière portant le picto, puis le nom complet. */
+.vue-titre {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 2px;
+  font-family: var(--police-titres);
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--texte);
+}
+
+.vue-titre-picto {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 2px solid var(--encre);
+  background: var(--accent);
+  color: var(--sur-couleur);
+  box-shadow: var(--relief-petit);
+}
+
 /* ---------- Structure ---------- */
 
 main { padding: var(--gouttiere); max-width: 1080px; margin: 0 auto; }
@@ -626,12 +656,17 @@ button:focus-visible, a:focus-visible, summary:focus-visible {
   vertical-align: 0.05em;
 }
 
+/* Le libellé de filière passe à la ligne plutôt que de déborder de la carte :
+   « ASSAINISSEMENT » à côté de assainissement.geojson ne tient pas à 400 px. */
 .fichier-entete {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
-  gap: 10px;
+  gap: 2px 10px;
 }
+
+.fichier-nom { min-width: 0; overflow-wrap: anywhere; }
 
 .fichier-nom { font-weight: 600; font-size: 0.9rem; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
 

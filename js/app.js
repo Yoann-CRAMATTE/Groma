@@ -364,12 +364,22 @@
     reglages: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>'
   };
 
-  function picto(nom) {
-    var hote = el('span', { classe: 'onglet-picto', 'aria-hidden': 'true' });
+  function picto(nom, classe, taille) {
+    var cote = taille || 22;
+    var hote = el('span', { classe: classe || 'onglet-picto', 'aria-hidden': 'true' });
     // Tracés figés ci-dessus, jamais une donnée saisie : innerHTML est sans risque.
-    hote.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" ' +
+    hote.innerHTML = '<svg viewBox="0 0 24 24" width="' + cote + '" height="' + cote + '" fill="none" stroke="currentColor" ' +
       'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false">' + (PICTOS[nom] || '') + '</svg>';
     return hote;
+  }
+
+  /**
+   * Titre en tête de chaque onglet. Au téléphone, les onglets n'affichent plus
+   * que leur picto : sans ce titre, rien ne disait en toutes lettres si l'on
+   * relevait de l'eau ou de l'assainissement.
+   */
+  function titreVue(icone, texte) {
+    return el('h2', { classe: 'vue-titre' }, [picto(icone, 'vue-titre-picto', 26), el('span', { texte: texte })]);
   }
 
   function construireOnglets() {
@@ -827,6 +837,7 @@
     ]);
 
     return el('section', { classe: 'vue', id: 'vue-' + f.id, role: 'tabpanel', 'aria-labelledby': 'onglet-' + f.id, hidden: 'hidden' }, [
+      titreVue(f.icone, f.titre),
       // Au-dessus du bouton : ce qui menace le travail déjà fait passe avant
       // l'invitation à en faire davantage.
       el('div', { classe: 'alerte-sauvegarde alerte-liaison', id: f.id + '-liaison', role: 'status', hidden: 'hidden' }),
@@ -1531,7 +1542,7 @@
       el('p', {
         classe: 'note',
         texte: "Seuls des services gratuits et sans clé d'accès sont fournis par défaut : "
-          + "photo aérienne et plan IGN (Géoplateforme), OpenStreetMap en secours. "
+          + "photo aérienne et plan IGN (Géoplateforme). "
           + "L'attribution est affichée en permanence sur la carte, comme l'exige la licence de ces fonds."
       }),
       el('div', { classe: 'fonds', id: 'cfg-fonds' }),
@@ -1541,9 +1552,9 @@
       ]),
       el('p', {
         classe: 'note note-alerte',
-        texte: "Gratuit ne veut pas dire sans conditions. Les tuiles d'openstreetmap.org "
-          + "interdisent les usages applicatifs intensifs, et un service public peut modifier "
-          + "ses conditions. Vérifiez celles du fond retenu avant un déploiement en service."
+        texte: "Gratuit ne veut pas dire sans conditions. Un service public peut modifier "
+          + "ses conditions, et les tuiles d'openstreetmap.org, qu'on peut ajouter ici, interdisent "
+          + "les usages applicatifs intensifs. Vérifiez celles du fond retenu avant un déploiement en service."
       })
     ]);
 
@@ -1598,6 +1609,7 @@
     });
 
     return el('section', { classe: 'vue', id: 'vue-configuration', role: 'tabpanel', 'aria-labelledby': 'onglet-configuration', hidden: 'hidden' }, [
+      titreVue('reglages', 'Configuration'),
       el('section', { classe: 'bloc' }, [el('h2', { texte: 'Paramètres' }), formulaire]),
       blocFichier,
       construireBlocCatalogue(),
