@@ -7,6 +7,29 @@ Une entrée par session de travail, la plus récente en haut.
 
 ---
 
+## 08/10/2026 (fin de soirée) — Nouveau logo
+
+**Demande :** un logo plus sympa. L'écran d'accueil de l'iPhone affichait un « G »
+générique, pas l'ancienne épingle : iOS n'avait pas récupéré l'icône à l'ajout, sans
+doute parce que le raccourci avait été créé hors de Safari.
+
+- Trois pistes rendues : viseur soleil, la groma (l'instrument romain), épingle topo.
+  Yoann a retenu l'épingle, et demandé une route schématique avec des points de
+  couleur pour figurer les ouvrages. Deux variantes ont été proposées (route en
+  courbe, carrefour). **Carrefour retenu (C2).**
+- `icons/logo.svg` est la source unique, avec un groupe `fond` (papier, courbes,
+  rues) et un groupe `motif` (points, épingle). `icons/generer-icones.mjs` en dérive
+  les PNG par Playwright. L'icône maskable réduit le motif à 80 %, pour rester dans
+  le disque garanti par les lanceurs Android.
+- `favicon.svg` devient le logo à coins arrondis. Il sert aussi de marque dans
+  l'en-tête (`<img class="marque">`), à la place de la croix de visée tracée en SVG.
+- `VERSION` passe à `groma-3`, pour que les icônes et le favicon déjà en cache soient
+  remplacés.
+- **À faire par Yoann :** supprimer le raccourci de l'écran d'accueil et le recréer
+  depuis Safari. iOS ne relit l'icône qu'à l'ajout.
+
+---
+
 ## 08/10/2026 (soir) — Retours du premier essai sur iPhone
 
 **Contexte :** la PR 17 a été fusionnée par Yoann et publiée (`groma-2`, commit

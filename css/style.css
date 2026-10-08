@@ -162,8 +162,8 @@ body {
   padding: 12px var(--gouttiere);
 }
 
-/* La marque est l'instrument : une croix de visée dans son cercle, le geste
-   central de l'application, en jaune soleil sur la bande d'encre. */
+/* La marque reprend le logo de l'icône : épingle à mire sur un carrefour,
+   posée en pastille claire sur la bande d'encre. */
 .entete h1 {
   display: flex;
   align-items: center;
@@ -177,9 +177,11 @@ body {
 }
 
 .marque {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   flex: 0 0 auto;
+  border-radius: 10px;
+  box-shadow: 0 0 0 2px var(--encre), 0 3px 0 2px rgba(0, 0, 0, 0.35);
 }
 
 /* Sur la bande d'encre, sombre dans les deux thèmes : les pastilles ont des

@@ -629,8 +629,9 @@ Paris Notre-Dame `48.8566 ; 2.3522` → `X = 652 469 m ; Y = 6 862 035 m`.
 ├── index.html
 ├── manifest.webmanifest # PWA : nom, icônes, mode plein écran
 ├── service-worker.js    # cache hors ligne de la coquille applicative
-├── favicon.svg
-├── icons/               # icônes PWA, dérivées de favicon.svg
+├── favicon.svg          # logo arrondi : onglet du navigateur et en-tête de l'application
+├── icons/               # logo.svg (source) et icônes PWA, régénérées par
+│                        # node icons/generer-icones.mjs
 ├── serveur.py           # serveur local (contexte sécurisé pour le GPS)
 ├── CLAUDE.md            # consignes de développement
 ├── .github/workflows/   # publication GitHub Pages

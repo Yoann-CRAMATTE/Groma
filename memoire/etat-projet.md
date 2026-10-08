@@ -44,7 +44,7 @@ navigateur headless sur quinze formats, de 280 px à 1180 px, portrait et paysag
 | `index.html` | Coquille : en-tête, nav, conteneur, toast, manifeste, enregistrement du SW | oui |
 | `manifest.webmanifest` | PWA : nom, icônes, plein écran. `start_url`/`scope` **relatifs** | oui |
 | `service-worker.js` | Cache hors ligne, stratégie cache-d'abord + revalidation | oui |
-| `icons/` | Icônes PWA dérivées de `favicon.svg` (192, 512, maskable, apple) | oui |
+| `icons/` | `logo.svg` (source unique), icônes PWA 192, 512, maskable, apple, régénérées par `node icons/generer-icones.mjs` | oui |
 | `.github/workflows/pages.yml` | Publication GitHub Pages à chaque passage sur `main` | oui |
 | `css/style.css` | Feuille unique, réglée pour la tablette, paliers 768 / 480 / 360 px + paysage court | oui |
 | `js/config.js` | **Source de vérité du schéma** : filières, cascade, couleurs, champs, `DECIMALES` | oui |
