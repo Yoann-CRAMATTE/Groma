@@ -66,15 +66,11 @@
       url: GEOPF.replace('{couche}', 'GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2').replace('{format}', 'image/png'),
       zoomMax: 19,
       credit: '© IGN — Géoplateforme'
-    },
-    // Secours si la Géoplateforme est injoignable. Attention : la politique d'usage
-    // des tuiles d'openstreetmap.org proscrit les usages applicatifs intensifs.
-    osm: {
-      libelle: 'OpenStreetMap',
-      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-      zoomMax: 19,
-      credit: '© Contributeurs OpenStreetMap (ODbL)'
     }
+    // OpenStreetMap a été retiré des fonds par défaut le 08/10/2026 : sa politique
+    // d'usage proscrit les usages applicatifs intensifs, et il n'offre pas de photo
+    // aérienne, sans laquelle on ne recale pas le viseur sur un tampon. Il reste
+    // ajoutable depuis Configuration → Fonds de carte.
   };
 
   /** Contrôle minimal d'un fond saisi par l'utilisateur. */

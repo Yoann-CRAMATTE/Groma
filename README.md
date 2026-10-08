@@ -171,8 +171,7 @@ Aucune dépendance, aucune étape de build : HTML, CSS et JavaScript nus.
 
 **Une fois installée, l'application fonctionne sans réseau** : interface, GPS, saisie,
 catalogue et export restent entiers — rien de tout cela ne dépend d'un serveur.
-**Seules les tuiles de carte manquent** hors couverture : elles viennent de l'IGN
-ou d'OpenStreetMap. La fenêtre de mesure le dit alors clairement, et le viseur,
+**Seules les tuiles de carte manquent** hors couverture : elles viennent de l'IGN. La fenêtre de mesure le dit alors clairement, et le viseur,
 les coordonnées et l'enregistrement continuent de fonctionner.
 
 ### Les relevés ne sont pas à l'abri tant qu'ils ne sont pas sortis
@@ -442,8 +441,8 @@ dessous.
 
 - Elle s'ouvre **au plus serré, sur une scène d'une dizaine de mètres** : c'est
   l'échelle à laquelle on distingue le tampon du regard voisin.
-- Fonds fournis : **photo aérienne** et **plan IGN** (Géoplateforme), plus
-  **OpenStreetMap** en secours — voir la section suivante.
+- Fonds fournis : **photo aérienne** et **plan IGN** (Géoplateforme) — voir la
+  section suivante.
 - La mesure GPS reste affichée en bleu, entourée de son rayon de précision.
 - L'écart du viseur à la mesure s'affiche en direct et passe en orange dès qu'il
   dépasse ce rayon.
@@ -475,7 +474,6 @@ Seuls des services **gratuits et sans clé d'accès** sont fournis par défaut :
 |---|---|---|---|
 | Photo aérienne | Géoplateforme IGN | 20 (≈ 10 cm/px à cette latitude) | © IGN — Géoplateforme |
 | Plan IGN | Géoplateforme IGN | 19 | © IGN — Géoplateforme |
-| OpenStreetMap | tile.openstreetmap.org | 19 | © Contributeurs OpenStreetMap (ODbL) |
 
 Aucun service payant, aucun quota, aucun compte. L'attribution s'affiche **en
 permanence** en bas de la carte : c'est une obligation de licence, pas une mention
@@ -483,10 +481,12 @@ décorative reléguée dans un menu.
 
 **Gratuit ne veut pas dire sans conditions :**
 
-- Les tuiles d'`openstreetmap.org` sont servies par une fondation à but non lucratif
-  et leur politique d'usage **proscrit les usages applicatifs intensifs**. C'est un
-  secours de dépannage, pas un fond de production pour un service qui relève des
-  centaines d'ouvrages par semaine.
+- **OpenStreetMap n'est plus fourni par défaut** (08/10/2026). Ses tuiles sont servies
+  par une fondation à but non lucratif dont la politique d'usage **proscrit les usages
+  applicatifs intensifs**, et il n'a pas de photo aérienne. On peut l'ajouter à la main
+  dans Configuration en dépannage, pas comme fond de production.
+- Aucun quota n'est annoncé pour la Géoplateforme, mais « sans limite » n'est écrit
+  nulle part : c'est un service public, à usage raisonnable.
 - Un service public peut modifier ses conditions. **Les URL n'ont pas pu être
   appelées réellement depuis l'environnement de développement** (sortie réseau
   fermée) : à confirmer avant tout déploiement en service.
@@ -649,9 +649,8 @@ Ajouter un *champ* aux relevés, en revanche, se fait dans `js/config.js` :
 ## Limites connues
 
 - **La carte exige du réseau.** L'application est installable et fonctionne hors
-  ligne, mais les tuiles ne sont pas mises en réserve : elles viennent de l'IGN et
-  d'OpenStreetMap, dont les conditions d'usage proscrivent la constitution de
-  réserves locales. Hors couverture, on relève au GPS sans recaler à l'œil.
+  ligne, mais les tuiles ne sont pas mises en réserve : elles viennent de l'IGN, et
+  une carte périmée sur un relevé vaut moins qu'une carte absente qui le dit. Hors couverture, on relève au GPS sans recaler à l'œil.
 - Pas de photo rattachée aux points.
 - L'import fusionne sur l'identifiant `id` ; deux relevés du même ouvrage saisis sur
   deux appareils différents produisent deux lignes.

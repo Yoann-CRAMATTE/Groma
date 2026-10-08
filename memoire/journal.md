@@ -7,6 +7,30 @@ Une entrée par session de travail, la plus récente en haut.
 
 ---
 
+## 08/10/2026 (soir) — Retours du premier essai sur iPhone
+
+**Contexte :** la PR 17 a été fusionnée par Yoann et publiée (`groma-2`, commit
+`d3d12f9`). Premier essai sur iPhone, trois remarques.
+
+- **« ASSAINISSEMENT » débordait de sa carte de fichier** dans Configuration.
+  `audit-responsive` ne voit que les débordements hors de l'écran, pas hors d'une
+  carte. `.fichier-entete` passe désormais à la ligne. Vérifié à 414 px : aucun
+  élément ne dépasse des cartes.
+- **On ne savait plus dans quelle filière on était**, les onglets n'affichant que leur
+  picto au téléphone. Chaque vue commence maintenant par un titre `.vue-titre` : picto
+  sur une pastille de la couleur de filière, puis `titre` de config.js (« Assainissement
+  collectif »…). Configuration a le sien.
+- **Fonds de carte réduits à l'IGN.** Yoann demandait un seul fournisseur, gratuit et
+  sans limite. L'IGN est le seul à donner la photo aérienne, nécessaire au recalage du
+  viseur. OpenStreetMap proscrit les usages applicatifs intensifs. Il sort donc des
+  fonds par défaut, mais reste ajoutable dans Configuration. Tuiles IGN testées
+  depuis le poste : HTTP 200, photo et plan. Aucun quota n'est annoncé, mais « sans
+  limite » n'est écrit nulle part : je l'ai dit à Yoann tel quel.
+- GPS refusé et carte absente sur sa capture : elle venait du navigateur intégré à
+  l'application Claude, qui n'a pas la localisation. Pas un défaut de Groma.
+
+---
+
 ## 08/10/2026 — Thème de terrain clair et identité « arpenteur »
 
 **Demande :** audit de l'interface, puis la rendre plus belle. Direction validée à deux
