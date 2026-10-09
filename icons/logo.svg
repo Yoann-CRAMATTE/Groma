@@ -1,12 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<!-- Logo Groma arrondi : favicon et marque de l'en-tête. Source : icons/logo.svg. -->
-<defs><clipPath id="coins"><rect width="512" height="512" rx="116"/></clipPath></defs>
-<g clip-path="url(#coins)">
+<!-- Logo Groma : l'épingle à mire jaune sur un carrefour de plan, entourée
+     d'ouvrages relevés aux couleurs des filières (eau, assainissement, SPANC,
+     voirie). Source unique des icônes : icons/generer-icones.mjs les dérive
+     de ce fichier. -->
+<g id="fond">
 <rect width="512" height="512" fill="#fff8ef"/><g fill="none" stroke="#ffd9b0" stroke-width="7" stroke-linecap="round"><path d="M-20 70 C90 25 200 125 320 70 S500 25 560 70"/><path d="M-20 455 C90 410 200 510 320 455 S500 410 560 455"/></g>
 <g fill="none" stroke-linecap="butt">
 <path d="M-20 300 H532" stroke="#e9dfcf" stroke-width="70"/><path d="M330 -20 V532" stroke="#e9dfcf" stroke-width="64"/>
 <path d="M-20 300 H532" stroke="#fffdf8" stroke-width="54"/><path d="M330 -20 V532" stroke="#fffdf8" stroke-width="48"/>
 <path d="M-20 300 H532" stroke="#d8ccb8" stroke-width="5" stroke-dasharray="18 16"/><path d="M330 -20 V532" stroke="#d8ccb8" stroke-width="5" stroke-dasharray="18 16"/></g>
+</g>
+<g id="motif">
 <circle cx="70" cy="250" r="17" fill="#25c7ff" stroke="#1b1340" stroke-width="5"/><circle cx="110" cy="352" r="17" fill="#3ee07a" stroke="#1b1340" stroke-width="5"/><circle cx="392" cy="420" r="17" fill="#c86bff" stroke="#1b1340" stroke-width="5"/><circle cx="392" cy="92" r="17" fill="#ff8a3d" stroke="#1b1340" stroke-width="5"/>
 <path d="M256 452s-128-138-128-230a128 128 0 0 1 256 0c0 92-128 230-128 230z" fill="#1b1340" opacity=".18" transform="translate(6 10)"/>
 <path d="M256 452s-128-138-128-230a128 128 0 0 1 256 0c0 92-128 230-128 230z" fill="#1b1340"/>
